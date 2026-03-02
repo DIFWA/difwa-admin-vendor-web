@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
     Plus,
     Search,
@@ -14,10 +14,32 @@ import {
 import { cn } from "@/lib/utils"
 
 import { useRouter } from "next/navigation"
+import retailerService from "@/data/services/retailerService"
+
+interface Category {
+    _id: string;
+    name: string;
+}
 
 export default function AddProductPage() {
     const router = useRouter()
     const [selectedColors, setSelectedColors] = useState<string[]>(["#AEDC81"])
+    const [categories, setCategories] = useState<Category[]>([])
+    const [selectedCategory, setSelectedCategory] = useState("")
+    const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+        fetchCategories()
+    }, [])
+
+    const fetchCategories = async () => {
+        try {
+            const response = await retailerService.getCategories()
+            setCategories(response.data)
+        } catch (error) {
+            console.error("Error fetching categories:", error)
+        }
+    }
 
     const colors = [
         { name: "Green", value: "#6CC51D" },
@@ -203,10 +225,19 @@ export default function AddProductPage() {
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold">Product Categories</label>
                                 <div className="relative">
-                                    <select className="w-full px-4 py-2.5 rounded-lg bg-background-soft border-transparent text-sm appearance-none outline-none">
-                                        <option>Select your product</option>
+                                    <select
+                                        value={selectedCategory}
+                                        onChange={(e) => setSelectedCategory(e.target.value)}
+                                        className="w-full px-4 py-2.5 rounded-lg bg-background-soft border-transparent text-sm appearance-none outline-none focus:bg-white focus:border-primary transition-all"
+                                    >
+                                        <option value="">Select your product</option>
+                                        {categories.map((cat) => (
+                                            <option key={cat._id} value={cat._id}>
+                                                {cat.name}
+                                            </option>
+                                        ))}
                                     </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
+                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" size={16} />
                                 </div>
                             </div>
                             <div className="space-y-2">

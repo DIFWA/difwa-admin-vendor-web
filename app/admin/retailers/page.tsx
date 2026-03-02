@@ -41,15 +41,28 @@ export default function RetailersPage() {
     const [rejectionReason, setRejectionReason] = useState("")
     const [actionLoading, setActionLoading] = useState(false)
 
-    useEffect(() => {
-        fetchRetailers()
-    }, [filter])
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
+    const [totalItems, setTotalItems] = useState(0)
+    const limit = 10
 
-    const fetchRetailers = async () => {
+    useEffect(() => {
+        setCurrentPage(1)
+        fetchRetailers(1)
+    }, [filter, searchTerm])
+
+    useEffect(() => {
+        fetchRetailers(currentPage)
+    }, [currentPage])
+
+    const fetchRetailers = async (page: number) => {
         setLoading(true)
         try {
-            const data = await adminService.getRetailers(filter)
-            setRetailers(data)
+            const response = await adminService.getRetailers(filter, page, limit, searchTerm)
+            setRetailers(response.data)
+            setTotalPages(response.pagination.totalPages)
+            setTotalItems(response.pagination.totalRetailers)
         } catch (error) {
             console.error("Error fetching retailers:", error)
         } finally {
@@ -68,7 +81,7 @@ export default function RetailersPage() {
             await adminService.updateRetailerStatus(userId, status, rejectionReason)
             setSelectedRetailer(null)
             setRejectionReason("")
-            fetchRetailers()
+            fetchRetailers(currentPage)
         } catch (error: any) {
             console.error(error)
             alert(error.response?.data?.message || "Action failed")
@@ -77,11 +90,8 @@ export default function RetailersPage() {
         }
     }
 
-    const filteredRetailers = retailers.filter(r =>
-        r.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.businessDetails?.businessName?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    // Filtered locally only if needed, but we now use server-side search
+    const filteredRetailers = retailers
 
     return (
         <div className="space-y-6">
@@ -185,6 +195,45 @@ export default function RetailersPage() {
                         </table>
                     )}
                 </div>
+
+                {/* Pagination Controls */}
+                {!loading && totalPages > 1 && (
+                    <div className="p-6 border-t border-border-custom flex items-center justify-between">
+                        <p className="text-sm text-text-muted font-medium">
+                            Showing <span className="text-primary font-bold">{(currentPage - 1) * limit + 1}</span> to <span className="text-primary font-bold">{Math.min(currentPage * limit, totalItems)}</span> of <span className="text-primary font-bold">{totalItems}</span> retailers
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-4 py-2 rounded-xl text-sm font-bold border border-border-custom hover:bg-background-soft disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                Previous
+                            </button>
+                            <div className="flex items-center gap-1">
+                                {[...Array(totalPages)].map((_, i) => (
+                                    <button
+                                        key={i + 1}
+                                        onClick={() => setCurrentPage(i + 1)}
+                                        className={cn(
+                                            "w-10 h-10 rounded-xl text-sm font-bold transition-all",
+                                            currentPage === i + 1 ? "bg-[#1B2D1F] text-white shadow-lg shadow-black/10" : "hover:bg-background-soft text-text-muted"
+                                        )}
+                                    >
+                                        {i + 1}
+                                    </button>
+                                ))}
+                            </div>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-4 py-2 rounded-xl text-sm font-bold border border-border-custom hover:bg-background-soft disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Review Modal */}

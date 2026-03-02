@@ -31,6 +31,7 @@ const adminMenu = [
             { name: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
             { name: "Shops", icon: Star, href: "/admin/shops" },
             { name: "Retailers", icon: Users, href: "/admin/retailers" },
+            { name: "Users", icon: Users, href: "/admin/users" },
             { name: "Order Management", icon: ShoppingCart, href: "/admin/orders" },
             { name: "Categories", icon: Layers, href: "/admin/categories" },
             { name: "Transaction", icon: ArrowLeftRight, href: "/admin/transactions" },
