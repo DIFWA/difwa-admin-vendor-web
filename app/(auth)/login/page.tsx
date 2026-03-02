@@ -211,7 +211,7 @@ export default function LoginPage() {
 
                                 <div className="flex items-center gap-3 ml-1 select-none">
                                     <input id="rem" type="checkbox" className="w-5 h-5 rounded border-[#D1D1D1] accent-[#FF6B00] cursor-pointer" />
-                                    <label htmlFor="rem" className="text-[15px] font-bold text-[#868889] cursor-pointer">Stay logged in</label>
+                                    <label htmlFor="rem" className="text-[15px] font-bold text-[#9BE15D] cursor-pointer">Stay logged in</label>
                                 </div>
 
                                 <button

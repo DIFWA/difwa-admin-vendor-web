@@ -32,18 +32,29 @@ const adminService = {
         return response.data;
     },
 
-    createCategory: async (name) => {
-        const response = await apiClient.post("/admin/categories", { name });
+    createCategory: async (name, image = "") => {
+        const response = await apiClient.post("/admin/categories", { name, image });
         return response.data;
     },
 
-    updateCategory: async (id, name) => {
-        const response = await apiClient.put(`/admin/categories/${id}`, { name });
+    updateCategory: async (id, name, image = "") => {
+        const response = await apiClient.put(`/admin/categories/${id}`, { name, image });
         return response.data;
     },
 
     deleteCategory: async (id) => {
         const response = await apiClient.delete(`/admin/categories/${id}`);
+        return response.data;
+    },
+
+    uploadImage: async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await apiClient.post("/upload", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data"
+            }
+        });
         return response.data;
     }
 };

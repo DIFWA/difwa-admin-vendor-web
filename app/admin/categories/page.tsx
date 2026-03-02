@@ -8,6 +8,7 @@ import adminService from "@/data/services/adminService"
 interface Category {
     _id: string;
     name: string;
+    image?: string;
     createdAt: string;
 }
 
@@ -18,7 +19,9 @@ export default function CategoriesPage() {
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [editingCategory, setEditingCategory] = useState<Category | null>(null)
     const [categoryName, setCategoryName] = useState("")
+    const [categoryImage, setCategoryImage] = useState("")
     const [actionLoading, setActionLoading] = useState(false)
+    const [uploadLoading, setUploadLoading] = useState(false)
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1)
@@ -52,7 +55,24 @@ export default function CategoriesPage() {
     const handleOpenModal = (category: Category | null = null) => {
         setEditingCategory(category)
         setCategoryName(category ? category.name : "")
+        setCategoryImage(category?.image || "")
         setIsModalOpen(true)
+    }
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        setUploadLoading(true)
+        try {
+            const response = await adminService.uploadImage(file)
+            setCategoryImage(response.url)
+        } catch (error) {
+            console.error("Upload failed:", error)
+            alert("Image upload failed. Please try again.")
+        } finally {
+            setUploadLoading(false)
+        }
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -62,9 +82,9 @@ export default function CategoriesPage() {
         setActionLoading(true)
         try {
             if (editingCategory) {
-                await adminService.updateCategory(editingCategory._id, categoryName)
+                await adminService.updateCategory(editingCategory._id, categoryName, categoryImage)
             } else {
-                await adminService.createCategory(categoryName)
+                await adminService.createCategory(categoryName, categoryImage)
             }
             setIsModalOpen(false)
             fetchCategories(currentPage)
@@ -126,6 +146,7 @@ export default function CategoriesPage() {
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="bg-primary/5 text-xs font-bold text-primary uppercase tracking-wider border-b border-border-custom">
+                                    <th className="px-6 py-4">Image</th>
                                     <th className="px-6 py-4">Category Name</th>
                                     <th className="px-6 py-4">Created At</th>
                                     <th className="px-6 py-4 text-right">Actions</th>
@@ -134,6 +155,15 @@ export default function CategoriesPage() {
                             <tbody className="divide-y divide-border-custom text-sm">
                                 {categories.map((cat) => (
                                     <tr key={cat._id} className="hover:bg-background-soft/50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            {cat.image ? (
+                                                <img src={cat.image} alt={cat.name} className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
+                                                    No
+                                                </div>
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4 font-bold">{cat.name}</td>
                                         <td className="px-6 py-4 text-text-muted">
                                             {new Date(cat.createdAt).toLocaleDateString()}
@@ -157,7 +187,7 @@ export default function CategoriesPage() {
                                     </tr>
                                 ))}
                                 {categories.length === 0 && (
-                                    <tr><td colSpan={3} className="p-12 text-center text-text-muted">No categories found</td></tr>
+                                    <tr><td colSpan={4} className="p-12 text-center text-text-muted">No categories found</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -226,6 +256,57 @@ export default function CategoriesPage() {
                                     onChange={e => setCategoryName(e.target.value)}
                                     className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-transparent focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all font-medium"
                                 />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold text-gray-700">Category Image URL</label>
+                                <input
+                                    type="text"
+                                    placeholder="Paste image URL here"
+                                    value={categoryImage}
+                                    onChange={e => setCategoryImage(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-transparent focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all font-medium"
+                                />
+                                {categoryImage && (
+                                    <div className="mt-2 p-2 border border-dashed rounded-xl flex items-center gap-4">
+                                        <img src={categoryImage} alt="Preview" className="w-16 h-16 rounded-lg object-cover" />
+                                        <span className="text-xs text-text-muted">Image Preview</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="relative">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-gray-200"></div>
+                                    </div>
+                                    <div className="relative flex justify-center text-xs uppercase">
+                                        <span className="bg-white px-2 text-text-muted">Or Upload Instead</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-center w-full">
+                                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-all cursor-pointer group">
+                                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                            {uploadLoading ? (
+                                                <Clock className="animate-spin text-primary" size={24} />
+                                            ) : (
+                                                <>
+                                                    <Plus className="text-gray-400 group-hover:text-primary mb-2 transition-colors" size={24} />
+                                                    <p className="text-sm text-gray-500 font-medium">Click to upload category image</p>
+                                                    <p className="text-xs text-gray-400 mt-1">PNG, JPG or WebP (Max 5MB)</p>
+                                                </>
+                                            )}
+                                        </div>
+                                        <input
+                                            type="file"
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                            disabled={uploadLoading}
+                                        />
+                                    </label>
+                                </div>
                             </div>
 
                             <div className="pt-2">
