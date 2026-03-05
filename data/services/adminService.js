@@ -47,6 +47,27 @@ const adminService = {
         return response.data;
     },
 
+    // Subscription Management
+    getSubscriptionPlans: async () => {
+        const response = await apiClient.get("/admin/subscriptions");
+        return response.data;
+    },
+
+    createSubscriptionPlan: async (planData) => {
+        const response = await apiClient.post("/admin/subscriptions", planData);
+        return response.data;
+    },
+
+    updateSubscriptionPlan: async (id, planData) => {
+        const response = await apiClient.put(`/admin/subscriptions/${id}`, planData);
+        return response.data;
+    },
+
+    deleteSubscriptionPlan: async (id) => {
+        const response = await apiClient.delete(`/admin/subscriptions/${id}`);
+        return response.data;
+    },
+
     uploadImage: async (file) => {
         const formData = new FormData();
         formData.append("file", file);
