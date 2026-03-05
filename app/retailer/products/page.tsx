@@ -168,7 +168,6 @@ export default function RetailerProductsPage() {
                                 <tr className="bg-primary/5 text-xs font-black text-primary uppercase tracking-widest border-b border-gray-300">
                                     <th className="px-6 py-4">No.</th>
                                     <th className="px-6 py-4">Product</th>
-                                    <th className="px-6 py-4 text-center">Pricing (R/S/G)</th>
                                     <th className="px-6 py-4 text-center">Stock</th>
                                     <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4 text-center">Action</th>
@@ -188,15 +187,6 @@ export default function RetailerProductsPage() {
                                                 <div>
                                                     <p className="font-bold text-primary uppercase">{p.name}</p>
                                                     <p className="text-[10px] text-text-muted font-black uppercase tracking-widest">{p.category?.name}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-col items-center gap-1">
-                                                <span className="font-bold text-primary">₹{p.price}</span>
-                                                <div className="flex gap-2">
-                                                    <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-500 font-bold">S: ₹{p.silverPrice}</span>
-                                                    <span className="text-[10px] bg-yellow-50 px-1.5 py-0.5 rounded text-yellow-600 font-bold">G: ₹{p.goldPrice}</span>
                                                 </div>
                                             </div>
                                         </td>

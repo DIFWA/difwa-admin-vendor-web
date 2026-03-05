@@ -35,9 +35,6 @@ export default function EditProductPage() {
     const [formData, setFormData] = useState({
         name: "",
         description: "",
-        price: "" as string | number,
-        silverPrice: "" as string | number,
-        goldPrice: "" as string | number,
         category: "",
         stock: 0,
         stockStatus: "In Stock" as "In Stock" | "Out of Stock" | "Low Stock",
@@ -72,9 +69,6 @@ export default function EditProductPage() {
             setFormData({
                 name: p.name || "",
                 description: p.description || "",
-                price: p.price || "",
-                silverPrice: p.silverPrice || "",
-                goldPrice: p.goldPrice || "",
                 category: p.category?._id || p.category || "",
                 stock: p.stock || 0,
                 stockStatus: p.stockStatus || "In Stock",
@@ -117,19 +111,14 @@ export default function EditProductPage() {
     }
 
     const handleUpdate = async () => {
-        if (!formData.name || !formData.category || !formData.price) {
-            alert("Please fill in the required fields (Name, Category, Price)")
+        if (!formData.name || !formData.category) {
+            alert("Please fill in the required fields (Name, Category)")
             return
         }
 
         setPublishing(true)
         try {
-            await retailerService.updateProduct(id as string, {
-                ...formData,
-                price: Number(formData.price),
-                silverPrice: Number(formData.silverPrice) || Number(formData.price),
-                goldPrice: Number(formData.goldPrice) || Number(formData.price),
-            })
+            await retailerService.updateProduct(id as string, formData)
             router.push("/retailer/products")
         } catch (error) {
             console.error("Failed to update catch:", error)
@@ -216,52 +205,6 @@ export default function EditProductPage() {
                         </div>
                     </section>
 
-                    {/* Tiered Pricing */}
-                    <section className="bg-white p-6 rounded-2xl border border-border shadow-sm space-y-6">
-                        <h3 className="text-lg font-bold">Pricing (Tiered)</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold uppercase tracking-tight text-text-muted">Regular Price *</label>
-                                <div className="relative">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold">₹</div>
-                                    <input
-                                        type="number"
-                                        value={formData.price}
-                                        onChange={e => setFormData({ ...formData, price: e.target.value })}
-                                        placeholder="0.00"
-                                        className="w-full pl-8 pr-4 py-2.5 rounded-lg bg-background-soft border-transparent focus:bg-white focus:border-primary transition-all outline-none text-sm font-bold"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold uppercase tracking-tight text-text-muted">Silver Plan Price</label>
-                                <div className="relative">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold">₹</div>
-                                    <input
-                                        type="number"
-                                        value={formData.silverPrice}
-                                        onChange={e => setFormData({ ...formData, silverPrice: e.target.value })}
-                                        placeholder="Same as regular"
-                                        className="w-full pl-8 pr-4 py-2.5 rounded-lg bg-background-soft border-transparent focus:bg-white focus:border-primary transition-all outline-none text-sm font-bold"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold uppercase tracking-tight text-text-muted">Gold Plan Price</label>
-                                <div className="relative">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold">₹</div>
-                                    <input
-                                        type="number"
-                                        value={formData.goldPrice}
-                                        onChange={e => setFormData({ ...formData, goldPrice: e.target.value })}
-                                        placeholder="Same as regular"
-                                        className="w-full pl-8 pr-4 py-2.5 rounded-lg bg-background-soft border-transparent focus:bg-white focus:border-primary transition-all outline-none text-sm font-bold"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        <p className="text-[10px] text-text-muted uppercase font-bold tracking-widest italic">Note: Plan prices default to regular price if left blank.</p>
-                    </section>
 
                     {/* Inventory */}
                     <section className="bg-white p-6 rounded-2xl border border-border shadow-sm space-y-6">
