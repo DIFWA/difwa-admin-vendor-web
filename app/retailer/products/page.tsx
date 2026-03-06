@@ -169,6 +169,7 @@ export default function RetailerProductsPage() {
                                     <th className="px-6 py-4">No.</th>
                                     <th className="px-6 py-4">Product</th>
                                     <th className="px-6 py-4 text-center">Stock</th>
+                                    <th className="px-6 py-4">Price</th>
                                     <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4 text-center">Action</th>
                                 </tr>
@@ -196,6 +197,9 @@ export default function RetailerProductsPage() {
                                                 "text-[9px] font-black uppercase",
                                                 p.stockStatus === "In Stock" ? "text-green-500" : "text-red-500"
                                             )}>{p.stockStatus}</p>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <p className="font-black text-primary">₹{p.price}</p>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={cn(

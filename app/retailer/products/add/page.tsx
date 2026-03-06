@@ -36,6 +36,7 @@ export default function AddProductPage() {
         name: "",
         description: "",
         category: "",
+        price: "" as string | number,
         stock: 0,
         stockStatus: "In Stock" as "In Stock" | "Out of Stock" | "Low Stock",
         status: "Published" as "Published" | "Draft",
@@ -82,8 +83,8 @@ export default function AddProductPage() {
     }
 
     const handlePublish = async () => {
-        if (!formData.name || !formData.category) {
-            alert("Please fill in the required fields (Name, Category)")
+        if (!formData.name || !formData.category || !formData.price) {
+            alert("Please fill in the required fields (Name, Category, Price)")
             return
         }
 
@@ -167,6 +168,25 @@ export default function AddProductPage() {
                         </div>
                     </section>
 
+                    {/* Pricing */}
+                    <section className="bg-white p-6 rounded-2xl border border-border shadow-sm space-y-4">
+                        <h3 className="text-lg font-bold">Pricing</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold">Base Price (₹) *</label>
+                                <div className="relative">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold">₹</div>
+                                    <input
+                                        type="number"
+                                        value={formData.price}
+                                        onChange={e => setFormData({ ...formData, price: e.target.value })}
+                                        placeholder="0.00"
+                                        className="w-full pl-8 pr-4 py-2.5 rounded-lg bg-background-soft border-transparent focus:bg-white focus:border-primary transition-all outline-none text-sm font-bold"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
 
                     {/* Inventory */}
                     <section className="bg-white p-6 rounded-2xl border border-border shadow-sm space-y-6">
@@ -302,6 +322,6 @@ export default function AddProductPage() {
                     </section>
                 </div>
             </div>
-        </div>
+        </div >
     )
 }
