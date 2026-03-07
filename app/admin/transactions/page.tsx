@@ -81,7 +81,7 @@ export default function AdminTransactionsPage() {
                                 <th className="px-6 py-4 text-center">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y text-sm">
+                        <tbody className="divide-y divide-border-custom text-sm">
                             {transactions.map((txn) => (
                                 <tr key={txn.id} className="hover:bg-background-soft transition-colors">
                                     <td className="px-6 py-4 font-bold text-primary">{txn.id}</td>
@@ -90,22 +90,26 @@ export default function AdminTransactionsPage() {
                                     <td className="px-6 py-4 font-bold">{txn.amount}</td>
                                     <td className="px-6 py-4 text-center">
                                         <span className={cn(
-                                            "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
-                                            txn.type === "Credit" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                                            "px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest transition-all",
+                                            txn.type === "Credit" ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-purple-50 text-purple-600 border-purple-100"
                                         )}>
                                             {txn.type}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-center">
+                                    <td className="px-6 py-4">
                                         <span className={cn(
-                                            "inline-block w-2 h-2 rounded-full mr-2",
-                                            txn.status === "Settled" ? "bg-primary" : "bg-warning"
-                                        )}></span>
-                                        <span className="font-medium">{txn.status}</span>
+                                            "px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest transition-all",
+                                            txn.status === "Settled" ? "bg-green-50 text-green-600 border-green-100" : "bg-red-50 text-red-600 border-red-100"
+                                        )}>
+                                            {txn.status}
+                                        </span>
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        <button className="p-2 hover:bg-background-soft rounded-lg">
-                                            <MoreVertical size={16} />
+                                        <button className={cn(
+                                            "px-4 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest transition-all",
+                                            "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-600 hover:text-white"
+                                        )}>
+                                            View
                                         </button>
                                     </td>
                                 </tr>

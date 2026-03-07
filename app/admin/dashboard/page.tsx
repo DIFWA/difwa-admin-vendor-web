@@ -142,10 +142,10 @@ export default function Dashboard() {
                         <Filter size={16} />
                         Filter
                     </button>
-                    <Link href="/admin/shops" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary transition-all text-sm font-medium shadow-md shadow-primary/20">
+                    {/* <Link href="/admin/shops" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary transition-all text-sm font-medium shadow-md shadow-primary/20">
                         <Plus size={16} />
                         Add Shop
-                    </Link>
+                    </Link> */}
                 </div>
             </div>
 

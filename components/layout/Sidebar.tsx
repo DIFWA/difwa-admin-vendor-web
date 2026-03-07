@@ -29,10 +29,12 @@ const adminMenu = [
         title: "Main menu",
         items: [
             { name: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
-            { name: "Shops", icon: Star, href: "/admin/shops" },
+            // { name: "Shops", icon: Star, href: "/admin/shops" },
             { name: "Retailers", icon: Users, href: "/admin/retailers" },
+            { name: "Users", icon: Users, href: "/admin/users" },
             { name: "Order Management", icon: ShoppingCart, href: "/admin/orders" },
             { name: "Categories", icon: Layers, href: "/admin/categories" },
+            { name: "Subscription Plans", icon: TicketPercent, href: "/admin/subscriptions" },
             { name: "Transaction", icon: ArrowLeftRight, href: "/admin/transactions" },
         ]
     },
@@ -54,6 +56,7 @@ const retailerMenu = [
             { name: "Add Product", icon: PlusCircle, href: "/retailer/products/add" },
             { name: "Orders", icon: ShoppingCart, href: "/retailer/orders" },
             { name: "Reviews", icon: Star, href: "/retailer/reviews" },
+            { name: "Store Settings", icon: UserCog, href: "/retailer/settings" },
         ]
     },
     {
@@ -91,8 +94,8 @@ export default function Sidebar() {
     }
 
     const menuGroups = role === "retailer" ? retailerMenu : adminMenu
-    const userLabel = role === "retailer" ? "Shrimp Retailer" : "Shrimpbite Admin"
-    const userIdentity = role === "retailer" ? "Shop Owner" : "mark@shrimpbite.in"
+    const userLabel = user?.name || (role === "retailer" ? "Shrimp Retailer" : "Shrimbite Admin")
+    const userIdentity = user?.email || (role === "retailer" ? "Shop Owner" : "admin@shrimpbite.in")
 
     return (
         <aside className={cn(
@@ -100,28 +103,20 @@ export default function Sidebar() {
             collapsed ? "w-20" : "w-64"
         )}>
             {/* Logo */}
-            <div className="p-6 flex items-center justify-between">
-                {!collapsed && (
-                    <Link href={role === "retailer" ? "/retailer/dashboard" : "/admin/dashboard"} className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                            <img
-                                src="/loginlogo.png"
-                                alt="Shrimpbite Logo"
-                                className="w-12 h-12 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.3)]"
-                            />
-                        </div>
-                        <span className="font-bold text-xl text-primary tracking-tight ">Shrimpbite</span>
-                    </Link>
-                )}
-                {collapsed && (
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center mx-auto">
-                        <img
-                            src="/loginlogo.png"
-                            alt="Shrimpbite Logo"
-                            className="w-12 h-12 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.3)]"
-                        />
-                    </div>
-                )}
+            <div className="p-6 flex items-center gap-3 overflow-hidden whitespace-nowrap">
+                <Link href={role === "retailer" ? "/retailer/dashboard" : "/admin/dashboard"} className="flex items-center gap-3 shrink-0">
+                    <img
+                        src="/loginlogo.png"
+                        alt="Shrimpbite Logo"
+                        className="w-10 h-10 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.3)] shrink-0"
+                    />
+                    <span className={cn(
+                        "font-bold text-xl text-primary tracking-tight transition-all duration-300 overflow-hidden",
+                        collapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+                    )}>
+                        Shrimbite
+                    </span>
+                </Link>
             </div>
 
             <button
@@ -135,11 +130,12 @@ export default function Sidebar() {
             <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 scrollbar-hide">
                 {menuGroups.map((group, groupIndex) => (
                     <div key={groupIndex} className="mb-6">
-                        {!collapsed && (
-                            <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4 px-2">
-                                {group.title}
-                            </h3>
-                        )}
+                        <h3 className={cn(
+                            "text-xs font-semibold text-text-muted uppercase tracking-wider mb-4 px-2 transition-all duration-300 overflow-hidden",
+                            collapsed ? "opacity-0 h-0 mb-0" : "opacity-100 h-auto mb-4"
+                        )}>
+                            {group.title}
+                        </h3>
                         <div className="space-y-1">
                             {group.items.map((item) => {
                                 const isActive = pathname === item.href
@@ -158,9 +154,12 @@ export default function Sidebar() {
                                             "shrink-0",
                                             !isActive && "text-text-muted group-hover:text-primary"
                                         )} />
-                                        {!collapsed && (
-                                            <span className="font-medium whitespace-nowrap">{item.name}</span>
-                                        )}
+                                        <span className={cn(
+                                            "font-medium whitespace-nowrap transition-all duration-300 overflow-hidden",
+                                            collapsed ? "w-0 opacity-0 ml-0" : "w-auto opacity-100 ml-3"
+                                        )}>
+                                            {item.name}
+                                        </span>
                                         {collapsed && (
                                             <div className="absolute left-full ml-6 px-2 py-1 bg-foreground text-background text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
                                                 {item.name}
@@ -177,8 +176,8 @@ export default function Sidebar() {
             {/* User Session */}
             <div className="p-4 border-t border-border-custom mt-auto">
                 <div className={cn(
-                    "flex items-center gap-3 p-2 rounded-xl transition-all",
-                    collapsed ? "justify-center" : "bg-background-soft"
+                    "flex items-center gap-3 p-2 rounded-xl transition-all duration-300 w-full overflow-hidden whitespace-nowrap",
+                    !collapsed && "bg-background-soft"
                 )}>
                     <div className="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center overflow-hidden shrink-0">
                         <img
@@ -187,12 +186,13 @@ export default function Sidebar() {
                             className="w-full h-full object-cover"
                         />
                     </div>
-                    {!collapsed && (
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold truncate">{userLabel}</p>
-                            <p className="text-xs text-text-muted truncate">{userIdentity}</p>
-                        </div>
-                    )}
+                    <div className={cn(
+                        "flex-1 min-w-0 transition-all duration-300",
+                        collapsed ? "opacity-0 w-0" : "opacity-100 w-auto ml-3"
+                    )}>
+                        <p className="text-sm font-bold truncate">{userLabel}</p>
+                        <p className="text-xs text-text-muted truncate">{userIdentity}</p>
+                    </div>
                     <button
                         onClick={() => {
                             document.cookie = "auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;"
@@ -208,16 +208,17 @@ export default function Sidebar() {
                         <LogOut size={18} />
                     </button>
                 </div>
-                {!collapsed && (
-                    <Link
-                        href="https://shrimpbite.in"
-                        target="_blank"
-                        className="flex items-center justify-between mt-4 px-3 py-2 rounded-lg border border-border-custom hover:border-primary transition-all text-xs font-medium"
-                    >
-                        <span>Shrimbite Website</span>
-                        <ArrowLeftRight size={14} className="rotate-45" />
-                    </Link>
-                )}
+                <Link
+                    href="https://shrimpbite.in"
+                    target="_blank"
+                    className={cn(
+                        "flex items-center justify-between mt-4 px-3 py-2 rounded-lg border border-border-custom hover:border-primary transition-all text-xs font-medium overflow-hidden whitespace-nowrap",
+                        collapsed ? "w-0 opacity-0 border-transparent p-0 mt-0" : "w-full opacity-100"
+                    )}
+                >
+                    <span>Shrimbite Website</span>
+                    <ArrowLeftRight size={14} className="rotate-45" />
+                </Link>
             </div>
         </aside>
     )

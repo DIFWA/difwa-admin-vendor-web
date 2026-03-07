@@ -4,7 +4,6 @@ import { Shield, Lock, ShieldCheck, UserPlus, MoreVertical } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const permissions = [
-    { role: "Super Admin", modules: "All Modules", users: 2, status: "Active" },
     { role: "Manager", modules: "Products, Orders", users: 5, status: "Active" },
     { role: "Support", modules: "Orders, Customers", users: 8, status: "Active" },
 ]
@@ -37,7 +36,7 @@ export default function AuthorityPage() {
                                 <th className="px-6 py-4 text-center">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y text-sm">
+                        <tbody className="divide-y divide-border-custom text-sm">
                             {permissions.map((p, i) => (
                                 <tr key={i} className="hover:bg-background-soft">
                                     <td className="px-6 py-4">
@@ -58,8 +57,11 @@ export default function AuthorityPage() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        <button className="p-2 hover:bg-background-soft rounded-lg">
-                                            <MoreVertical size={16} />
+                                        <button className={cn(
+                                            "px-4 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest transition-all",
+                                            "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-600 hover:text-white whitespace-nowrap"
+                                        )}>
+                                            Take Action
                                         </button>
                                     </td>
                                 </tr>

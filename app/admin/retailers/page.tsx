@@ -16,6 +16,7 @@ interface Retailer {
     businessDetails?: {
         businessName?: string;
         businessType?: string;
+        storeImage?: string;
         location?: {
             address?: string;
             city?: string;
@@ -40,16 +41,35 @@ export default function RetailersPage() {
     const [selectedRetailer, setSelectedRetailer] = useState<Retailer | null>(null)
     const [rejectionReason, setRejectionReason] = useState("")
     const [actionLoading, setActionLoading] = useState(false)
+    const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null)
+
+    const showToast = (message: string, type: "error" | "success" = "error") => {
+        setToast({ message, type })
+        setTimeout(() => setToast(null), 3000)
+    }
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
+    const [totalItems, setTotalItems] = useState(0)
+    const limit = 10
 
     useEffect(() => {
-        fetchRetailers()
-    }, [filter])
+        setCurrentPage(1)
+        fetchRetailers(1)
+    }, [filter, searchTerm])
 
-    const fetchRetailers = async () => {
+    useEffect(() => {
+        fetchRetailers(currentPage)
+    }, [currentPage])
+
+    const fetchRetailers = async (page: number) => {
         setLoading(true)
         try {
-            const data = await adminService.getRetailers(filter)
-            setRetailers(data)
+            const response = await adminService.getRetailers(filter, page, limit, searchTerm)
+            setRetailers(response.data)
+            setTotalPages(response.pagination.totalPages)
+            setTotalItems(response.pagination.totalRetailers)
         } catch (error) {
             console.error("Error fetching retailers:", error)
         } finally {
@@ -59,29 +79,29 @@ export default function RetailersPage() {
 
     const handleUpdateStatus = async (userId: string, status: string) => {
         if (status === "rejected" && !rejectionReason) {
-            alert("Please provide a rejection reason.")
+            showToast("Rejection reason is mandatory")
             return
         }
 
         setActionLoading(true)
         try {
             await adminService.updateRetailerStatus(userId, status, rejectionReason)
-            setSelectedRetailer(null)
-            setRejectionReason("")
-            fetchRetailers()
+            showToast(`Retailer ${status} successfully`, "success")
+            setTimeout(() => {
+                setSelectedRetailer(null)
+                setRejectionReason("")
+                fetchRetailers(currentPage)
+            }, 1000)
         } catch (error: any) {
             console.error(error)
-            alert(error.response?.data?.message || "Action failed")
+            showToast(error.response?.data?.message || "Action failed")
         } finally {
             setActionLoading(false)
         }
     }
 
-    const filteredRetailers = retailers.filter(r =>
-        r.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.businessDetails?.businessName?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    // Filtered locally only if needed, but we now use server-side search
+    const filteredRetailers = retailers
 
     return (
         <div className="space-y-6">
@@ -167,14 +187,16 @@ export default function RetailersPage() {
                                                 {ret.status.replace("_", " ")}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <button
-                                                    onClick={() => setSelectedRetailer(ret)}
-                                                    className="p-2 hover:bg-gray-100 rounded-lg text-gray-600" title="Review">
-                                                    <Eye size={18} />
-                                                </button>
-                                            </div>
+                                        <td className="px-6 py-4 text-center">
+                                            <button
+                                                onClick={() => setSelectedRetailer(ret)}
+                                                className={cn(
+                                                    "px-4 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest transition-all",
+                                                    "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-600 hover:text-white"
+                                                )}
+                                            >
+                                                View
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -185,6 +207,45 @@ export default function RetailersPage() {
                         </table>
                     )}
                 </div>
+
+                {/* Pagination Controls */}
+                {!loading && totalPages > 1 && (
+                    <div className="p-6 border-t border-border-custom flex items-center justify-between">
+                        <p className="text-sm text-text-muted font-medium">
+                            Showing <span className="text-primary font-bold">{(currentPage - 1) * limit + 1}</span> to <span className="text-primary font-bold">{Math.min(currentPage * limit, totalItems)}</span> of <span className="text-primary font-bold">{totalItems}</span> retailers
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-4 py-2 rounded-xl text-sm font-bold border border-border-custom hover:bg-background-soft disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                Previous
+                            </button>
+                            <div className="flex items-center gap-1">
+                                {[...Array(totalPages)].map((_, i) => (
+                                    <button
+                                        key={i + 1}
+                                        onClick={() => setCurrentPage(i + 1)}
+                                        className={cn(
+                                            "w-10 h-10 rounded-xl text-sm font-bold transition-all",
+                                            currentPage === i + 1 ? "bg-[#1B2D1F] text-white shadow-lg shadow-black/10" : "hover:bg-background-soft text-text-muted"
+                                        )}
+                                    >
+                                        {i + 1}
+                                    </button>
+                                ))}
+                            </div>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-4 py-2 rounded-xl text-sm font-bold border border-border-custom hover:bg-background-soft disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Review Modal */}
@@ -199,6 +260,17 @@ export default function RetailersPage() {
                             <button onClick={() => setSelectedRetailer(null)} className="p-2 hover:bg-gray-100 rounded-full">
                                 <X size={24} />
                             </button>
+
+                            {/* Toast Notification */}
+                            {toast && (
+                                <div className={cn(
+                                    "absolute top-24 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl shadow-2xl border animate-in slide-in-from-top-4 duration-300 flex items-center gap-2 z-50",
+                                    toast.type === "error" ? "bg-red-50 border-red-100 text-red-600" : "bg-green-50 border-green-100 text-green-600"
+                                )}>
+                                    {toast.type === "error" ? <AlertCircle size={18} /> : <CheckSquare size={18} />}
+                                    <span className="text-sm font-bold uppercase tracking-wider">{toast.message}</span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="p-8 grid md:grid-cols-2 gap-12">
@@ -209,6 +281,11 @@ export default function RetailersPage() {
                                         <Building size={14} /> Store Profile
                                     </h3>
                                     <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
+                                        {selectedRetailer.businessDetails?.storeImage && (
+                                            <div className="aspect-video w-full rounded-xl overflow-hidden border mb-4">
+                                                <img src={selectedRetailer.businessDetails.storeImage} alt="Store" className="w-full h-full object-cover" />
+                                            </div>
+                                        )}
                                         <div>
                                             <p className="text-xs text-gray-400 font-bold">BUSINESS NAME</p>
                                             <p className="font-bold text-lg">{selectedRetailer.businessDetails?.businessName}</p>
@@ -273,7 +350,6 @@ export default function RetailersPage() {
                                                     {selectedRetailer.businessDetails?.legal?.licenseUrl ? "View File" : "No File"}
                                                 </p>
                                             </div>
-                                            <Eye size={16} className={selectedRetailer.businessDetails?.legal?.licenseUrl ? "text-blue-600" : "text-gray-400"} />
                                         </div>
                                         <div
                                             onClick={() => selectedRetailer.businessDetails?.legal?.gstCertificateUrl && window.open(selectedRetailer.businessDetails.legal.gstCertificateUrl, "_blank")}
@@ -291,7 +367,6 @@ export default function RetailersPage() {
                                                     {selectedRetailer.businessDetails?.legal?.gstCertificateUrl ? "View File" : "No File"}
                                                 </p>
                                             </div>
-                                            <Eye size={16} className={selectedRetailer.businessDetails?.legal?.gstCertificateUrl ? "text-blue-600" : "text-gray-400"} />
                                         </div>
                                     </div>
                                 </section>
@@ -301,11 +376,11 @@ export default function RetailersPage() {
                             <div className="space-y-8">
                                 <section>
                                     <h3 className="font-bold text-[#FF6B00] text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
-                                        <AlertCircle size={14} /> Decision
+                                        <AlertCircle size={14} /> Reason
                                     </h3>
                                     <div className="space-y-4">
                                         <textarea
-                                            placeholder="Write rejection reason here (mandatory for rejection)..."
+                                            placeholder="Write rejection reason here (mandatory for rejection)"
                                             value={rejectionReason}
                                             onChange={e => setRejectionReason(e.target.value)}
                                             className="w-full h-32 px-4 py-3 rounded-2xl border border-gray-200 outline-none focus:ring-2 focus:ring-red-500/10 text-sm"

@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import retailerService from "@/data/services/retailerService"
 import ImageCropper from "@/components/shared/ImageCropper"
 
@@ -23,12 +23,12 @@ interface Category {
     name: string;
 }
 
-export default function AddProductPage() {
+export default function EditProductPage() {
     const router = useRouter()
+    const { id } = useParams()
     const [selectedColors, setSelectedColors] = useState<string[]>(["#AEDC81"])
     const [categories, setCategories] = useState<Category[]>([])
-    const [selectedCategory, setSelectedCategory] = useState("")
-    const [loading, setLoading] = useState(false)
+    const [loading, setLoading] = useState(true)
     const [publishing, setPublishing] = useState(false)
     const [uploading, setUploading] = useState(false)
 
@@ -49,8 +49,14 @@ export default function AddProductPage() {
     })
 
     useEffect(() => {
-        fetchCategories()
-    }, [])
+        const init = async () => {
+            await fetchCategories()
+            if (id) {
+                await fetchProduct(id as string)
+            }
+        }
+        init()
+    }, [id])
 
     const fetchCategories = async () => {
         try {
@@ -58,6 +64,30 @@ export default function AddProductPage() {
             setCategories(response.data)
         } catch (error) {
             console.error("Error fetching categories:", error)
+        }
+    }
+
+    const fetchProduct = async (productId: string) => {
+        setLoading(true)
+        try {
+            const response = await retailerService.getProduct(productId)
+            const p = response.data
+            setFormData({
+                name: p.name || "",
+                description: p.description || "",
+                category: p.category?._id || p.category || "",
+                price: p.price || 0,
+                stock: p.stock || 0,
+                stockStatus: p.stockStatus || "In Stock",
+                status: p.status || "Published",
+                images: p.images || []
+            })
+        } catch (error) {
+            console.error("Error fetching product:", error)
+            alert("Failed to load product data")
+            router.push("/retailer/products")
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -77,7 +107,6 @@ export default function AddProductPage() {
         setShowCropper(false)
         setUploading(true)
         try {
-            // Convert blob to file for standard upload
             const file = new File([croppedBlob], "product-image.jpg", { type: "image/jpeg" })
             const response = await retailerService.uploadImage(file)
             setFormData(prev => ({
@@ -100,7 +129,7 @@ export default function AddProductPage() {
         }))
     }
 
-    const handlePublish = async () => {
+    const handleUpdate = async () => {
         if (!formData.name || !formData.category || !formData.price) {
             alert("Please fill in the required fields (Name, Category, Price)")
             return
@@ -108,11 +137,11 @@ export default function AddProductPage() {
 
         setPublishing(true)
         try {
-            await retailerService.createProduct(formData)
+            await retailerService.updateProduct(id as string, formData)
             router.push("/retailer/products")
         } catch (error) {
-            console.error("Failed to publish catch:", error)
-            alert("Failed to publish product")
+            console.error("Failed to update catch:", error)
+            alert("Failed to update product")
         } finally {
             setPublishing(false)
         }
@@ -126,12 +155,21 @@ export default function AddProductPage() {
         { name: "Dark", value: "#111827" },
     ]
 
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+                <Loader2 size={48} className="animate-spin text-primary" />
+                <p className="text-sm font-bold text-text-muted uppercase tracking-widest">Loading Product Details...</p>
+            </div>
+        )
+    }
+
     return (
         <div className="space-y-8 pb-20 text-foreground">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Add New Product</h1>
-                    <p className="text-text-muted text-sm">List a new catch to your shrimp shop.</p>
+                    <h1 className="text-2xl font-bold tracking-tight">Edit Product</h1>
+                    <p className="text-text-muted text-sm">Update your catch details.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
@@ -141,12 +179,12 @@ export default function AddProductPage() {
                         Cancel
                     </button>
                     <button
-                        onClick={handlePublish}
+                        onClick={handleUpdate}
                         disabled={publishing || uploading}
                         className="px-6 py-2 rounded-lg bg-primary text-white hover:bg-primary transition-all text-sm font-medium shadow-md shadow-primary/20 flex items-center gap-2 disabled:opacity-50"
                     >
                         {publishing ? <Loader2 size={16} className="animate-spin" /> : null}
-                        {publishing ? "Publishing..." : "Publish Catch"}
+                        {publishing ? "Updating..." : "Save Changes"}
                     </button>
                 </div>
             </div>
@@ -351,6 +389,6 @@ export default function AddProductPage() {
                     }}
                 />
             )}
-        </div >
+        </div>
     )
 }

@@ -10,8 +10,10 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
+import useAuthStore from "@/data/store/useAuthStore"
 
 export default function Topbar() {
+    const { user } = useAuthStore()
     const [isDark, setIsDark] = useState(false)
 
     return (
@@ -44,14 +46,14 @@ export default function Topbar() {
                 <div className="flex items-center gap-2 pl-4 border-l group">
                     <div className="w-9 h-9 rounded-full bg-primary-light flex items-center justify-center overflow-hidden border border-border-custom">
                         <img
-                            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin"
+                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Admin'}`}
                             alt="User"
                             className="w-full h-full object-cover"
                         />
                     </div>
                     <div className="hidden md:block">
-                        <p className="text-sm font-semibold leading-tight">Mark S.</p>
-                        <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Manager</p>
+                        <p className="text-sm font-semibold leading-tight">{user?.name || 'Guest'}</p>
+                        <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">{user?.role || 'User'}</p>
                     </div>
                     <button
                         onClick={() => {

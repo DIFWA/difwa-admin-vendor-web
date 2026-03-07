@@ -5,10 +5,9 @@ import { Shield, UserPlus, MoreVertical, Edit2, Trash2, Key, Users } from "lucid
 import { cn } from "@/lib/utils"
 
 const roles = [
-    { id: 1, name: "Super Admin", users: 2, permissions: "Full Access", status: "Active", lastAssigned: "Feb 20, 2026" },
-    { id: 2, name: "Manager", users: 5, permissions: "Products, Orders, Customers", status: "Active", lastAssigned: "Feb 18, 2026" },
-    { id: 3, name: "Support Staff", users: 12, permissions: "Orders, Reviews, Customers", status: "Active", lastAssigned: "Jan 15, 2026" },
-    { id: 4, name: "Content Editor", users: 3, permissions: "Products, Categories", status: "Inactive", lastAssigned: "Dec 10, 2025" },
+    { id: 1, name: "Manager", users: 5, permissions: "Products, Orders, Customers", status: "Active", lastAssigned: "Feb 18, 2026" },
+    { id: 2, name: "Support Staff", users: 12, permissions: "Orders, Reviews, Customers", status: "Active", lastAssigned: "Jan 15, 2026" },
+    { id: 3, name: "Content Editor", users: 3, permissions: "Products, Categories", status: "Inactive", lastAssigned: "Dec 10, 2025" },
 ]
 
 export default function AdminRolesPage() {
@@ -64,7 +63,7 @@ export default function AdminRolesPage() {
                                 <th className="px-6 py-4 text-center">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y text-sm">
+                        <tbody className="divide-y divide-border-custom text-sm">
                             {roles.map((role) => (
                                 <tr key={role.id} className="hover:bg-background-soft/50 transition-colors group">
                                     <td className="px-6 py-4">
@@ -82,10 +81,10 @@ export default function AdminRolesPage() {
                                         <div className="flex items-center gap-1.5">
                                             <div className="flex gap-0.5">
                                                 {[...Array(3)].map((_, i) => (
-                                                    <div key={i} className={cn("w-1.5 h-3 rounded-sm", i < (role.name === "Super Admin" ? 3 : role.name === "Manager" ? 2 : 1) ? "bg-primary" : "bg-slate-200")}></div>
+                                                    <div key={i} className={cn("w-1.5 h-3 rounded-sm", i < (role.name === "Manager" ? 2 : role.name === "Support Staff" ? 1 : 0) ? "bg-primary" : "bg-slate-200")}></div>
                                                 ))}
                                             </div>
-                                            <span className="text-xs font-bold text-text-muted">{role.name === "Super Admin" ? "Level 3" : role.name === "Manager" ? "Level 2" : "Level 1"}</span>
+                                            <span className="text-xs font-bold text-text-muted">{role.name === "Manager" ? "Level 2" : role.name === "Support Staff" ? "Level 1" : "Level 0"}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
