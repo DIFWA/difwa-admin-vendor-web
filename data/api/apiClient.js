@@ -1,16 +1,13 @@
 import axios from "axios";
 
 const apiClient = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
-
     // baseURL: "https://shrimpbite-backend.vercel.app/api",
+    baseURL: "http://localhost:5000/api",
     headers: {
         "Content-Type": "application/json",
     },
 });
 
-
-// Add a request interceptor to include the JWT token
 apiClient.interceptors.request.use(
     (config) => {
         if (typeof window !== "undefined") {

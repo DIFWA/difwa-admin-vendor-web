@@ -12,6 +12,8 @@ interface PrepItem {
     quantity: number;
     unit: string;
     orderCount: number;
+    subscriptionCount: number;
+    oneTimeCount: number;
     status: 'Pending' | 'Ready' | 'Shortage';
 }
 
@@ -121,6 +123,16 @@ export default function DailyPrepListPage() {
                                         <div className="flex items-center gap-1 text-xs font-bold text-gray-700 bg-gray-50 px-2 py-1 rounded-md">
                                             <Clock size={12} /> {item.orderCount} Orders
                                         </div>
+                                        {(item.subscriptionCount ?? 0) > 0 && (
+                                            <div className="flex items-center gap-1 text-xs font-bold text-green-700 bg-green-50 px-2 py-1 rounded-md border border-green-100">
+                                                ↻ {item.subscriptionCount} Sub
+                                            </div>
+                                        )}
+                                        {(item.oneTimeCount ?? 0) > 0 && (
+                                            <div className="flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
+                                                1x {item.oneTimeCount} One-off
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
