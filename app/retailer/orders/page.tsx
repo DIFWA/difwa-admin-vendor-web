@@ -24,14 +24,17 @@ const statusStyles: any = {
     "New": "bg-primary-light text-primary border-primary-100",
     "Pending": "bg-warning-50 text-warning border-warning-100",
     "Accepted": "bg-blue-50 text-blue-600 border-blue-100",
+    "Rider Assigned": "bg-blue-50 text-blue-600 border-blue-100",
     "Processing": "bg-blue-50 text-blue-600 border-blue-100",
     "Preparing": "bg-indigo-50 text-indigo-600 border-indigo-100",
     "Shipped": "bg-blue-50 text-blue-600 border-blue-100",
     "Out for Delivery": "bg-orange-50 text-orange-600 border-orange-100",
     "Delivered": "bg-green-50 text-green-600 border-green-100",
     "Completed": "bg-green-50 text-green-600 border-green-100",
-    "Cancelled": "bg-red-50 text-red-600 border-red-100",
+    "Cancelled": "bg-red-50 text-red-100 border-red-100",
 }
+
+import socket from "@/data/api/socket"
 
 export default function RetailerOrdersPage() {
     const [mounted, setMounted] = useState(false)
@@ -44,6 +47,70 @@ export default function RetailerOrdersPage() {
         setMounted(true)
         fetchOrders()
         fetchRiders()
+
+        // Socket connection logic
+        const userId = localStorage.getItem("userId")
+        if (userId) {
+            socket.connect()
+
+            socket.on("connect", () => {
+                console.log("🟢 Connected to Socket Relay")
+                socket.emit("join", `retailer_${userId}`)
+            })
+
+            socket.on("orderUpdate", (data) => {
+                console.log("⚡ Real-time Order Update:", data)
+
+                // Helper to normalize status casing (e.g., DELIVERED -> Delivered)
+                const normalizeStatus = (s: string) => {
+                    if (!s) return s;
+                    return s.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+                };
+
+                const newStatus = normalizeStatus(data.status);
+                toast.info(`Order Update: ${newStatus}`)
+
+                // Instant Local Update for Row and Stats
+                if (data.orderId && data.status) {
+                    setOrdersData((prev: any) => {
+                        if (!prev) return prev;
+
+                        // 1. Update the order in the list
+                        const updatedOrders = prev.orders.map((o: any) =>
+                            o.id === data.orderId ? { ...o, status: newStatus } : o
+                        );
+
+                        // 2. Recalculate basic stats for instant feedback
+                        const total = updatedOrders.length;
+                        const pending = updatedOrders.filter((o: any) => ['Pending', 'Accepted', 'Processing', 'Preparing', 'Shipped', 'Out for Delivery', 'Rider Assigned'].includes(o.status)).length;
+                        const completed = updatedOrders.filter((o: any) => ['Delivered', 'Completed'].includes(o.status)).length;
+
+                        return {
+                            ...prev,
+                            stats: {
+                                ...prev.stats,
+                                pendingOrders: pending,
+                                completedOrders: completed,
+                                completedPercentage: `${Math.round((completed / total) * 100)}%`
+                            },
+                            orders: updatedOrders
+                        };
+                    });
+                }
+
+                // Still fetch to get correct official data from server
+                fetchOrders()
+            })
+
+            socket.on("disconnect", () => {
+                console.log("🔴 Socket Disconnected")
+            })
+        }
+
+        return () => {
+            socket.off("orderUpdate")
+            socket.disconnect()
+        }
     }, [])
 
     const fetchRiders = async () => {
