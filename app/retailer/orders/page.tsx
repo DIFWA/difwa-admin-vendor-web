@@ -71,12 +71,39 @@ export default function RetailerOrdersPage() {
                     setOrdersData((prev: any) => {
                         if (!prev) return prev;
 
-                        // 1. Update the order in the list
-                        const updatedOrders = prev.orders.map((o: any) =>
-                            o.id === data.orderId ? { ...o, status: newStatus } : o
-                        );
+                        const isExisting = prev.orders.find((o: any) => o.id === data.orderId);
+                        let updatedOrders;
 
-                        // 2. Recalculate basic stats for instant feedback
+                        if (isExisting) {
+                            // 1. Update existing order
+                            updatedOrders = prev.orders.map((o: any) =>
+                                o.id === data.orderId ? { ...o, status: newStatus } : o
+                            );
+                        } else {
+                            // 2. Add as NEW order (likely from subscription cron or new app order)
+                            // Construct a basic UI-friendly order object from the data
+                            const newOrder = {
+                                id: data.orderId,
+                                product: data.data?.items?.map((i: any) => i.product?.name || "Product").join(", ") || (data.data?.product || "New Order"),
+                                date: new Date(data.data?.createdAt || new Date()).toLocaleString("en-IN", {
+                                    timeZone: "Asia/Kolkata",
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    hour12: true
+                                }).replace(/\//g, "-"),
+                                price: data.data?.totalAmount || data.data?.price || "0.00",
+                                payment: data.data?.paymentStatus || "Paid",
+                                status: newStatus,
+                                orderType: data.data?.orderType || (data.orderId.startsWith("SUB-") ? "Subscription" : "One-time"),
+                                rider: data.data?.rider,
+                                subscriptionDetails: data.data?.subscriptionDetails
+                            };
+                            updatedOrders = [newOrder, ...prev.orders];
+                        }
+
+                        // 3. Recalculate basic stats for instant feedback
                         const total = updatedOrders.length;
                         const pending = updatedOrders.filter((o: any) => ['Pending', 'Accepted', 'Processing', 'Preparing', 'Shipped', 'Out for Delivery', 'Rider Assigned'].includes(o.status)).length;
                         const completed = updatedOrders.filter((o: any) => ['Delivered', 'Completed'].includes(o.status)).length;
@@ -328,8 +355,19 @@ export default function RetailerOrdersPage() {
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 font-medium max-w-[200px] truncate" title={order.product}>{order.product}</td>
-                                            <td className="px-6 py-4 text-text-muted whitespace-nowrap">{order.date}</td>
+                                            <td className="px-6 py-4 font-medium max-w-[200px]" title={order.product}>
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="truncate block">{order.product}</span>
+                                                    {order.subscriptionDetails && (
+                                                        <span className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded w-fit">
+                                                            {order.subscriptionDetails.frequency === "Weekly"
+                                                                ? `Weekly: ${order.subscriptionDetails.customDays?.join(", ") || "No days"}`
+                                                                : order.subscriptionDetails.frequency}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-text-muted whitespace-nowrap text-xs">{order.date}</td>
                                             <td className="px-6 py-4 font-bold">₹{order.price}</td>
                                             <td className="px-6 py-4">
                                                 <span className={cn(
@@ -422,12 +460,25 @@ export default function RetailerOrdersPage() {
                             </div>
 
                             {/* Current Status */}
-                            <div className="p-6 border-b">
-                                <p className="text-xs text-text-muted uppercase font-bold mb-2">Current Status</p>
-                                <span className={cn(
-                                    "px-3 py-1.5 rounded-full text-xs font-black uppercase border",
-                                    statusStyles[selectedOrder.status] || "bg-gray-50 text-gray-600"
-                                )}>{selectedOrder.status}</span>
+                            <div className="p-6 border-b flex flex-col gap-4">
+                                <div>
+                                    <p className="text-xs text-text-muted uppercase font-bold mb-2">Current Status</p>
+                                    <span className={cn(
+                                        "px-3 py-1.5 rounded-full text-xs font-black uppercase border",
+                                        statusStyles[selectedOrder.status] || "bg-gray-50 text-gray-600"
+                                    )}>{selectedOrder.status}</span>
+                                </div>
+                                {selectedOrder.subscriptionDetails && (
+                                    <div>
+                                        <p className="text-xs text-text-muted uppercase font-bold mb-2">Subscription Schedule</p>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-sm font-bold text-primary">{selectedOrder.subscriptionDetails.frequency}</span>
+                                            {selectedOrder.subscriptionDetails.customDays && selectedOrder.subscriptionDetails.customDays.length > 0 && (
+                                                <p className="text-xs text-text-muted">Days: {selectedOrder.subscriptionDetails.customDays.join(", ")}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Timeline */}
