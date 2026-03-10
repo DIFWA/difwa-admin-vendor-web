@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils"
 import retailerService from "@/data/services/retailerService"
 import { toast } from "sonner"
+import * as XLSX from "xlsx"
 
 const statusStyles: any = {
     "New": "bg-primary-light text-primary border-primary-100",
@@ -38,6 +39,8 @@ export default function RetailerOrdersPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [orderTypeFilter, setOrderTypeFilter] = useState<"All" | "Subscription" | "One-time">("All")
     const [selectedOrder, setSelectedOrder] = useState<any>(null)
+    const [currentPage, setCurrentPage] = useState(1)
+    const ORDERS_PER_PAGE = 10
 
     useEffect(() => {
         setMounted(true)
@@ -184,6 +187,12 @@ export default function RetailerOrdersPage() {
         return matchesSearch && matchesType
     })
 
+    const totalPages = Math.ceil(filteredOrders.length / ORDERS_PER_PAGE)
+    const paginatedOrders = filteredOrders.slice(
+        (currentPage - 1) * ORDERS_PER_PAGE,
+        currentPage * ORDERS_PER_PAGE
+    )
+
     const subscriptionCount = ordersData.orders.filter((o: any) => o.orderType === "Subscription").length
     const oneTimeCount = ordersData.orders.filter((o: any) => o.orderType !== "Subscription").length
 
@@ -229,6 +238,50 @@ export default function RetailerOrdersPage() {
         }
     }
 
+    const handleExport = () => {
+        try {
+            if (!ordersData?.orders || ordersData.orders.length === 0) {
+                toast.error("No orders to export")
+                return
+            }
+
+            // Format data for Excel
+            const exportData = ordersData.orders.map((o: any) => ({
+                "Order ID": o.id,
+                "Type": o.orderType,
+                "Product Details": o.product,
+                "Date": o.date,
+                "Total Amount": `₹${o.price}`,
+                "Payment": o.payment,
+                "Status": o.status,
+                "Rider": o.rider?.name || "Unassigned"
+            }))
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData)
+            const workbook = XLSX.utils.book_new()
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Orders")
+
+            // Adjust column widths
+            const wscols = [
+                { wch: 15 }, // Order ID
+                { wch: 15 }, // Type
+                { wch: 40 }, // Product
+                { wch: 20 }, // Date
+                { wch: 12 }, // Price
+                { wch: 12 }, // Payment
+                { wch: 15 }, // Status
+                { wch: 20 }  // Rider
+            ]
+            worksheet["!cols"] = wscols
+
+            XLSX.writeFile(workbook, `Shrimpbite_Orders_${new Date().toISOString().split('T')[0]}.xlsx`)
+            toast.success("Order list exported successfully")
+        } catch (error) {
+            console.error("Export failed", error)
+            toast.error("Failed to export order list")
+        }
+    }
+
     return (
         <>
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -238,7 +291,10 @@ export default function RetailerOrdersPage() {
                         <p className="text-text-muted">Manage and fulfill your customer orders.</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary transition-all text-sm font-medium shadow-md shadow-primary/20">
+                        <button
+                            onClick={handleExport}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary transition-all text-sm font-medium shadow-md shadow-primary/20"
+                        >
                             <Download size={16} />
                             Export List
                         </button>
@@ -279,7 +335,10 @@ export default function RetailerOrdersPage() {
                                 {(["All", "Subscription", "One-time"] as const).map(tab => (
                                     <button
                                         key={tab}
-                                        onClick={() => setOrderTypeFilter(tab)}
+                                        onClick={() => {
+                                            setOrderTypeFilter(tab)
+                                            setCurrentPage(1)
+                                        }}
                                         className={cn(
                                             "text-xs font-bold px-3 py-1.5 rounded-md transition-all",
                                             orderTypeFilter === tab
@@ -309,7 +368,10 @@ export default function RetailerOrdersPage() {
                                     type="text"
                                     placeholder="Search orders..."
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onChange={(e) => {
+                                        setSearchQuery(e.target.value)
+                                        setCurrentPage(1)
+                                    }}
                                     className="pl-9 pr-4 py-1.5 rounded-lg bg-background-soft border-transparent text-sm outline-none w-64 focus:ring-2 focus:ring-primary/20 transition-all"
                                 />
                             </div>
@@ -332,15 +394,15 @@ export default function RetailerOrdersPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border-custom text-sm">
-                                {filteredOrders.length === 0 ? (
+                                {paginatedOrders.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="px-6 py-12 text-center text-text-muted">
+                                        <td colSpan={9} className="px-6 py-12 text-center text-text-muted">
                                             <Package size={48} className="mx-auto mb-4 opacity-20" />
                                             <p>No orders found matching "{searchQuery}"</p>
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredOrders.map((order: any) => (
+                                    paginatedOrders.map((order: any) => (
                                         <tr key={order.id} className="hover:bg-background-soft/50 transition-colors">
                                             <td className="px-6 py-4 font-bold text-primary">{order.id}</td>
                                             <td className="px-6 py-4">
@@ -440,6 +502,55 @@ export default function RetailerOrdersPage() {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Pagination Footer */}
+                    {totalPages > 1 && (
+                        <div className="p-4 border-t border-border-custom flex items-center justify-between bg-background-soft/30">
+                            <p className="text-xs text-text-muted font-medium">
+                                Showing <span className="text-text font-bold">{(currentPage - 1) * ORDERS_PER_PAGE + 1}</span> to <span className="text-text font-bold">{Math.min(currentPage * ORDERS_PER_PAGE, filteredOrders.length)}</span> of <span className="text-text font-bold">{filteredOrders.length}</span> orders
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1.5 text-xs font-bold rounded-lg border bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background-soft transition-all"
+                                >
+                                    Previous
+                                </button>
+                                <div className="flex items-center gap-1">
+                                    {[...Array(totalPages)].map((_, i) => {
+                                        const pageNum = i + 1;
+                                        // Show only current, 1st, last, and neighbors if many pages
+                                        if (totalPages > 7 && pageNum !== 1 && pageNum !== totalPages && Math.abs(pageNum - currentPage) > 1) {
+                                            if (Math.abs(pageNum - currentPage) === 2) return <span key={pageNum} className="px-1 text-text-muted">...</span>;
+                                            return null;
+                                        }
+                                        return (
+                                            <button
+                                                key={pageNum}
+                                                onClick={() => setCurrentPage(pageNum)}
+                                                className={cn(
+                                                    "w-8 h-8 text-xs font-bold rounded-lg transition-all",
+                                                    currentPage === pageNum
+                                                        ? "bg-primary text-white shadow-md shadow-primary/20"
+                                                        : "bg-white border hover:bg-background-soft"
+                                                )}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1.5 text-xs font-bold rounded-lg border bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background-soft transition-all"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

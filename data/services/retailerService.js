@@ -6,8 +6,10 @@ const retailerService = {
         return response.data;
     },
 
-    getOrders: async () => {
-        const response = await apiClient.get("/retailer/orders");
+    getOrders: async (customerId = null) => {
+        const response = await apiClient.get("/retailer/orders", {
+            params: { customerId }
+        });
         return response.data;
     },
 
