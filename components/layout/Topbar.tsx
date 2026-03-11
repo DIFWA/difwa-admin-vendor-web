@@ -42,8 +42,8 @@ export default function Topbar() {
             setNotifications(prev => [newNotif, ...prev])
             setUnreadCount(prev => prev + 1)
             toast.info(newNotif.title, {
-                description: newNotif.message,
-                radius: "lg"
+                description: newNotif.message
+                // radius: "lg"
             })
         })
 
