@@ -179,11 +179,11 @@ export default function RidersPage() {
                                         <p className="text-xs text-text-muted">{rider.user?.email}</p>
                                     </div>
                                 </div>
-                                <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${rider.status === 'Available' ? 'bg-green-100 text-green-700' :
+                                {/* <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${rider.status === 'Available' ? 'bg-green-100 text-green-700' :
                                     rider.status === 'On Delivery' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
                                     }`}>
                                     {rider.status}
-                                </div>
+                                </div> */}
                             </div>
 
                             <div className="space-y-2.5 mb-6" onClick={() => openDetails(rider)}>
@@ -198,13 +198,13 @@ export default function RidersPage() {
                             </div>
 
                             <div className="flex items-center gap-2 pt-4 border-t border-border-custom">
-                                <button
+                                {/* <button
                                     onClick={() => toggleStatus(rider._id, rider.status)}
                                     className="flex-1 bg-background-soft hover:bg-primary-light hover:text-primary py-2 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
                                 >
                                     <Power size={16} />
                                     {rider.status === 'Offline' ? 'Go Online' : 'Go Offline'}
-                                </button>
+                                </button> */}
                                 <button
                                     onClick={() => openDetails(rider)}
                                     className="p-2 border border-border-custom rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors"
@@ -352,13 +352,13 @@ export default function RidersPage() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="absolute bottom-4 right-8">
+                            {/* <div className="absolute bottom-4 right-8">
                                 <div className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-sm border ${selectedRider.status === 'Available' ? 'bg-green-500 text-white border-green-600' :
                                     selectedRider.status === 'On Delivery' ? 'bg-blue-500 text-white border-blue-600' : 'bg-gray-500 text-white border-gray-600'
                                     }`}>
                                     {selectedRider.status}
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
 
                         <div className="px-8 pt-14 pb-8">
@@ -517,13 +517,13 @@ export default function RidersPage() {
 
                             <div className="mt-10 pt-8 border-t border-border-custom flex items-center justify-between">
                                 <p className="text-xs text-text-muted font-medium italic">Registered on {new Date(selectedRider.createdAt).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
-                                <button
+                                {/* <button
                                     onClick={() => toggleStatus(selectedRider._id, selectedRider.status)}
                                     className={`px-8 py-3 rounded-2xl font-black text-sm transition-all shadow-md ${selectedRider.status === 'Offline' ? 'bg-primary text-white hover:bg-primary font-bold shadow-primary/20' : 'bg-background-soft text-foreground hover:bg-red-50 hover:text-red-600 shadow-none'
                                         }`}
                                 >
                                     {selectedRider.status === 'Offline' ? 'Activate Rider' : 'Set to Offline'}
-                                </button>
+                                </button> */}
                             </div>
                         </div>
                     </div>

@@ -6,8 +6,8 @@ const SOCKET_URL = "https://shrimpbite-socket-server.onrender.com";
 const socket = io(SOCKET_URL, {
     autoConnect: false,
     reconnection: true,
-    reconnectionAttempts: 5,
-    transports: ["websocket"]
+    reconnectionAttempts: 5
+    // Removed strict ["websocket"] transport to allow polling for Render cold starts
 });
 
 export default socket;
