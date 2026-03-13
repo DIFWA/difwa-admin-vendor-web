@@ -9,8 +9,11 @@ import {
     Download,
     CheckCircle,
     Package,
-    RefreshCw
+    RefreshCw,
+    ChevronRight,
+    Lock
 } from "lucide-react"
+import { useRef } from "react"
 import { cn } from "@/lib/utils"
 import retailerService from "@/data/services/retailerService"
 import { toast } from "sonner"
@@ -43,6 +46,12 @@ function OrdersContent() {
     const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Completed">("All")
     const [selectedOrder, setSelectedOrder] = useState<any>(null)
     const [currentPage, setCurrentPage] = useState(1)
+    
+    // Tooltip State
+    const [hoveredOrderId, setHoveredOrderId] = useState<string | null>(null)
+    const [tooltipStep, setTooltipStep] = useState(1)
+    const leaveTimer = useRef<NodeJS.Timeout | null>(null)
+
     const ORDERS_PER_PAGE = 10
 
     useEffect(() => {
@@ -480,27 +489,94 @@ function OrdersContent() {
                                                     {order.status}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-6 py-4 relative group/rider">
                                                 {(() => {
                                                     const isLocked = ["New", "Pending", "Accepted"].includes(order.status);
+                                                    
+                                                    const handleMouseEnter = () => {
+                                                        if (!isLocked) return;
+                                                        if (leaveTimer.current) clearTimeout(leaveTimer.current);
+                                                        setTooltipStep(1); // Always reset to step 1 on new hover
+                                                        setHoveredOrderId(order.id);
+                                                    };
+
+                                                    const handleMouseLeave = () => {
+                                                        leaveTimer.current = setTimeout(() => {
+                                                            setHoveredOrderId(null);
+                                                            setTooltipStep(1);
+                                                        }, 500);
+                                                    };
+
                                                     return (
-                                                        <select
-                                                            value={order.rider?._id || ""}
-                                                            onChange={(e) => handleAssignRider(order.id, e.target.value)}
-                                                            disabled={isLocked}
-                                                            title={isLocked ? "Mark order as Processing to assign a rider" : "Select a rider"}
-                                                            className={cn(
-                                                                "text-xs bg-background-soft border-transparent rounded p-1 outline-none focus:ring-1 focus:ring-primary/30 transition-all",
-                                                                isLocked ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-primary/30"
-                                                            )}
+                                                        <div 
+                                                            className="relative"
+                                                            onMouseEnter={handleMouseEnter}
+                                                            onMouseLeave={handleMouseLeave}
                                                         >
-                                                            <option value="">{isLocked ? "🔒 Locked" : "Assign Rider"}</option>
-                                                            {riders.map((rider: any) => (
-                                                                <option key={rider._id} value={rider.user?._id}>
-                                                                    {rider.user?.name}
-                                                                </option>
-                                                            ))}
-                                                        </select>
+                                                            <select
+                                                                value={order.rider?._id || ""}
+                                                                onChange={(e) => handleAssignRider(order.id, e.target.value)}
+                                                                disabled={isLocked}
+                                                                className={cn(
+                                                                    "text-xs bg-background-soft border-transparent rounded p-1 outline-none focus:ring-1 focus:ring-primary/30 transition-all w-full",
+                                                                    isLocked ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-primary/30"
+                                                                )}
+                                                            >
+                                                                <option value="">{isLocked ? "🔒 Locked" : "Assign Rider"}</option>
+                                                                {riders.map((rider: any) => (
+                                                                    <option key={rider._id} value={rider.user?._id}>
+                                                                        {rider.user?.name}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+
+                                                            {/* Custom Interactive Tooltip */}
+                                                            {hoveredOrderId === order.id && isLocked && (
+                                                                <div 
+                                                                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-white border border-border-custom p-3 rounded-xl shadow-xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200"
+                                                                    onMouseEnter={() => {
+                                                                        if (leaveTimer.current) clearTimeout(leaveTimer.current);
+                                                                    }}
+                                                                >
+                                                                    <div className="text-[11px] leading-relaxed text-text font-medium flex flex-col gap-2">
+                                                                        {(() => {
+                                                                            const targetStatus = order.status === "Pending" ? "Accepted" : "Processing";
+                                                                            const actionGoal = order.status === "Pending" ? "Accept order" : "mark as processing";
+                                                                            
+                                                                            if (tooltipStep === 1) {
+                                                                                return (
+                                                                                    <div className="flex items-start gap-2">
+                                                                                        <div className="mt-0.5 text-primary"><CheckCircle size={14} /></div>
+                                                                                        <p>Mark order as <span className="font-bold text-primary">{targetStatus}</span> to assign a rider.</p>
+                                                                                    </div>
+                                                                                );
+                                                                            }
+                                                                            
+                                                                            return (
+                                                                                <div className="flex items-start gap-2">
+                                                                                    <div className="mt-0.5 text-primary"><CheckCircle size={14} /></div>
+                                                                                    <p>Click on check icon to {actionGoal}, then assign rider.</p>
+                                                                                </div>
+                                                                            );
+                                                                        })()}
+                                                                        
+                                                                        <div className="flex justify-end border-t pt-2 mt-1">
+                                                                            <button 
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setTooltipStep(tooltipStep === 1 ? 2 : 1);
+                                                                                }}
+                                                                                className="p-1 hover:bg-primary/10 rounded-full text-primary transition-colors border border-primary/20"
+                                                                            >
+                                                                                <ChevronRight size={14} className={cn("transition-transform", tooltipStep === 2 && "rotate-180")} />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                    {/* Tooltip Arrow */}
+                                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-8 border-transparent border-t-white drop-shadow-sm"></div>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     );
                                                 })()}
                                             </td>
