@@ -117,10 +117,10 @@ export default function Sidebar() {
                         className="w-10 h-10 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.3)] shrink-0"
                     />
                     <span className={cn(
-                        "font-bold text-xl text-primary tracking-tight transition-all duration-300 overflow-hidden",
-                        collapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-                    )}>
-                        Shrimbite
+                          "font-bold text-xl text-blue-500 tracking-tight transition-all duration-300 overflow-hidden",
+                           collapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+                     )}>
+                        Difwa
                     </span>
                 </Link>
             </div>
@@ -152,13 +152,13 @@ export default function Sidebar() {
                                         className={cn(
                                             "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
                                             isActive
-                                                ? "bg-primary text-white shadow-md shadow-primary/20"
-                                                : "text-foreground hover:bg-primary-light hover:text-primary"
+                                                ? "bg-blue-500 text-white shadow-md shadow-blue-500/20"
+                                                : "text-foreground hover:bg-blue-50 hover:text-blue-500"
                                         )}
                                     >
                                         <item.icon size={20} className={cn(
                                             "shrink-0",
-                                            !isActive && "text-text-muted group-hover:text-primary"
+                                            !isActive && "text-text-muted group-hover:text-blue-500"
                                         )} />
                                         <span className={cn(
                                             "font-medium whitespace-nowrap transition-all duration-300 overflow-hidden",
