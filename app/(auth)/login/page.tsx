@@ -50,15 +50,13 @@ export default function LoginPage() {
     return (
         <div className="relative h-screen overflow-hidden ">
             <img
-                src="https://raw.githubusercontent.com/anushk2026a/img-url/c6df7976948ff2cc5b9e5c2fe7d432b8540e7f3b/image.png"
+                src="https://i.ibb.co/8DP10d22/Image-Mar-17-2026-12-50-45-PM.png"
                 alt="Fresh Shrimp Dish"
                 className="absolute inset-0 w-full h-full object-cover"
             />
-            {/* Dark Overlay */}
-            <div className="absolute inset-0 bg-black/30 " />
 
             {/* CONTENT LAYER */}
-            <div className="min-h-screen flex bg-gradient-to-br from-[#1b2d1f] via-[#2f3e2f] to-[#1e2a1f] container mx-auto">
+            <div className="min-h-screen flex w-full relative z-10">
                 {/* Left Side - Visual Branding (Exact Reference Match) */}
                 <div className="hidden lg:flex w-1/2 items-center justify-center p-10">
                     {/* <img
@@ -66,40 +64,40 @@ export default function LoginPage() {
                         alt="Fresh Shrimp Dish"
                         className="absolute inset-0 w-full h-full object-cover"
                     /> */}
-                    <div className="absolute inset-0 bg-black/30"></div>
+                    <div className="absolute inset-0 bg-black/50"></div>
 
                     <div className="relative z-10 w-full h-full flex flex-col p-10">
                         {/* Logo Section */}
                         <div className="flex items-center gap-2 mb-16 select-none group cursor-pointer">
                             <div className="relative w-12 h-12 flex items-center justify-center">
                                 <img
-                                    src="/loginlogo.png"
-                                    alt="Shrimpbite Logo"
-                                    className="w-12 h-12 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.3)]"
+                                    src="/waterlogo.png"
+                                    alt="Difwa Logo"
+                                    className="w-10 h-10 object-contain rounded-2xl"
                                 />
                                 <div className="absolute top-1 right-0 w-2 h-2 rounded-full bg-[#FF6B00]"></div>
                             </div>
-                            <span className="text-3xl font-extrabold text-white tracking-tighter">Shrimpbite</span>
+                            <span className="text-3xl font-extrabold text-white tracking-tighter">Difwa</span>
                         </div>
 
                         <div className="space-y-8 mt-4">
                             {/* Status Badge */}
                             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#2A2C1D]/80 backdrop-blur-md border border-white/5 select-none">
-                                <span className="text-[#FFB800] text-xs">🔥</span>
-                                <span className="text-[#FDFCFB]/90 text-[10px] font-black uppercase tracking-[0.2em]">Seafood Done Right</span>
+            
+                                
                             </div>
 
                             {/* Heading */}
                             <div className="space-y-1">
                                 <h1 className="text-[72px] font-extrabold text-[#FDFCFB] leading-[1.05] tracking-tight">
                                     Nourishing <br />
-                                    India <span className="text-[#FFB800]"> with </span> <br />
-                                    <span className="text-[#FFB800]">Fresh Shrimp</span>
+                                    People <span className="text-[#3B82F6]"> with </span> <br />
+                                    <span className="text-[#3B82F6]">Clean Water</span>
                                 </h1>
                             </div>
 
                             <p className="text-[17px] text-[#FDFCFB]/80 font-medium max-w-[400px] leading-relaxed tracking-tight">
-                                Premium distribution brand empowering farmers and delivering quality seafood across the country.
+                                Empowering communities with access to pure, hygienic, and reliable drinking water
                             </p>
                         </div>
 
@@ -122,15 +120,7 @@ export default function LoginPage() {
                 <div className="flex w-full lg:w-1/2 items-center justify-center p-6">
                     {/* Sweeping Arc Container */}
                     <div
-                        className="w-full 
-  max-w-md 
-  bg-[#c8b8a6]/40
-  backdrop-blur-xl
-  rounded-[40px] 
-  shadow-[0_30px_60px_-15px_rgba(0,0,0,0.45)] 
-  border border-white/10
-  p-10
-  relative"
+                        className="w-full max-w-md bg-white/10 backdrop-blur-2xl rounded-[40px] border border-white/20 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] p-7 relative"
 
                     >
                         {/* Top-Right Lighting Effect */}
@@ -139,17 +129,24 @@ export default function LoginPage() {
                         {/* Stronger Inner Shadow Frame */}
                         <div className="absolute inset-0 shadow-[inset_0_0_40px_rgba(0,0,0,0.05)] rounded-[40px] pointer-events-none" />
 
-                        <div className="w-full max-w-sm space-y-12 relative z-10">
+                        <div className="w-full max-w-sm space-y-4 relative z-10">
                             {/* Mobile Logo Visibility */}
                             <div className="lg:hidden flex items-center justify-center gap-2 mb-8">
                                 <span className="text-4xl font-black text-[#6CC51D]">S</span>
-                                <span className="text-2xl font-bold text-[#1A1A1A] tracking-tight">Shrimpbite</span>
+                                <span className="text-2xl font-bold text-[#1A1A1A] tracking-tight">Difwa</span>
                             </div>
 
                             <div className="text-center">
-                                <h2 className="text-4xl font-bold text-[#1f2a1f] mb-2">Login</h2>
-                                <p className="text-sm text-gray-800 mb-8">Enter your credentials to access your account</p>
-                            </div>
+    <div className="flex justify-center mb-5">
+        <img
+            src="/waterlogo.png"
+            alt="Difwa Logo"
+            className="w-12 h-12 object-contain rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.3)]"
+        />
+    </div>
+    <h2 className="text-4xl font-bold text-white mb-2">Login Portals</h2>
+    <p className="text-sm text-white/60 mb-8">Sign in to access dashboard</p>
+</div>
 
                             {error && (
                                 <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-[13px] font-black text-center animate-shake">
@@ -157,7 +154,7 @@ export default function LoginPage() {
                                 </div>
                             )}
 
-                            <form onSubmit={handleLogin} className="space-y-6">
+                            <form onSubmit={handleLogin} className="space-y-3">
                                 <div className="space-y-6">
                                     <div className="space-y-2.5">
                                         <div className="flex items-center justify-between">
@@ -180,7 +177,7 @@ export default function LoginPage() {
 
                                     <div className="space-y-2.5">
                                         <div className="flex items-center justify-between ml-1">
-                                            <label className="text-sm font-black text-[#1A1A1A]">Password</label>
+                                            <label className="text-sm font-black text-[#1A1A1A] ml-1">Password</label>
                                             <Link href="#" className="text-xs font-black text-[#9BE15D] hover:text-[#7ED957] transition-colors">Forgot password?</Link>
                                         </div>
                                         <div className="relative group">
@@ -193,7 +190,7 @@ export default function LoginPage() {
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
                                                 placeholder="•••••"
-                                                className="w-full pl-14 pr-14 py-[18px] rounded-2xl bg-[#F0F2F4] border-transparent focus:bg-white focus:ring-2 focus:ring-[#FF6B00]/10 transition-all outline-none text-sm font-bold text-[#1A1A1A]"
+                                                className="w-full pl-14 pr-14 py-[13px] rounded-2xl bg-[#F0F2F4] border-transparent focus:bg-white focus:ring-2 focus:ring-[#FF6B00]/10 transition-all outline-none text-sm font-bold text-[#1A1A1A]"
                                             />
                                             <button
                                                 type="button"
@@ -208,26 +205,26 @@ export default function LoginPage() {
 
                                 <div className="flex items-center gap-3 ml-1 select-none">
                                     <input id="rem" type="checkbox" className="w-5 h-5 rounded border-[#D1D1D1] accent-[#FF6B00] cursor-pointer" />
-                                    <label htmlFor="rem" className="text-[15px] font-bold text-[#868889] cursor-pointer">Stay logged in</label>
+                                    <label htmlFor="rem" className="text-[15px] font-bold text-white/70 cursor-pointer">Stay logged in</label>
                                 </div>
 
                                 <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className={cn(
-                                        "w-full mt-6 py-4 rounded-2xl font-bold text-white text-lg bg-gradient-to-br from-[#FF8A00] via-[#FF6B00] to-[#FF4D00] shadow-[0_12px_24px_-8px_rgba(255,107,0,0.5)] hover:shadow-[0_15px_30px_-5px_rgba(255,107,0,0.6)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2 group",
-                                        loading && "opacity-70 cursor-not-allowed"
-                                    )}
-                                >
-                                    {loading ? (
-                                        <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                                    ) : (
-                                        <>
-                                            Sign In
-                                            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform stroke-[3]" />
-                                        </>
-                                    )}
-                                </button>
+    type="submit"
+    disabled={loading}
+    className={cn(
+        "w-full mt-6 py-4 rounded-2xl font-bold text-white text-lg bg-gradient-to-br from-[#2563EB] via-[#1D4ED8] to-[#1E40AF] shadow-[0_12px_24px_-8px_rgba(37,99,235,0.5)] hover:shadow-[0_15px_30px_-5px_rgba(37,99,235,0.6)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2 group",
+        loading && "opacity-70 cursor-not-allowed"
+    )}
+>
+    {loading ? (
+        <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+    ) : (
+        <>
+            Sign In
+            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform stroke-[3]" />
+        </>
+    )}
+</button>
                             </form>
 
                             <p className="text-center text-sm text-[#868889] font-bold pt-6 tracking-tight">
