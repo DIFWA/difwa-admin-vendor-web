@@ -190,7 +190,7 @@ export default function RetailerProductsPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <p className="font-black text-primary">{p.stock}kg</p>
+                                            <p className="font-black text-primary">{p.stock}lt.</p>
                                             <p className={cn(
                                                 "text-[9px] font-black uppercase",
                                                 p.stockStatus === "In Stock" ? "text-blue-500" : "text-red-500"
