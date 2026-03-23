@@ -118,12 +118,12 @@ export default function AdminPayoutsPage() {
                     </div>
                 </div>
                 <div className="bg-white p-6 rounded-[32px] border border-border-custom shadow-sm flex items-center gap-6">
-                    <div className="w-14 h-14 rounded-2xl bg-green-100 flex items-center justify-center text-green-600">
+                    <div className="w-14 h-14 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600">
                         <CheckCircle size={28} />
                     </div>
                     <div>
                         <p className="text-xs font-black text-text-muted uppercase tracking-widest">Settled Volume</p>
-                        <h2 className="text-2xl font-black text-green-600">₹{stats.approved.toLocaleString()}</h2>
+                        <h2 className="text-2xl font-black text-blue-600">₹{stats.approved.toLocaleString()}</h2>
                     </div>
                 </div>
             </div>
@@ -210,7 +210,7 @@ export default function AdminPayoutsPage() {
                                         <td className="px-8 py-6">
                                             <span className={cn(
                                                 "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border",
-                                                payout.status === 'Approved' ? "bg-green-50 text-green-600 border-green-100" :
+                                                payout.status === 'Approved' ? "bg-blue-50 text-blue-600 border-blue-100" :
                                                     payout.status === 'Pending' ? "bg-amber-50 text-amber-600 border-amber-100" :
                                                         "bg-red-50 text-red-600 border-red-100"
                                             )}>
@@ -235,7 +235,7 @@ export default function AdminPayoutsPage() {
                                                             setSelectedPayout(payout)
                                                             setShowModal(true)
                                                         }}
-                                                        className="p-2.5 rounded-xl bg-green-50 text-green-600 hover:bg-green-600 hover:text-white transition-all border border-green-100 shadow-sm"
+                                                        className="p-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all border border-blue-100 shadow-sm"
                                                         title="Approve Settlement"
                                                     >
                                                         <Check size={18} />
@@ -290,7 +290,7 @@ export default function AdminPayoutsPage() {
                                 <div className="text-right">
                                     <span className={cn(
                                         "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest",
-                                        selectedPayout.status === 'Approved' ? "bg-green-100 text-green-600" : "bg-amber-100 text-amber-600"
+                                        selectedPayout.status === 'Approved' ? "bg-blue-100 text-blue-600" : "bg-amber-100 text-amber-600"
                                     )}>
                                         {selectedPayout.status}
                                     </span>

@@ -17,7 +17,7 @@ export default function AddProductPage() {
     const [selectedColors, setSelectedColors] = useState<string[]>(["#AEDC81"])
 
     const colors = [
-        { name: "Green", value: "#6CC51D" },
+        { name: "blue", value: "#0096FF" },
         { name: "Pink", value: "#F9D5D7" },
         { name: "Blue", value: "#D5E7F9" },
         { name: "Cream", value: "#F9F1D5" },

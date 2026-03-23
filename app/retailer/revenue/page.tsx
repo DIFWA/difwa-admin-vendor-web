@@ -113,7 +113,7 @@ export default function RetailerRevenuePage() {
                     ) : (
                         <h2 className="text-4xl font-black">₹{revenueStats.availableBalance.toLocaleString()}</h2>
                     )}
-                    <div className="mt-6 flex items-center gap-2 text-xs font-bold text-green-300">
+                    <div className="mt-6 flex items-center gap-2 text-xs font-bold text-blue-300">
                         <ArrowUpRight size={14} /> Based on completed orders
                     </div>
                 </div>
@@ -133,7 +133,7 @@ export default function RetailerRevenuePage() {
                     {loadingStats ? (
                         <div className="h-9 bg-background-soft rounded animate-pulse w-32" />
                     ) : (
-                        <h2 className="text-3xl font-black text-green-600">₹{revenueStats.totalSettled.toLocaleString()}</h2>
+                        <h2 className="text-3xl font-black text-blue-600">₹{revenueStats.totalSettled.toLocaleString()}</h2>
                     )}
                     <p className="mt-2 text-xs font-bold text-text-muted uppercase">Lifetime Earnings: ₹{revenueStats.totalEarnings.toLocaleString()}</p>
                 </div>
@@ -192,7 +192,7 @@ export default function RetailerRevenuePage() {
                                         <td className="px-8 py-6">
                                             <span className={cn(
                                                 "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
-                                                payout.status === 'Approved' ? "bg-green-50 text-green-600 border-green-100" :
+                                                payout.status === 'Approved' ? "bg-blue-50 text-blue-600 border-blue-100" :
                                                     payout.status === 'Pending' ? "bg-amber-50 text-amber-600 border-amber-100" :
                                                         "bg-red-50 text-red-600 border-red-100"
                                             )}>

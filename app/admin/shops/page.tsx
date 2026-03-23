@@ -97,7 +97,7 @@ export default function ShopsPage() {
                                         <td className="px-6 py-4">
                                             <span className={cn(
                                                 "px-3 py-1 rounded-full text-xs font-bold border",
-                                                shop.status === "approved" ? "bg-green-50 text-green-600 border-green-100" :
+                                                shop.status === "approved" ? "bg-blue-50 text-blue-600 border-blue-100" :
                                                     shop.status === "under_review" ? "bg-amber-50 text-amber-600 border-amber-100" :
                                                         "bg-red-50 text-red-600 border-red-100"
                                             )}>
@@ -106,7 +106,7 @@ export default function ShopsPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-center gap-2">
-                                                <button className="p-2 hover:bg-green-50 text-green-600 rounded-lg" title="Approve">
+                                                <button className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg" title="Approve">
                                                     <CheckCircle size={18} />
                                                 </button>
                                                 <button className="p-2 hover:bg-red-50 text-red-600 rounded-lg" title="Deactivate">

@@ -148,7 +148,7 @@ export default function EditProductPage() {
     }
 
     const colors = [
-        { name: "Green", value: "#6CC51D" },
+        { name: "blue", value: "#0096FF" },
         { name: "Pink", value: "#F9D5D7" },
         { name: "Blue", value: "#D5E7F9" },
         { name: "Cream", value: "#F9F1D5" },

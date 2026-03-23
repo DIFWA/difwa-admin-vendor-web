@@ -125,7 +125,7 @@ export default function Dashboard() {
             change: "",
             trend: "up",
             icon: ShieldCheckIcon,
-            color: "bg-green-50 text-green-600",
+            color: "bg-blue-50 text-blue-600",
             href: "/admin/orders"
         },
         {
@@ -204,8 +204,8 @@ export default function Dashboard() {
                             <AreaChart data={statsData.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#6CC51D" stopOpacity={0.2} />
-                                        <stop offset="95%" stopColor="#6CC51D" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#0096FF" stopOpacity={0.2} />
+                                        <stop offset="95%" stopColor="#0096FF" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EBEBEB" />
@@ -231,7 +231,7 @@ export default function Dashboard() {
                                 <Area
                                     type="monotone"
                                     dataKey="orders"
-                                    stroke="#6CC51D"
+                                    stroke="#0096FF"
                                     strokeWidth={3}
                                     fillOpacity={1}
                                     fill="url(#colorOrders)"

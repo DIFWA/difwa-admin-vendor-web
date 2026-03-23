@@ -183,7 +183,7 @@ export default function RetailersPage() {
                                         <td className="px-6 py-4">
                                             <span className={cn(
                                                 "px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest",
-                                                ret.status === "approved" ? "bg-green-50 text-green-600 border-green-100" :
+                                                ret.status === "approved" ? "bg-blue-50 text-blue-600 border-blue-100" :
                                                     ret.status === "under_review" ? "bg-blue-50 text-blue-600 border-blue-100" :
                                                         "bg-red-50 text-red-600 border-red-100"
                                             )}>
@@ -268,7 +268,7 @@ export default function RetailersPage() {
                             {toast && (
                                 <div className={cn(
                                     "absolute top-24 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl shadow-2xl border animate-in slide-in-from-top-4 duration-300 flex items-center gap-2 z-50",
-                                    toast.type === "error" ? "bg-red-50 border-red-100 text-red-600" : "bg-green-50 border-green-100 text-green-600"
+                                    toast.type === "error" ? "bg-red-50 border-red-100 text-red-600" : "bg-blue-50 border-blue-100 text-blue-600"
                                 )}>
                                     {toast.type === "error" ? <AlertCircle size={18} /> : <CheckSquare size={18} />}
                                     <span className="text-sm font-bold uppercase tracking-wider">{toast.message}</span>
@@ -322,7 +322,7 @@ export default function RetailersPage() {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <p className="text-xs text-gray-400 font-bold">WHATSAPP</p>
-                                                <p className="font-medium text-green-600">{selectedRetailer.whatsappNumber || "N/A"}</p>
+                                                <p className="font-medium text-blue-600">{selectedRetailer.whatsappNumber || "N/A"}</p>
                                             </div>
                                             <div>
                                                 <p className="text-xs text-gray-400 font-bold">EMAIL</p>

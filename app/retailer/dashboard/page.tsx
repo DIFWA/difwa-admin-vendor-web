@@ -78,7 +78,7 @@ export default function RetailerDashboard() {
     const staticCards = [
         { title: "My Total Sales", value: `₹${statsData.stats.totalRevenue.toLocaleString()}`, change: "", trend: "up", icon: DollarSign, color: "bg-primary-light text-primary", href: "/retailer/revenue" },
         { title: "My Orders", value: statsData.stats.totalOrders.toLocaleString(), change: "", trend: "up", icon: ShoppingCart, color: "bg-blue-50 text-blue-600", href: "/retailer/orders" },
-        { title: "Active Products", value: statsData.stats.activeProducts.toLocaleString(), change: "", trend: "neutral", icon: Package, color: "bg-green-50 text-green-600", href: "/retailer/products" },
+        { title: "Active Products", value: statsData.stats.activeProducts.toLocaleString(), change: "", trend: "neutral", icon: Package, color: "bg-blue-50 text-blue-600", href: "/retailer/products" },
         { title: "My Customers", value: statsData.stats.totalCustomers.toLocaleString(), change: "", trend: "up", icon: Users, color: "bg-purple-50 text-purple-600", href: "/retailer/customers" },
     ]
 
@@ -101,11 +101,11 @@ export default function RetailerDashboard() {
                             className={cn(
                                 "flex items-center gap-3 px-6 py-2.5 rounded-full font-black text-xs uppercase tracking-[0.1em] transition-all border-2",
                                 shopActive
-                                    ? "bg-green-50 text-green-600 border-green-100 hover:bg-green-100"
+                                    ? "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100"
                                     : "bg-red-50 text-red-600 border-red-100 hover:bg-red-100"
                             )}
                         >
-                            <div className={cn("w-2 h-2 rounded-full", shopActive ? "bg-green-500 animate-pulse" : "bg-red-500")} />
+                            <div className={cn("w-2 h-2 rounded-full", shopActive ? "bg-blue-500 animate-pulse" : "bg-red-500")} />
                             {shopActive ? "Shop is Open" : "Shop is Closed"}
                         </button>
                     </div>
@@ -170,15 +170,15 @@ export default function RetailerDashboard() {
                             <AreaChart data={statsData.chartData}>
                                 <defs>
                                     <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#6CC51D" stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor="#6CC51D" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#0096FF" stopOpacity={0.1} />
+                                        <stop offset="95%" stopColor="#0096FF" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F4F5F9" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#868889" }} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#868889" }} />
                                 <Tooltip contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }} />
-                                <Area type="monotone" dataKey="sales" stroke="#6CC51D" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
+                                <Area type="monotone" dataKey="sales" stroke="#0096FF" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>

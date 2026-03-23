@@ -193,7 +193,7 @@ export default function RetailerProductsPage() {
                                             <p className="font-black text-primary">{p.stock}kg</p>
                                             <p className={cn(
                                                 "text-[9px] font-black uppercase",
-                                                p.stockStatus === "In Stock" ? "text-green-500" : "text-red-500"
+                                                p.stockStatus === "In Stock" ? "text-blue-500" : "text-red-500"
                                             )}>{p.stockStatus}</p>
                                         </td>
                                         <td className="px-6 py-4">

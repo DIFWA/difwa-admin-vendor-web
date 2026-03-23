@@ -89,7 +89,7 @@ export default function CommunicationHubPage() {
                     <div className="bg-white rounded-[40px] border border-border-custom shadow-xl p-8 md:p-12 relative overflow-hidden">
                         {/* Status Message */}
                         {success && (
-                            <div className="absolute top-0 left-0 right-0 bg-green-500 text-white py-3 px-8 flex items-center gap-3 animate-in slide-in-from-top duration-300 z-10">
+                            <div className="absolute top-0 left-0 right-0 bg-blue-500 text-white py-3 px-8 flex items-center gap-3 animate-in slide-in-from-top duration-300 z-10">
                                 <CheckCircle2 size={20} />
                                 <p className="font-black text-xs uppercase tracking-widest">{success}</p>
                             </div>
@@ -277,7 +277,7 @@ export default function CommunicationHubPage() {
                                     </div>
                                     <span className="text-sm font-bold">FCM Enabled</span>
                                 </div>
-                                <span className="font-black text-green-300">84%</span>
+                                <span className="font-black text-blue-300">84%</span>
                             </div>
                             <div className="bg-white/10 rounded-3xl p-4 flex items-start gap-3">
                                 <ShieldAlert size={20} className="shrink-0 text-amber-300" />

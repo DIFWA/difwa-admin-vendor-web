@@ -38,7 +38,7 @@ apiClient.interceptors.response.use(
         // Log formatted response
         console.log(
             `✅ %c[API Response]  %c${response.status} %c${response.config.url}`,
-            "color: #6CC51D; font-weight: bold;",
+            "color: #0096FF; font-weight: bold;",
             "color: #1B2D1F; font-weight: bold;",
             "color: #868E96;",
             response.data

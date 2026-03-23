@@ -30,8 +30,8 @@ const statusStyles: any = {
     "Preparing": "bg-indigo-50 text-indigo-600 border-indigo-100",
     "Shipped": "bg-blue-50 text-blue-600 border-blue-100",
     "Out for Delivery": "bg-orange-50 text-orange-600 border-orange-100",
-    "Delivered": "bg-green-50 text-green-600 border-green-100",
-    "Completed": "bg-green-50 text-green-600 border-green-100",
+    "Delivered": "bg-blue-50 text-blue-600 border-blue-100",
+    "Completed": "bg-blue-50 text-blue-600 border-blue-100",
     "Cancelled": "bg-red-50 text-red-600 border-red-100",
 }
 
@@ -125,7 +125,7 @@ function AdminOrdersContent() {
     const stats = [
         { title: "Total Orders", value: ordersData.stats.totalOrders.toLocaleString(), color: "bg-primary-light text-primary", filterValue: "All" },
         { title: "Pending Orders", value: ordersData.stats.pendingOrders.toLocaleString(), color: "bg-warning-50 text-warning", filterValue: "Pending" },
-        { title: "Completed", value: ordersData.stats.completedOrders.toLocaleString(), color: "bg-green-50 text-green-600", filterValue: "Completed" },
+        { title: "Completed", value: ordersData.stats.completedOrders.toLocaleString(), color: "bg-blue-50 text-blue-600", filterValue: "Completed" },
         { title: "Cancelled", value: ordersData.stats.canceledOrders.toLocaleString(), color: "bg-red-50 text-red-600", filterValue: "Cancelled" },
     ]
 
@@ -274,7 +274,7 @@ function AdminOrdersContent() {
                                         <td className="px-6 py-4 font-bold text-primary">{order.orderId}</td>
                                         <td className="px-6 py-4">
                                             {order.orderType === "Subscription" ? (
-                                                <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-green-50 text-green-700 border border-green-200 w-fit">
+                                                <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-blue-50 text-blue-700 border border-blue-200 w-fit">
                                                     <RefreshCw size={10} />
                                                     Sub
                                                 </span>

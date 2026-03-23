@@ -136,15 +136,15 @@ export default function RetailerCustomersPage() {
                             <AreaChart data={customersData.chartData}>
                                 <defs>
                                     <linearGradient id="colorGrowth" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#6CC51D" stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor="#6CC51D" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#0096FF" stopOpacity={0.1} />
+                                        <stop offset="95%" stopColor="#0096FF" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#868889" }} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#868889" }} />
                                 <Tooltip contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }} />
-                                <Area type="monotone" dataKey="customers" stroke="#6CC51D" strokeWidth={3} fillOpacity={1} fill="url(#colorGrowth)" />
+                                <Area type="monotone" dataKey="customers" stroke="#0096FF" strokeWidth={3} fillOpacity={1} fill="url(#colorGrowth)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
@@ -338,7 +338,7 @@ export default function RetailerCustomersPage() {
                                                         <div className="flex justify-center">
                                                             <span className={cn(
                                                                 "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase text-center w-[100px]",
-                                                                (order.status === "Delivered" || order.status === "Completed") ? "bg-green-100 text-green-700" :
+                                                                (order.status === "Delivered" || order.status === "Completed") ? "bg-blue-100 text-blue-700" :
                                                                     (order.status === "Pending" || order.status === "Accepted") ? "bg-warning-50 text-warning" :
                                                                         "bg-blue-100 text-blue-700"
                                                             )}>

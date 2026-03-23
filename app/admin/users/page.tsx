@@ -241,7 +241,7 @@ export default function UsersPage() {
                                                         {addr.label}
                                                     </span>
                                                     {addr.isDefault && (
-                                                        <span className="text-[10px] text-green-600 font-bold uppercase tracking-wider bg-green-50 px-2 py-0.5 rounded">
+                                                        <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wider bg-blue-50 px-2 py-0.5 rounded">
                                                             Default
                                                         </span>
                                                     )}

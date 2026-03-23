@@ -83,8 +83,8 @@ export default function LoginPage() {
                         <div className="space-y-8 mt-4">
                             {/* Status Badge */}
                             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#2A2C1D]/80 backdrop-blur-md border border-white/5 select-none">
-            
-                                
+
+
                             </div>
 
                             {/* Heading */}
@@ -101,7 +101,7 @@ export default function LoginPage() {
                             </p>
                         </div>
 
-                        {/* Action Pill (Olive-Green) */}
+                        {/* Action Pill (Olive-blue) */}
                         <div className="mt-16">
                             <div className="inline-flex items-center gap-4 pl-4 pr-8 py-3.5 rounded-full bg-[#3D422E]/60 backdrop-blur-xl border border-white/10 group cursor-pointer hover:bg-[#3D422E]/80 transition-all shadow-xl">
                                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#3D422E] group-hover:scale-110 transition-transform shadow-md">
@@ -132,21 +132,21 @@ export default function LoginPage() {
                         <div className="w-full max-w-sm space-y-4 relative z-10">
                             {/* Mobile Logo Visibility */}
                             <div className="lg:hidden flex items-center justify-center gap-2 mb-8">
-                                <span className="text-4xl font-black text-[#6CC51D]">S</span>
+                                <span className="text-4xl font-black text-[#0096FF]">S</span>
                                 <span className="text-2xl font-bold text-[#1A1A1A] tracking-tight">Difwa</span>
                             </div>
 
                             <div className="text-center">
-    <div className="flex justify-center mb-5">
-        <img
-            src="/waterlogo.png"
-            alt="Difwa Logo"
-            className="w-12 h-12 object-contain rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.3)]"
-        />
-    </div>
-    <h2 className="text-4xl font-bold text-white mb-2">Login Portals</h2>
-    <p className="text-sm text-white/60 mb-8">Sign in to access dashboard</p>
-</div>
+                                <div className="flex justify-center mb-5">
+                                    <img
+                                        src="/waterlogo.png"
+                                        alt="Difwa Logo"
+                                        className="w-12 h-12 object-contain rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.3)]"
+                                    />
+                                </div>
+                                <h2 className="text-4xl font-bold text-white mb-2">Login Portals</h2>
+                                <p className="text-sm text-white/60 mb-8">Sign in to access dashboard</p>
+                            </div>
 
                             {error && (
                                 <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-[13px] font-black text-center animate-shake">
@@ -209,22 +209,22 @@ export default function LoginPage() {
                                 </div>
 
                                 <button
-    type="submit"
-    disabled={loading}
-    className={cn(
-        "w-full mt-6 py-4 rounded-2xl font-bold text-white text-lg bg-gradient-to-br from-[#2563EB] via-[#1D4ED8] to-[#1E40AF] shadow-[0_12px_24px_-8px_rgba(37,99,235,0.5)] hover:shadow-[0_15px_30px_-5px_rgba(37,99,235,0.6)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2 group",
-        loading && "opacity-70 cursor-not-allowed"
-    )}
->
-    {loading ? (
-        <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-    ) : (
-        <>
-            Sign In
-            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform stroke-[3]" />
-        </>
-    )}
-</button>
+                                    type="submit"
+                                    disabled={loading}
+                                    className={cn(
+                                        "w-full mt-6 py-4 rounded-2xl font-bold text-white text-lg bg-gradient-to-br from-[#2563EB] via-[#1D4ED8] to-[#1E40AF] shadow-[0_12px_24px_-8px_rgba(37,99,235,0.5)] hover:shadow-[0_15px_30px_-5px_rgba(37,99,235,0.6)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2 group",
+                                        loading && "opacity-70 cursor-not-allowed"
+                                    )}
+                                >
+                                    {loading ? (
+                                        <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                                    ) : (
+                                        <>
+                                            Sign In
+                                            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform stroke-[3]" />
+                                        </>
+                                    )}
+                                </button>
                             </form>
 
                             <p className="text-center text-sm text-[#868889] font-bold pt-6 tracking-tight">
