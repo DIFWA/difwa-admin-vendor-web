@@ -131,7 +131,7 @@ export default function AddProductPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Add New Product</h1>
-                    <p className="text-text-muted text-sm">List a new catch to your shrimp shop.</p>
+                    <p className="text-text-muted text-sm">List a new catch to your Water shop.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
@@ -164,7 +164,7 @@ export default function AddProductPage() {
                                     type="text"
                                     value={formData.name}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    placeholder="e.g. Premium Tiger Shrimp (Head-on)"
+                                    placeholder="e.g. water bottle"
                                     className="w-full px-4 py-2.5 rounded-lg bg-background-soft border-transparent focus:bg-white focus:border-primary transition-all outline-none text-sm"
                                 />
                             </div>
