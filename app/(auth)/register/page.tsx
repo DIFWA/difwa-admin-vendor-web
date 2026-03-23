@@ -47,7 +47,7 @@ export default function RegisterPage() {
     return (
         <div className="relative h-screen overflow-hidden">
             <img
-                src="https://raw.githubusercontent.com/anushk2026a/img-url/c6df7976948ff2cc5b9e5c2fe7d432b8540e7f3b/image.png"
+                src="https://i.ibb.co/8DP10d22/Image-Mar-17-2026-12-50-45-PM.png"
                 alt="Fresh Shrimp Dish"
                 className="absolute inset-0 w-full h-full object-cover"
             />
@@ -65,7 +65,7 @@ export default function RegisterPage() {
                         <div className="flex items-center gap-2 mb-16 select-none group cursor-pointer">
                             <div className="relative w-12 h-12 flex items-center justify-center">
                                 <img
-                                    src="/loginlogo.png"
+                                    src="/waterlogo.png"
                                     alt="Shrimpbite Logo"
                                     className="w-12 h-12 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.3)]"
                                 />
@@ -76,20 +76,20 @@ export default function RegisterPage() {
 
                         <div className="space-y-8 mt-4">
                             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#2A2C1D]/80 backdrop-blur-md border border-white/5 select-none">
-                                <span className="text-[#FFB800] text-xs">🔥</span>
+                                <span className="text-[#FFB800] text-xs">🤝</span>
                                 <span className="text-[#FDFCFB]/90 text-[10px] font-black uppercase tracking-[0.2em]">Partner with us</span>
                             </div>
 
                             <div className="space-y-1">
                                 <h1 className="text-[72px] font-extrabold text-[#FDFCFB] leading-[1.05] tracking-tight">
-                                    Grow Your <br />
-                                    Business <span className="text-[#FFB800]"> with </span> <br />
-                                    <span className="text-[#FFB800]">Shrimpbite</span>
+                                    Thrive Your <br />
+                                    Business <span className="text-[#0096FF]"> with </span> <br />
+                                    <span className="text-[#0096FF]">Difwa</span>
                                 </h1>
                             </div>
 
                             <p className="text-[17px] text-[#FDFCFB]/80 font-medium max-w-[400px] leading-relaxed tracking-tight">
-                                Join India's leading shrimp distribution network. Access top-quality inventory and reach more customers.
+                                Join water distribution network. Access top-quality inventory and reach more customers.
                             </p>
                         </div>
                     </div>
@@ -103,7 +103,7 @@ export default function RegisterPage() {
 
                         <div className="w-full max-w-sm space-y-10 relative z-10">
                             <div className="text-center">
-                                <h2 className="text-4xl font-bold text-[#1f2a1f] mb-2">Join Shrimpbite</h2>
+                                <h2 className="text-4xl font-bold text-[#1f2a1f] mb-2">Join Difwa</h2>
                                 <p className="text-sm text-gray-800">Create your owner account to get started</p>
                             </div>
 
@@ -197,7 +197,7 @@ export default function RegisterPage() {
                                     type="submit"
                                     disabled={loading}
                                     className={cn(
-                                        "w-full mt-4 py-4 rounded-2xl font-bold text-white text-lg bg-gradient-to-br from-[#FF8A00] via-[#FF6B00] to-[#FF4D00] shadow-[0_12px_24px_-8px_rgba(255,107,0,0.5)] hover:shadow-[0_15px_30px_-5px_rgba(255,107,0,0.6)] hover:scale-[1.01] transition-all duration-300 flex items-center justify-center gap-2 group",
+                                        "w-full mt-4 py-4 rounded-2xl font-bold text-white text-lg bg-gradient-to-br from-[#007BFF] via-[#339CFF] to-[#0056D2] shadow-[0_12px_24px_-8px_rgba(255,107,0,0.5)] hover:shadow-[0_15px_30px_-5px_rgba(255,107,0,0.6)] hover:scale-[1.01] transition-all duration-300 flex items-center justify-center gap-2 group",
                                         loading && "opacity-70 cursor-not-allowed"
                                     )}
                                 >
