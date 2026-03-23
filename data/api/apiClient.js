@@ -1,7 +1,7 @@
 import axios from "axios";
 const apiClient = axios.create({
     // baseURL: "https://shrimpbite-backend.vercel.app/api",
-    baseURL: "https://difwa-backend.vercel.app/",
+    baseURL: "https://difwa-backend.vercel.app/api",
     headers: {
         "Content-Type": "application/json",
     },
