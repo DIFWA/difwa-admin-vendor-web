@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Shrimpbite | Admin Panel",
+  title: "Difwa | Admin Panel",
   description: "Admin management panel for Shrimpbite inventory and orders.",
 };
 
