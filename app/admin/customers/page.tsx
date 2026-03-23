@@ -132,7 +132,7 @@ export default function CustomersPage() {
                                 <Area
                                     type="monotone"
                                     dataKey="customers"
-                                    stroke="#6CC51D"
+                                    stroke="#0096FF"
                                     strokeWidth={3}
                                     fillOpacity={1}
                                     fill="url(#colorCust)"

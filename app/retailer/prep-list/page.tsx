@@ -88,7 +88,7 @@ export default function DailyPrepListPage() {
                 </div>
                 <div className="bg-white p-6 rounded-[32px] border border-border-custom shadow-sm">
                     <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Est. Revenue</p>
-                    <h3 className="text-2xl font-black text-green-600">₹32,450</h3>
+                    <h3 className="text-2xl font-black text-blue-600">₹32,450</h3>
                 </div>
             </div>
 
@@ -100,7 +100,7 @@ export default function DailyPrepListPage() {
                         onClick={() => toggleStatus(item.id)}
                         className={cn(
                             "group bg-white rounded-[32px] border-2 p-6 transition-all duration-300 cursor-pointer relative overflow-hidden",
-                            item.status === 'Ready' ? "border-green-100 shadow-md" :
+                            item.status === 'Ready' ? "border-blue-100 shadow-md" :
                                 item.status === 'Shortage' ? "border-red-100 shadow-md" : "border-gray-50 hover:border-primary/20"
                         )}
                     >
@@ -108,7 +108,7 @@ export default function DailyPrepListPage() {
                             <div className="flex gap-4">
                                 <div className={cn(
                                     "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors",
-                                    item.status === 'Ready' ? "bg-green-100 text-green-600" :
+                                    item.status === 'Ready' ? "bg-blue-100 text-blue-600" :
                                         item.status === 'Shortage' ? "bg-red-100 text-red-600" : "bg-primary/10 text-primary"
                                 )}>
                                     <Fish size={24} />
@@ -124,7 +124,7 @@ export default function DailyPrepListPage() {
                                             <Clock size={12} /> {item.orderCount} Orders
                                         </div>
                                         {(item.subscriptionCount ?? 0) > 0 && (
-                                            <div className="flex items-center gap-1 text-xs font-bold text-green-700 bg-green-50 px-2 py-1 rounded-md border border-green-100">
+                                            <div className="flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
                                                 ↻ {item.subscriptionCount} Sub
                                             </div>
                                         )}
@@ -139,12 +139,12 @@ export default function DailyPrepListPage() {
                             <div className="flex flex-col items-end gap-2">
                                 <span className={cn(
                                     "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
-                                    item.status === 'Ready' ? "bg-green-50 text-green-600 border-green-200" :
+                                    item.status === 'Ready' ? "bg-blue-50 text-blue-600 border-blue-200" :
                                         item.status === 'Shortage' ? "bg-red-50 text-red-600 border-red-200" : "bg-gray-50 text-text-muted border-gray-100"
                                 )}>
                                     {item.status}
                                 </span>
-                                {item.status === 'Ready' && <CheckCircle2 size={24} className="text-green-500 transition-all scale-110" />}
+                                {item.status === 'Ready' && <CheckCircle2 size={24} className="text-blue-500 transition-all scale-110" />}
                                 {item.status === 'Shortage' && <AlertCircle size={24} className="text-red-500 transition-all scale-110" />}
                             </div>
                         </div>
@@ -157,7 +157,7 @@ export default function DailyPrepListPage() {
 
                         {/* Progress bar for 'Ready' items */}
                         {item.status === 'Ready' && (
-                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-green-500" />
+                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500" />
                         )}
                     </div>
                 ))}

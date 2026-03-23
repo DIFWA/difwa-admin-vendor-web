@@ -424,15 +424,15 @@ export default function OnboardingPage() {
                                             onClick={() => licenseInputRef.current?.click()}
                                             className={cn(
                                                 "border border-dashed rounded-xl p-6 transition-all cursor-pointer group mt-2 flex flex-col items-center justify-center min-h-[120px]",
-                                                formData.licenseUrl ? "bg-green-50 border-green-200" : "border-[#DEE2E6] hover:bg-[#F8F9FA]"
+                                                formData.licenseUrl ? "bg-blue-50 border-blue-200" : "border-[#DEE2E6] hover:bg-[#F8F9FA]"
                                             )}
                                         >
                                             {uploading["licenseUrl"] ? (
                                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#FF6B00]"></div>
                                             ) : formData.licenseUrl ? (
                                                 <>
-                                                    <CheckCircle2 className="text-green-500 mb-1" size={20} />
-                                                    <p className="text-[10px] text-green-600 font-bold uppercase">Uploaded</p>
+                                                    <CheckCircle2 className="text-blue-500 mb-1" size={20} />
+                                                    <p className="text-[10px] text-blue-600 font-bold uppercase">Uploaded</p>
                                                 </>
                                             ) : (
                                                 <>
@@ -455,15 +455,15 @@ export default function OnboardingPage() {
                                             onClick={() => gstInputRef.current?.click()}
                                             className={cn(
                                                 "border border-dashed rounded-xl p-6 transition-all cursor-pointer group mt-2 flex flex-col items-center justify-center min-h-[120px]",
-                                                formData.gstCertificateUrl ? "bg-green-50 border-green-200" : "border-[#DEE2E6] hover:bg-[#F8F9FA]"
+                                                formData.gstCertificateUrl ? "bg-blue-50 border-blue-200" : "border-[#DEE2E6] hover:bg-[#F8F9FA]"
                                             )}
                                         >
                                             {uploading["gstCertificateUrl"] ? (
                                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#FF6B00]"></div>
                                             ) : formData.gstCertificateUrl ? (
                                                 <>
-                                                    <CheckCircle2 className="text-green-500 mb-1" size={20} />
-                                                    <p className="text-[10px] text-green-600 font-bold uppercase">Uploaded</p>
+                                                    <CheckCircle2 className="text-blue-500 mb-1" size={20} />
+                                                    <p className="text-[10px] text-blue-600 font-bold uppercase">Uploaded</p>
                                                 </>
                                             ) : (
                                                 <>

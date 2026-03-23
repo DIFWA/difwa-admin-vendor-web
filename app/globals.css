@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #6CC51D;
+  --color-primary: #0096FF;
   --color-primary-dark: #5CAD1A;
   --color-primary-light: #EBFFD7;
   --color-background: #F9FAFB;
@@ -20,7 +20,7 @@
   --card-foreground: #111827;
   --popover: #ffffff;
   --popover-foreground: #111827;
-  --primary: #6CC51D;
+  --primary: #0096FF;
   --primary-foreground: #ffffff;
   --secondary: #F4F5F9;
   --secondary-foreground: #111827;
@@ -32,7 +32,7 @@
   --destructive-foreground: #ffffff;
   --border: #EBEBEB;
   --input: #EBEBEB;
-  --ring: #6CC51D;
+  --ring: #0096FF;
   --radius: 0.75rem;
 }
 

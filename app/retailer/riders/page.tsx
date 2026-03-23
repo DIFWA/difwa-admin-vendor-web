@@ -179,7 +179,7 @@ export default function RidersPage() {
                                         <p className="text-xs text-text-muted">{rider.user?.email}</p>
                                     </div>
                                 </div>
-                                {/* <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${rider.status === 'Available' ? 'bg-green-100 text-green-700' :
+                                {/* <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${rider.status === 'Available' ? 'bg-blue-100 text-blue-700' :
                                     rider.status === 'On Delivery' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
                                     }`}>
                                     {rider.status}
@@ -353,7 +353,7 @@ export default function RidersPage() {
                                 </div>
                             </div>
                             {/* <div className="absolute bottom-4 right-8">
-                                <div className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-sm border ${selectedRider.status === 'Available' ? 'bg-green-500 text-white border-green-600' :
+                                <div className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-sm border ${selectedRider.status === 'Available' ? 'bg-blue-500 text-white border-blue-600' :
                                     selectedRider.status === 'On Delivery' ? 'bg-blue-500 text-white border-blue-600' : 'bg-gray-500 text-white border-gray-600'
                                     }`}>
                                     {selectedRider.status}
@@ -384,7 +384,7 @@ export default function RidersPage() {
                                         </button>
                                         <button
                                             onClick={handleUpdate}
-                                            className="px-6 py-2.5 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all shadow-lg shadow-green-600/20"
+                                            className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"
                                         >
                                             Save Changes
                                         </button>

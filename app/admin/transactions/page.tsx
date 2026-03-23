@@ -99,7 +99,7 @@ export default function AdminTransactionsPage() {
                                     <td className="px-6 py-4">
                                         <span className={cn(
                                             "px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest transition-all",
-                                            txn.status === "Settled" ? "bg-green-50 text-green-600 border-green-100" : "bg-red-50 text-red-600 border-red-100"
+                                            txn.status === "Settled" ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-red-50 text-red-600 border-red-100"
                                         )}>
                                             {txn.status}
                                         </span>

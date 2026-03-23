@@ -112,8 +112,8 @@ export default function Sidebar() {
             <div className="p-6 flex items-center gap-3 overflow-hidden whitespace-nowrap">
                 <Link href={role === "retailer" ? "/retailer/dashboard" : "/admin/dashboard"} className="flex items-center gap-3 shrink-0">
                     <img
-                        src="/loginlogo.png"
-                        alt="Shrimpbite Logo"
+                        src="/waterlogo.png"
+                        alt="Difwa Logo"
                         className="w-10 h-10 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.3)] shrink-0"
                     />
                     <span className={cn(

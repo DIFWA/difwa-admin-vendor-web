@@ -30,8 +30,8 @@ const statusStyles: any = {
     "Preparing": "bg-indigo-50 text-indigo-600 border-indigo-100",
     "Shipped": "bg-blue-50 text-blue-600 border-blue-100",
     "Out for Delivery": "bg-orange-50 text-orange-600 border-orange-100",
-    "Delivered": "bg-green-50 text-green-600 border-green-100",
-    "Completed": "bg-green-50 text-green-600 border-green-100",
+    "Delivered": "bg-blue-50 text-blue-600 border-blue-100",
+    "Completed": "bg-blue-50 text-blue-600 border-blue-100",
     "Cancelled": "bg-red-50 text-red-100 border-red-100",
 }
 
@@ -197,7 +197,7 @@ function OrdersContent() {
     const stats = [
         { title: "Total Shop Orders", value: ordersData.stats.totalOrders.toLocaleString(), change: "", trend: "up", color: "bg-primary-light text-primary", filterValue: "All" },
         { title: "Pending Orders", value: ordersData.stats.pendingOrders.toLocaleString(), change: "", trend: "down", color: "bg-warning-50 text-warning", filterValue: "Pending" },
-        { title: "Completed", value: ordersData.stats.completedOrders.toLocaleString(), change: ordersData.stats.completedPercentage, trend: "up", color: "bg-green-50 text-green-600", filterValue: "Completed" },
+        { title: "Completed", value: ordersData.stats.completedOrders.toLocaleString(), change: ordersData.stats.completedPercentage, trend: "up", color: "bg-blue-50 text-blue-600", filterValue: "Completed" },
         { title: "Avg. Order Value", value: ordersData.stats.avgOrderValue, change: "", trend: "up", color: "bg-blue-50 text-blue-600", filterValue: null },
     ]
 
@@ -448,7 +448,7 @@ function OrdersContent() {
                                             <td className="px-6 py-4 font-bold text-primary">{order.id}</td>
                                             <td className="px-6 py-4">
                                                 {order.orderType === "Subscription" ? (
-                                                    <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-green-50 text-green-700 border border-green-200 w-fit">
+                                                    <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-blue-50 text-blue-700 border border-blue-200 w-fit">
                                                         <RefreshCw size={10} />
                                                         Sub
                                                     </span>
@@ -609,7 +609,7 @@ function OrdersContent() {
                                                                     "p-2 rounded-lg transition-colors",
                                                                     isTerminal
                                                                         ? "text-gray-300 cursor-not-allowed"
-                                                                        : "hover:bg-green-50 text-text-muted hover:text-green-600"
+                                                                        : "hover:bg-blue-50 text-text-muted hover:text-blue-600"
                                                                 )}
                                                                 title={isTerminal ? (order.status === "Delivered" ? "Order Delivered" : "No further retailer actions") : `Mark as ${nextStatus}`}
                                                             >
@@ -722,7 +722,7 @@ function OrdersContent() {
                                     <div className="space-y-0">
                                         {selectedOrder.statusHistory.map((entry: any, idx: number) => {
                                             const roleColors: any = {
-                                                retailer: 'bg-green-100 text-green-700',
+                                                retailer: 'bg-blue-100 text-blue-700',
                                                 rider: 'bg-orange-100 text-orange-700',
                                                 system: 'bg-gray-100 text-gray-600',
                                                 user: 'bg-blue-100 text-blue-700'

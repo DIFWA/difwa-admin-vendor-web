@@ -71,7 +71,7 @@ export default function RegisterPage() {
                                 />
                                 <div className="absolute top-1 right-0 w-2 h-2 rounded-full bg-[#FF6B00]"></div>
                             </div>
-                            <span className="text-3xl font-extrabold text-white tracking-tighter">Shrimpbite</span>
+                            <span className="text-3xl font-extrabold text-white tracking-tighter">Difwa</span>
                         </div>
 
                         <div className="space-y-8 mt-4">
@@ -213,7 +213,7 @@ export default function RegisterPage() {
                             </form>
 
                             <p className="text-center text-sm text-[#868889] font-bold pt-4 tracking-tight">
-                                Already have an account? <Link href="/login" className="text-[#6CC51D] font-black hover:text-[#5BA819] transition-colors">Login here</Link>
+                                Already have an account? <Link href="/login" className="text-[#0096FF] font-black hover:text-[#5BA819] transition-colors">Login here</Link>
                             </p>
 
                         </div>
