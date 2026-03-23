@@ -132,7 +132,7 @@ export default function Sidebar() {
                 {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
             </button>
 
-            {/* Navigation */}
+            {/* Navigation bar */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 scrollbar-hide">
                 {menuGroups.map((group, groupIndex) => (
                     <div key={groupIndex} className="mb-6">
