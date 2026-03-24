@@ -166,20 +166,20 @@ export default function OnboardingPage() {
         <div className="min-h-screen bg-[#F8F9FA] flex">
             {/* Sidebar Branding */}
             <div className="hidden lg:flex w-1/3 bg-[#1B2D1F] p-12 flex-col justify-between relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-[#FF6B00]/10 blur-[100px] rounded-full -mr-32 -mt-32" />
+                <div className="absolute top-0 right-0 w-64 h-64 bg-[#458BCC]/10 blur-[100px] rounded-full -mr-32 -mt-32" />
 
                 <div className="relative z-10">
                     <div className="flex items-center gap-3 mb-12">
-                        <img src="/loginlogo.png" alt="Logo" className="w-10 h-10" />
-                        <span className="text-2xl font-bold text-white">Shrimpbite</span>
+                        <img src="/waterlogo.png" alt="Logo" className="w-10 h-10" />
+                        <span className="text-2xl font-bold text-white">Difwa</span>
                     </div>
 
                     <h1 className="text-4xl font-bold text-white mb-6 leading-tight">
                         Complete your <br />
-                        <span className="text-[#FFB800]">business profile</span>
+                        <span className="text-[#0096FF]">business profile</span>
                     </h1>
                     <p className="text-white/60 text-lg leading-relaxed">
-                        Provide your business details to start selling premium shrimp on our platform.
+                        Provide your business details to start selling fresh water on our platform.
                         This information helps us verify and set up your store.
                     </p>
                 </div>
@@ -189,7 +189,7 @@ export default function OnboardingPage() {
                         <div key={step.id} className="flex items-center gap-4">
                             <div className={cn(
                                 "w-10 h-10 rounded-full flex items-center justify-center transition-all",
-                                idx <= currentStep ? "bg-[#FF6B00] text-white" : "bg-white/10 text-white/40"
+                                idx <= currentStep ? "bg-[#458BCC] text-white" : "bg-white/10 text-white/40"
                             )}>
                                 {idx < currentStep ? <CheckCircle2 size={20} /> : <step.icon size={20} />}
                             </div>
@@ -208,7 +208,7 @@ export default function OnboardingPage() {
             <div className="flex-1 flex flex-col p-8 lg:p-20 overflow-y-auto">
                 <div className="max-w-2xl w-full mx-auto">
                     <div className="mb-12 lg:hidden">
-                        <p className="text-[#FF6B00] font-bold text-sm uppercase tracking-widest mb-2">Step {currentStep + 1} of 4</p>
+                        <p className="text-[#458BCC] font-bold text-sm uppercase tracking-widest mb-2">Step {currentStep + 1} of 4</p>
                         <h2 className="text-3xl font-bold text-[#1A1A1A]">{steps[currentStep].title}</h2>
                     </div>
 
@@ -332,7 +332,7 @@ export default function OnboardingPage() {
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold text-[#495057]">Store Type</label>
                                     <div className="grid grid-cols-2 gap-3">
-                                        {["Seafood Retail Store", "Frozen Products Store", "Supermarket", "Kirana Store", "Distributor"].map(type => (
+                                        {["water Retail Store", "Frozen Products Store", "Supermarket", "Kirana Store", "Distributor"].map(type => (
                                             <button
                                                 key={type}
                                                 type="button"
@@ -341,7 +341,7 @@ export default function OnboardingPage() {
                                                     "px-4 py-3 rounded-xl border font-bold text-sm transition-all text-left",
                                                     formData.businessType === type
                                                         ? "bg-[#1B2D1F] border-[#1B2D1F] text-white shadow-lg"
-                                                        : "bg-white border-[#E9ECEF] text-[#495057] hover:border-[#FF6B00]"
+                                                        : "bg-white border-[#E9ECEF] text-[#495057] hover:border-[#458BCC]"
                                                 )}
                                             >
                                                 {type}
@@ -483,7 +483,7 @@ export default function OnboardingPage() {
                                         className="w-6 h-6 rounded border-[#DEE2E6] accent-[#FF6B00] mt-0.5"
                                     />
                                     <div className="flex-1">
-                                        <p className="font-bold text-[#1A1A1A]">I agree to Shrimpbite Partner Terms & Supply Policies</p>
+                                        <p className="font-bold text-[#1A1A1A]">I agree to Difwa Partner Terms & Supply Policies</p>
                                         <p className="text-sm text-[#868E96]">I certify that all information provided is accurate.</p>
                                     </div>
                                 </label>
@@ -518,7 +518,7 @@ export default function OnboardingPage() {
                                     type="submit"
                                     disabled={!formData.agreed || loading}
                                     className={cn(
-                                        "flex items-center gap-2 px-10 py-3.5 rounded-xl bg-[#FF6B00] text-white font-bold shadow-lg shadow-[#FF6B00]/20 hover:scale-[1.02] active:scale-[0.98] transition-all",
+                                        "flex items-center gap-2 px-10 py-3.5 rounded-xl bg-[#458BCC] text-white font-bold shadow-lg shadow-[#458BCC]/20 hover:scale-[1.02] active:scale-[0.98] transition-all",
                                         (!formData.agreed || loading) && "opacity-50 cursor-not-allowed"
                                     )}
                                 >
