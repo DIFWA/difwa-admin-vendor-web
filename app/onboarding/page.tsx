@@ -258,7 +258,7 @@ export default function OnboardingPage() {
                                             value={formData.businessName}
                                             onChange={e => setFormData({ ...formData, businessName: e.target.value })}
                                             className="w-full px-5 py-4 rounded-xl border border-[#E9ECEF] focus:ring-2 focus:ring-[#FF6B00]/10 focus:border-[#FF6B00] outline-none transition-all"
-                                            placeholder="Gourmet Seafoods"
+                                            placeholder="Gourmet Water"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -332,7 +332,7 @@ export default function OnboardingPage() {
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold text-[#495057]">Store Type</label>
                                     <div className="grid grid-cols-2 gap-3">
-                                        {["water Retail Store", "Frozen Products Store", "Supermarket", "Kirana Store", "Distributor"].map(type => (
+                                        {["Seafood Retail Store", "Frozen Products Store", "Supermarket", "Kirana Store", "Distributor"].map(type => (
                                             <button
                                                 key={type}
                                                 type="button"
@@ -382,7 +382,7 @@ export default function OnboardingPage() {
                                         value={formData.monthlyPurchaseVolume}
                                         onChange={e => setFormData({ ...formData, monthlyPurchaseVolume: e.target.value })}
                                         className="w-full px-5 py-4 rounded-xl border border-[#E9ECEF] focus:ring-2 focus:ring-[#FF6B00]/10 focus:border-[#FF6B00] outline-none transition-all"
-                                        placeholder="e.g. 500kg"
+                                        placeholder="e.g. 500LTR"
                                     />
                                 </div>
                             </div>
