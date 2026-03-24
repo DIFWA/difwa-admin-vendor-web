@@ -66,7 +66,7 @@ export default function RegisterPage() {
                             <div className="relative w-12 h-12 flex items-center justify-center">
                                 <img
                                     src="/waterlogo.png"
-                                    alt="Shrimpbite Logo"
+                                    alt="Difwa Logo"
                                     className="w-12 h-12 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.3)]"
                                 />
                                 <div className="absolute top-1 right-0 w-2 h-2 rounded-full bg-[#FF6B00]"></div>
