@@ -61,13 +61,13 @@ export default function StatusPage() {
     const isUnderReview = userData?.status === "under_review"
 
     return (
-        <div className="min-h-screen bg-[#F8F9FA] p-6 lg:p-12">
+        <div className="min-h-screen bg-[#458BCC] p-6 lg:p-12">
             <div className="max-w-4xl mx-auto space-y-8">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <img src="/loginlogo.png" alt="Logo" className="w-10 h-10" />
-                        <span className="text-2xl font-bold text-[#1B2D1F]">Shrimpbite</span>
+                        <img src="/waterlogo.png" alt="Logo" className="w-10 h-10" />
+                        <span className="text-2xl font-bold text-[#1B2D1F]">Difwa</span>
                     </div>
                     <button
                         onClick={handleLogout}

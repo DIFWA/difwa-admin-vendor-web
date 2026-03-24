@@ -222,7 +222,7 @@ export default function Sidebar() {
                         collapsed ? "w-0 opacity-0 border-transparent p-0 mt-0" : "w-full opacity-100"
                     )}
                 >
-                    <span>Shrimbite Website</span>
+                    <span>Difwa Website</span>
                     <ArrowLeftRight size={14} className="rotate-45" />
                 </Link>
             </div>

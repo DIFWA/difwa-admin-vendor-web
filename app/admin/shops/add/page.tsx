@@ -24,7 +24,7 @@ export default function AddShopPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Register New Shop</h1>
-                    <p className="text-text-muted text-sm">Onboard a new retailer to the Shrimpbite platform.</p>
+                    <p className="text-text-muted text-sm">Onboard a new retailer to the Difwa platform.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <Link href="/admin/shops" className="px-4 py-2 rounded-lg border bg-white hover:bg-background-soft transition-all text-sm font-medium">

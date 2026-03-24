@@ -190,7 +190,7 @@ export default function CommunicationHubPage() {
                                         <textarea
                                             required
                                             rows={12}
-                                            placeholder="<h1>Welcome to Shrimpbite</h1><p>Your premium seafood updates go here...</p>"
+                                            placeholder="<h1>Welcome to Difwa</h1><p>Your premium store updates go here...</p>"
                                             value={emailData.content}
                                             onChange={e => setEmailData({ ...emailData, content: e.target.value })}
                                             className="w-full px-6 py-4 rounded-3xl bg-background-soft border-2 border-transparent focus:border-primary/20 outline-none transition-all font-mono text-sm leading-relaxed"
