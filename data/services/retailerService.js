@@ -163,6 +163,11 @@ const retailerService = {
         const url = customerId ? `/retailer/subscriptions?customerId=${customerId}` : "/retailer/subscriptions";
         const response = await apiClient.get(url);
         return response.data;
+    },
+    
+    searchAnything: async (query) => {
+        const response = await apiClient.get("/retailer/search", { params: { q: query } });
+        return response.data;
     }
 };
 

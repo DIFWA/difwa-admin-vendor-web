@@ -10,6 +10,11 @@ import {
     ChevronRight,
     TrendingUp,
     TrendingDown,
+    AlertCircle,
+    X,
+    Clock,
+    UserPlus,
+    CheckCircle
 } from "lucide-react"
 import {
     AreaChart,
@@ -23,6 +28,7 @@ import {
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import retailerService from "@/data/services/retailerService"
+import { toast } from "sonner"
 
 export default function RetailerDashboard() {
     const [mounted, setMounted] = useState(false)
@@ -30,6 +36,7 @@ export default function RetailerDashboard() {
     const [actionLoading, setActionLoading] = useState(false)
     const [statsData, setStatsData] = useState<any>(null)
     const [loading, setLoading] = useState(true)
+    const [showStatusModal, setShowStatusModal] = useState(false)
 
     useEffect(() => {
         setMounted(true)
@@ -53,12 +60,28 @@ export default function RetailerDashboard() {
     }
 
     const handleToggle = async () => {
+        // Only show confirmation when OPENING the shop
+        if (!shopActive) {
+            setShowStatusModal(true)
+            return
+        }
+        
+        // Closing the shop (direct toggle for now, or could also ask)
+        executeToggle()
+    }
+
+    const executeToggle = async () => {
         setActionLoading(true)
+        setShowStatusModal(false)
         try {
-            await retailerService.toggleShopStatus()
-            setShopActive(!shopActive)
+            const res = await retailerService.toggleShopStatus()
+            if (res.success) {
+                setShopActive(res.isShopActive)
+                toast.success(res.isShopActive ? "Shop is now ONLINE" : "Shop is now OFFLINE")
+            }
         } catch (error) {
             console.error("Toggle failed", error)
+            toast.error("Failed to update shop status")
         } finally {
             setActionLoading(false)
         }
@@ -82,8 +105,37 @@ export default function RetailerDashboard() {
         { title: "My Customers", value: statsData.stats.totalCustomers.toLocaleString(), change: "", trend: "up", icon: Users, color: "bg-purple-50 text-purple-600", href: "/retailer/customers" },
     ]
 
+    // Time Formatter for Activity Feed
+    const formatRelativeTime = (date: string | Date) => {
+        const now = new Date();
+        const past = new Date(date);
+        const diffInMs = now.getTime() - past.getTime();
+        const diffInMins = Math.floor(diffInMs / (1000 * 60));
+        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+        const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+        if (diffInMins < 1) return 'Just now';
+        if (diffInMins < 60) return `${diffInMins}m ago`;
+        if (diffInHours < 24) return `${diffInHours}h ago`;
+        if (diffInDays === 1) return 'Yesterday';
+        return `${diffInDays}d ago`;
+    };
+
+    const getActivityIcon = (type: string, status: string) => {
+        switch (type) {
+            case 'order_new': return { icon: ShoppingCart, color: 'text-blue-600', bg: 'bg-blue-50' };
+            case 'order_status':
+                if (status === 'success') return { icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' };
+                if (status === 'error') return { icon: X, color: 'text-red-600', bg: 'bg-red-50' };
+                return { icon: Package, color: 'text-orange-600', bg: 'bg-orange-50' };
+            case 'low_stock': return { icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50' };
+            case 'customer_new': return { icon: UserPlus, color: 'text-purple-600', bg: 'bg-purple-50' };
+            default: return { icon: AlertCircle, color: 'text-gray-600', bg: 'bg-gray-50' };
+        }
+    };
+
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
             {/* Header with Shop Status */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-[40px] border border-border-custom shadow-sm">
                 <div>
@@ -111,6 +163,38 @@ export default function RetailerDashboard() {
                     </div>
                 </div>
             </div>
+
+            {/* Shop Opening Confirmation Modal */}
+            {showStatusModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[40px] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-8 duration-500">
+                        <div className="p-8 text-center">
+                            <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <AlertCircle className="text-blue-600" size={40} />
+                            </div>
+                            <h3 className="text-2xl font-black uppercase text-primary tracking-tight mb-2">Ready to Open?</h3>
+                            <p className="text-text-muted font-medium italic">
+                                &quot;Are you sure you want to open the shop? New orders will start appearing in your dashboard.&quot;
+                            </p>
+                        </div>
+                        
+                        <div className="flex border-t border-border-custom px-6 py-6 gap-3">
+                            <button 
+                                onClick={() => setShowStatusModal(false)}
+                                className="flex-1 px-6 py-4 rounded-[24px] font-black uppercase tracking-widest text-xs border border-border-custom hover:bg-gray-50 transition-all"
+                            >
+                                Not Yet
+                            </button>
+                            <button 
+                                onClick={executeToggle}
+                                className="flex-1 px-6 py-4 rounded-[24px] font-black uppercase tracking-widest text-xs bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all"
+                            >
+                                Yes, Go Online
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Quick Actions / Prep List Focus */}
             <Link
@@ -184,32 +268,52 @@ export default function RetailerDashboard() {
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl border border-border-custom shadow-sm flex flex-col justify-between">
-                    <div>
-                        <h3 className="text-lg font-bold mb-6">Recent Shop Activity</h3>
-                        <div className="space-y-6">
-                            <div className="flex gap-4">
-                                <div className="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center shrink-0">
-                                    <ShoppingCart size={18} className="text-primary" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-semibold">New Orders: {statsData.stats.newOrders}</p>
-                                    <p className="text-xs text-text-muted">In the last 24 hours</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center shrink-0">
-                                    <Package size={18} className="text-primary" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-semibold">Active Products: {statsData.stats.activeProducts}</p>
-                                    <p className="text-xs text-text-muted">Currently live</p>
-                                </div>
-                            </div>
+                <div className="bg-white p-8 rounded-[40px] border border-border-custom shadow-sm flex flex-col h-full">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h3 className="text-xl font-black uppercase tracking-tight text-primary">Shop Activity</h3>
+                            <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-1">Live Feed</p>
                         </div>
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     </div>
-                    <Link href="/retailer/prep-list" className="block text-center mt-6 w-full py-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-sm font-bold text-gray-700">
-                        View Prep List
+
+                    <div className="flex-1 space-y-6 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
+                        {statsData.recentActivities && statsData.recentActivities.length > 0 ? (
+                            statsData.recentActivities.map((activity: any) => {
+                                const { icon: Icon, color, bg } = getActivityIcon(activity.type, activity.status);
+                                return (
+                                    <div key={activity.id} className="flex gap-4 group cursor-default">
+                                        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all group-hover:scale-110", bg)}>
+                                            <Icon size={20} className={color} />
+                                        </div>
+                                        <div className="flex-1 border-b border-gray-50 pb-4 group-last:border-0">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <p className="text-sm font-bold text-text uppercase tracking-tight">{activity.title}</p>
+                                                <div className="flex items-center gap-1.5 text-[10px] font-black text-text-muted uppercase">
+                                                    <Clock size={10} />
+                                                    {formatRelativeTime(activity.timestamp)}
+                                                </div>
+                                            </div>
+                                            <p className="text-[11px] font-medium text-text-muted italic leading-relaxed">
+                                                {activity.message}
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-12 text-center">
+                                <AlertCircle size={40} className="text-gray-200 mb-4" />
+                                <p className="text-sm font-bold text-text-muted uppercase">No recent activity</p>
+                            </div>
+                        )}
+                    </div>
+
+                    <Link 
+                        href="/retailer/orders" 
+                        className="mt-8 flex items-center justify-center gap-2 w-full py-4 rounded-[20px] bg-gray-50 hover:bg-primary-light hover:text-primary transition-all text-xs font-black uppercase tracking-widest text-text-muted"
+                    >
+                        View Full History <ChevronRight size={14} />
                     </Link>
                 </div>
             </div>

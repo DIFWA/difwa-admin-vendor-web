@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import {
     Plus,
     Search,
-    MoreVertical,
     Edit2,
     Trash2,
     ChevronLeft,
@@ -12,11 +11,17 @@ import {
     Package,
     TrendingUp,
     AlertCircle,
-    Loader2
+    Loader2,
+    RefreshCw,
+    Download,
+    MoreVertical
 } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import retailerService from "@/data/services/retailerService"
+import { useSearchParams } from "next/navigation"
+import { useRef } from "react"
+import { toast } from "sonner"
 
 interface Product {
     _id: string;
@@ -32,14 +37,33 @@ interface Product {
     status: string;
 }
 
-export default function RetailerProductsPage() {
+function RetailerProductsContent() {
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState("All Products")
     const [searchQuery, setSearchQuery] = useState("")
+    const [showMoreMenu, setShowMoreMenu] = useState(false)
+    const moreMenuRef = useRef<HTMLDivElement>(null)
+
+    const searchParams = useSearchParams()
 
     useEffect(() => {
         fetchProducts()
+        
+        const q = searchParams.get("q") || searchParams.get("query")
+        if (q) {
+            setSearchQuery(q)
+        }
+    }, [searchParams])
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+                setShowMoreMenu(false)
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside)
+        return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [])
 
     const fetchProducts = async () => {
@@ -77,12 +101,47 @@ export default function RetailerProductsPage() {
                     <h1 className="text-2xl font-bold tracking-tight">My Products</h1>
                     <p className="text-text-muted">Manage your shop&apos;s inventory and listings.</p>
                 </div>
-                <div className="flex items-center gap-3">
                     <Link href="/retailer/products/add" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary transition-all text-sm font-medium shadow-md shadow-primary/20">
                         <Plus size={16} />
                         Add New Item
                     </Link>
-                </div>
+                    <div className="relative" ref={moreMenuRef}>
+                        <button 
+                            onClick={() => setShowMoreMenu(!showMoreMenu)}
+                            className={cn(
+                                "p-2 rounded-lg border transition-all",
+                                showMoreMenu ? "bg-primary/10 border-primary text-primary" : "bg-white hover:bg-background-soft border-border-custom text-text-muted"
+                            )}
+                        >
+                            <MoreVertical size={18} />
+                        </button>
+
+                        {showMoreMenu && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl border border-border-custom shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-200 py-2">
+                                <button 
+                                    onClick={() => {
+                                        fetchProducts();
+                                        setShowMoreMenu(false);
+                                        toast.success("Inventory refreshed");
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-background-soft transition-colors"
+                                >
+                                    <RefreshCw size={16} className="text-primary" />
+                                    Refresh Inventory
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        window.print();
+                                        setShowMoreMenu(false);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-background-soft transition-colors"
+                                >
+                                    <Download size={16} className="text-blue-500" />
+                                    Print/Save View
+                                </button>
+                            </div>
+                        )}
+                    </div>
             </div>
 
             {/* Stats Cards */}
@@ -243,5 +302,23 @@ export default function RetailerProductsPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+import { Suspense } from "react"
+
+export default function RetailerProductsPage() {
+    return (
+        <Suspense fallback={
+            <div className="space-y-6 animate-pulse p-4">
+                <div className="h-12 bg-background-soft rounded-xl w-1/4" />
+                <div className="grid grid-cols-3 gap-6">
+                    {[1, 2, 3].map(i => <div key={i} className="h-32 bg-background-soft rounded-2xl" />)}
+                </div>
+                <div className="h-96 bg-background-soft rounded-2xl" />
+            </div>
+        }>
+            <RetailerProductsContent />
+        </Suspense>
     )
 }

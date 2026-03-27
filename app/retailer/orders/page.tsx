@@ -51,6 +51,8 @@ function OrdersContent() {
     const [hoveredOrderId, setHoveredOrderId] = useState<string | null>(null)
     const [tooltipStep, setTooltipStep] = useState(1)
     const leaveTimer = useRef<NodeJS.Timeout | null>(null)
+    const [showMoreMenu, setShowMoreMenu] = useState(false)
+    const moreMenuRef = useRef<HTMLDivElement>(null)
 
     const ORDERS_PER_PAGE = 10
 
@@ -60,6 +62,11 @@ function OrdersContent() {
             setStatusFilter(filter)
         } else {
             setStatusFilter("All")
+        }
+
+        const idParam = searchParams.get("id")
+        if (idParam) {
+            setSearchQuery(idParam)
         }
     }, [searchParams])
 
@@ -160,6 +167,16 @@ function OrdersContent() {
         }
     }, [])
 
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+                setShowMoreMenu(false)
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside)
+        return () => document.removeEventListener("mousedown", handleClickOutside)
+    }, [])
+
     const fetchRiders = async () => {
         try {
             const res = await retailerService.getRiders()
@@ -255,6 +272,29 @@ function OrdersContent() {
         }
     }
 
+    const handleBulkAccept = async () => {
+        const pendingOrders = ordersData.orders.filter((o: any) => o.status === "Pending")
+        if (pendingOrders.length === 0) {
+            toast.info("No pending orders to accept")
+            return
+        }
+
+        if (!window.confirm(`Are you sure you want to accept all ${pendingOrders.length} pending orders?`)) return
+
+        try {
+            setLoading(true)
+            const promises = pendingOrders.map((o: any) => retailerService.updateOrderStatus(o.id, "Accepted"))
+            await Promise.all(promises)
+            toast.success(`Successfully accepted ${pendingOrders.length} orders`)
+            fetchOrders()
+            setShowMoreMenu(false)
+        } catch (error) {
+            toast.error("Failed to accept some orders")
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const handleExport = () => {
         try {
             if (!ordersData?.orders || ordersData.orders.length === 0) {
@@ -315,9 +355,51 @@ function OrdersContent() {
                             <Download size={16} />
                             Export List
                         </button>
-                        <button className="p-2 rounded-lg border bg-white hover:bg-background-soft">
-                            <MoreVertical size={18} />
-                        </button>
+                        <div className="relative" ref={moreMenuRef}>
+                            <button 
+                                onClick={() => setShowMoreMenu(!showMoreMenu)}
+                                className={cn(
+                                    "p-2 rounded-lg border transition-all",
+                                    showMoreMenu ? "bg-primary/10 border-primary text-primary" : "bg-white hover:bg-background-soft border-border-custom text-text-muted"
+                                )}
+                            >
+                                <MoreVertical size={18} />
+                            </button>
+                            
+                            {showMoreMenu && (
+                                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-border-custom shadow-xl z-[100] animate-in fade-in slide-in-from-top-2 duration-200 py-2">
+                                    <button 
+                                        onClick={() => {
+                                            fetchOrders();
+                                            fetchRiders();
+                                            setShowMoreMenu(false);
+                                            toast.success("Data refreshed");
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-background-soft transition-colors"
+                                    >
+                                        <RefreshCw size={16} className="text-primary" />
+                                        Refresh Data
+                                    </button>
+                                    <button 
+                                        onClick={handleBulkAccept}
+                                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-background-soft transition-colors"
+                                    >
+                                        <CheckCircle size={16} className="text-emerald-500" />
+                                        Accept All Pending
+                                    </button>
+                                    <button 
+                                        onClick={() => {
+                                            window.print();
+                                            setShowMoreMenu(false);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-background-soft transition-colors"
+                                    >
+                                        <Download size={16} className="text-blue-500" />
+                                        Print/Save View
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 

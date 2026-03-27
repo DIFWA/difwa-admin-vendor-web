@@ -102,10 +102,10 @@ export default function UsersPage() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                                    {user.fullName.charAt(0).toUpperCase()}
+                                                    {(user.fullName || "U").charAt(0).toUpperCase()}
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="font-bold">{user.fullName}</span>
+                                                    <span className="font-bold">{user.fullName || "Unnamed User"}</span>
                                                     <span className="text-xs text-text-muted">ID: {user._id.slice(-6)}</span>
                                                 </div>
                                             </div>
@@ -125,7 +125,7 @@ export default function UsersPage() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2 text-text-muted">
                                                 <Calendar size={14} />
-                                                {new Date(user.createdAt).toLocaleDateString()}
+                                                {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
@@ -211,7 +211,7 @@ export default function UsersPage() {
                                 <div className="bg-gray-50 rounded-2xl p-6 grid grid-cols-2 gap-6">
                                     <div>
                                         <p className="text-xs text-gray-400 font-bold">FULL NAME</p>
-                                        <p className="font-bold text-lg">{selectedUser.fullName}</p>
+                                        <p className="font-bold text-lg">{selectedUser?.fullName || "Unnamed User"}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-400 font-bold">JOINED DATE</p>

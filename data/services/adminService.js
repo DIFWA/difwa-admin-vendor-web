@@ -116,6 +116,38 @@ const adminService = {
             }
         });
         return response.data;
+    },
+
+    // Role Management
+    getRoles: async () => {
+        const response = await apiClient.get("/admin/roles");
+        return response.data;
+    },
+
+    createRole: async (roleData) => {
+        const response = await apiClient.post("/admin/roles", roleData);
+        return response.data;
+    },
+
+    updateRole: async (id, roleData) => {
+        const response = await apiClient.put(`/admin/roles/${id}`, roleData);
+        return response.data;
+    },
+
+    deleteRole: async (id) => {
+        const response = await apiClient.delete(`/admin/roles/${id}`);
+        return response.data;
+    },
+
+    // Admin Invitation
+    inviteAdmin: async (name, email, roleId) => {
+        const response = await apiClient.post("/admin/invite", { name, email, roleId });
+        return response.data;
+    },
+
+    changePassword: async (currentPassword, newPassword) => {
+        const response = await apiClient.put("/admin/change-password", { currentPassword, newPassword });
+        return response.data;
     }
 };
 

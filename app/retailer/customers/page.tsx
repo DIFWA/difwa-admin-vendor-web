@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import {
     Users,
     UserPlus,
@@ -13,7 +13,12 @@ import {
     Plus,
     ShoppingCart,
     Calendar,
+    RefreshCw,
+    Download,
+    X,
+    Loader2
 } from "lucide-react"
+import { toast } from "sonner"
 import {
     AreaChart,
     Area,
@@ -28,8 +33,10 @@ import retailerService from "@/data/services/retailerService"
 import ManualCustomerModal from "@/components/retailer/ManualCustomerModal"
 import ManualOrderModal from "@/components/retailer/ManualOrderModal"
 import ManualSubscriptionModal from "@/components/retailer/ManualSubscriptionModal"
+import { useSearchParams } from "next/navigation"
 
-export default function RetailerCustomersPage() {
+function CustomersContent() {
+    const searchParams = useSearchParams()
     const [mounted, setMounted] = useState(false)
     const [customersData, setCustomersData] = useState<any>(null)
     const [loading, setLoading] = useState(true)
@@ -45,10 +52,27 @@ export default function RetailerCustomersPage() {
     const [settleAmount, setSettleAmount] = useState("")
     const [settleLoading, setSettleLoading] = useState(false)
     const [customerForOrder, setCustomerForOrder] = useState<any>(null)
+    const [showMoreMenu, setShowMoreMenu] = useState(false)
+    const moreMenuRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
         setMounted(true)
         fetchData()
+        
+        const q = searchParams.get("q") || searchParams.get("query")
+        if (q) {
+            setSearchQuery(q)
+        }
+    }, [searchParams])
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+                setShowMoreMenu(false)
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside)
+        return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [])
 
     const fetchData = async () => {
@@ -121,9 +145,43 @@ export default function RetailerCustomersPage() {
                         <Plus size={18} />
                         Add Customer
                     </button>
-                    <button className="p-2 rounded-lg border bg-white hover:bg-background-soft">
-                        <MoreVertical size={18} />
-                    </button>
+                    <div className="relative" ref={moreMenuRef}>
+                        <button 
+                            onClick={() => setShowMoreMenu(!showMoreMenu)}
+                            className={cn(
+                                "p-2 rounded-lg border transition-all",
+                                showMoreMenu ? "bg-primary/10 border-primary text-primary" : "bg-white hover:bg-background-soft border-border-custom text-text-muted"
+                            )}
+                        >
+                            <MoreVertical size={18} />
+                        </button>
+
+                        {showMoreMenu && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl border border-border-custom shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-200 py-2">
+                                <button 
+                                    onClick={() => {
+                                        fetchData();
+                                        setShowMoreMenu(false);
+                                        toast.success("Data refreshed");
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-background-soft transition-colors"
+                                >
+                                    <RefreshCw size={16} className="text-primary" />
+                                    Refresh Data
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        window.print();
+                                        setShowMoreMenu(false);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-background-soft transition-colors"
+                                >
+                                    <Download size={16} className="text-blue-500" />
+                                    Print/Save View
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -173,6 +231,7 @@ export default function RetailerCustomersPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 <div className="lg:col-span-3 bg-white rounded-2xl border border-border-custom shadow-sm overflow-hidden flex flex-col">
+
                     <div className="p-6 border-b border-border-custom flex items-center justify-between">
                         <h3 className="text-lg font-bold">Customer Directory</h3>
                         <div className="relative">
@@ -186,6 +245,8 @@ export default function RetailerCustomersPage() {
                             />
                         </div>
                     </div>
+
+
                     <div className="overflow-x-auto flex-1 h-[500px] overflow-y-auto">
                         <table className="w-full text-left">
                             <thead className="bg-primary/5 text-xs font-bold text-primary uppercase sticky top-0 z-10 backdrop-blur-sm">
@@ -285,6 +346,8 @@ export default function RetailerCustomersPage() {
                             </tbody>
                         </table>
                     </div>
+
+
                 </div>
 
                 {selectedCustomer ? (
@@ -516,5 +579,21 @@ export default function RetailerCustomersPage() {
                 </div>
             )}
         </div>
+    )
+}
+
+export default function RetailerCustomersPage() {
+    return (
+        <Suspense fallback={
+            <div className="space-y-6 animate-pulse p-4">
+                <div className="h-12 bg-background-soft rounded-xl w-1/4" />
+                <div className="grid grid-cols-3 gap-6">
+                    {[1, 2, 3].map(i => <div key={i} className="h-32 bg-background-soft rounded-2xl" />)}
+                </div>
+                <div className="h-80 bg-background-soft rounded-2xl" />
+            </div>
+        }>
+            <CustomersContent />
+        </Suspense>
     )
 }

@@ -32,7 +32,11 @@ export default function LoginPage() {
             const data = await login(email, password)
 
             if (data.user.role === "admin") {
-                router.push("/admin/dashboard")
+                if (data.user.isFirstLogin) {
+                    router.push("/admin/change-password")
+                } else {
+                    router.push("/admin/dashboard")
+                }
             } else {
                 if (data.user.status === "approved") {
                     router.push("/retailer/dashboard")
