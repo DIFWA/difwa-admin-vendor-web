@@ -10,6 +10,9 @@ import {
     MapPin,
     MessageSquare,
     TrendingUp,
+    Plus,
+    ShoppingCart,
+    Calendar,
 } from "lucide-react"
 import {
     AreaChart,
@@ -22,6 +25,9 @@ import {
 } from "recharts"
 import { cn } from "@/lib/utils"
 import retailerService from "@/data/services/retailerService"
+import ManualCustomerModal from "@/components/retailer/ManualCustomerModal"
+import ManualOrderModal from "@/components/retailer/ManualOrderModal"
+import ManualSubscriptionModal from "@/components/retailer/ManualSubscriptionModal"
 
 export default function RetailerCustomersPage() {
     const [mounted, setMounted] = useState(false)
@@ -32,6 +38,13 @@ export default function RetailerCustomersPage() {
     const [showHistoryModal, setShowHistoryModal] = useState(false)
     const [customerOrders, setCustomerOrders] = useState<any[]>([])
     const [historyLoading, setHistoryLoading] = useState(false)
+    const [showAddCustomerModal, setShowAddCustomerModal] = useState(false)
+    const [showCreateOrderModal, setShowCreateOrderModal] = useState(false)
+    const [showSettleModal, setShowSettleModal] = useState(false)
+    const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
+    const [settleAmount, setSettleAmount] = useState("")
+    const [settleLoading, setSettleLoading] = useState(false)
+    const [customerForOrder, setCustomerForOrder] = useState<any>(null)
 
     useEffect(() => {
         setMounted(true)
@@ -101,6 +114,13 @@ export default function RetailerCustomersPage() {
                     <p className="text-text-muted">Manage your shop&apos;s customer base and loyalty.</p>
                 </div>
                 <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowAddCustomerModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-all text-sm font-bold shadow-md shadow-primary/20"
+                    >
+                        <Plus size={18} />
+                        Add Customer
+                    </button>
                     <button className="p-2 rounded-lg border bg-white hover:bg-background-soft">
                         <MoreVertical size={18} />
                     </button>
@@ -174,11 +194,12 @@ export default function RetailerCustomersPage() {
                                     <th className="px-6 py-4">Phone</th>
                                     <th className="px-6 py-4">Purchase History</th>
                                     <th className="px-6 py-4">Spent</th>
+                                    <th className="px-6 py-4">Balance</th>
                                     <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4 text-center">Action</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y text-sm">
+                            <tbody className="divide-y divide-gray-200 text-sm">
                                 {filteredCustomers.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="px-6 py-12 text-center text-text-muted">
@@ -190,7 +211,7 @@ export default function RetailerCustomersPage() {
                                         <tr key={c.id} onClick={() => setSelectedCustomer(c)} className={cn("hover:bg-background-soft cursor-pointer transition-colors", selectedCustomer?.id === c.id && "bg-background-soft/50")}>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-8 h-8 rounded-full overflow-hidden border">
+                                                    <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-200">
                                                         <img src={c.image} alt={c.name} />
                                                     </div>
                                                     <span className="font-bold">{c.name}</span>
@@ -213,6 +234,7 @@ export default function RetailerCustomersPage() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 font-bold text-primary">₹{c.spend}</td>
+                                            <td className="px-6 py-4 font-bold text-orange-600">₹{c.balance}</td>
                                             <td className="px-6 py-4">
                                                 <span className={cn(
                                                     "px-3 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 w-fit",
@@ -222,11 +244,40 @@ export default function RetailerCustomersPage() {
                                                 )}>
                                                     {c.status}
                                                 </span>
+                                                {c.isManual && (
+                                                    <span className="px-2 py-0.5 rounded-md bg-orange-100 text-orange-600 text-[8px] font-black uppercase">
+                                                        Manual
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <button className="p-2 hover:bg-primary-light hover:text-primary rounded-lg transition-colors">
-                                                    <MessageSquare size={16} />
-                                                </button>
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            setCustomerForOrder(c)
+                                                            setShowCreateOrderModal(true)
+                                                        }}
+                                                        className="p-2 hover:bg-primary-light hover:text-primary rounded-lg transition-colors"
+                                                        title="Create Order"
+                                                    >
+                                                        <Plus size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            setCustomerForOrder(c)
+                                                            setShowSubscriptionModal(true)
+                                                        }}
+                                                        className="p-2 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                                                        title="Schedule Subscription"
+                                                    >
+                                                        <Calendar size={16} />
+                                                    </button>
+                                                    <button className="p-2 hover:bg-primary-light hover:text-primary rounded-lg transition-colors">
+                                                        <MessageSquare size={16} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
@@ -237,7 +288,7 @@ export default function RetailerCustomersPage() {
                 </div>
 
                 {selectedCustomer ? (
-                    <div className="bg-white rounded-2xl border shadow-sm p-6 space-y-6 h-fit sticky top-6">
+                    <div className="bg-white rounded-2xl  shadow-sm p-6 space-y-6 h-fit sticky top-6">
                         <div className="text-center">
                             <div className="w-20 h-20 rounded-full bg-primary-light overflow-hidden mx-auto mb-3 border-2 border-primary/20">
                                 <img src={selectedCustomer.image} alt={selectedCustomer.name} className="w-full h-full object-cover" />
@@ -261,6 +312,28 @@ export default function RetailerCustomersPage() {
                                     <p className="text-[10px] text-text-muted uppercase font-bold mb-1">Total Spent</p>
                                     <p className="font-bold text-lg text-primary">₹{selectedCustomer.spend}</p>
                                 </div>
+                            </div>
+                            <div className={cn(
+                                "p-4 rounded-xl border flex items-center justify-between",
+                                parseFloat(selectedCustomer.balance) > 0 ? "bg-orange-50 border-orange-100" : "bg-green-50 border-green-100"
+                            )}>
+                                <div>
+                                    <p className="text-[10px] text-text-muted uppercase font-bold">Due Balance</p>
+                                    <p className={cn("font-bold text-xl", parseFloat(selectedCustomer.balance) > 0 ? "text-orange-600" : "text-green-600 ")}>
+                                        ₹{selectedCustomer.balance}
+                                    </p>
+                                </div>
+                                {parseFloat(selectedCustomer.balance) > 0 && (
+                                    <button
+                                        onClick={() => {
+                                            setSettleAmount(selectedCustomer.balance)
+                                            setShowSettleModal(true)
+                                        }}
+                                        className="px-4 py-2 bg-orange-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-orange-700 transition-all"
+                                    >
+                                        Settle
+                                    </button>
+                                )}
                             </div>
                         </div>
                         <button
@@ -361,6 +434,82 @@ export default function RetailerCustomersPage() {
                                 className="px-6 py-2 bg-white border border-border-custom rounded-xl font-bold text-text hover:bg-background-soft transition-colors"
                             >
                                 Close History
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <ManualCustomerModal
+                isOpen={showAddCustomerModal}
+                onClose={() => setShowAddCustomerModal(false)}
+                onSuccess={fetchData}
+            />
+
+            <ManualOrderModal
+                isOpen={showCreateOrderModal}
+                onClose={() => {
+                    setShowCreateOrderModal(false)
+                    setCustomerForOrder(null)
+                }}
+                customer={customerForOrder}
+                onSuccess={fetchData}
+            />
+
+            <ManualSubscriptionModal
+                isOpen={showSubscriptionModal}
+                onClose={() => {
+                    setShowSubscriptionModal(false)
+                    setCustomerForOrder(null)
+                }}
+                customer={customerForOrder}
+                onSuccess={fetchData}
+            />
+
+            {/* Settlement Modal */}
+            {showSettleModal && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300">
+                        <div className="p-6 border-b border-border-custom flex items-center justify-between">
+                            <h3 className="text-xl font-bold">Settle Balance</h3>
+                            <button onClick={() => setShowSettleModal(false)} className="p-2 rounded-full hover:bg-background-soft transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="text-center pb-2">
+                                <p className="text-sm text-text-muted mb-1">Total Due for {selectedCustomer?.name}</p>
+                                <p className="text-3xl font-black text-orange-600">₹{selectedCustomer?.balance}</p>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-text-muted uppercase tracking-widest ml-1">Settlement Amount</label>
+                                <input
+                                    type="number"
+                                    value={settleAmount}
+                                    onChange={(e) => setSettleAmount(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl bg-background-soft border-transparent outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold text-lg"
+                                    placeholder="Enter amount"
+                                />
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    setSettleLoading(true)
+                                    try {
+                                        const res = await retailerService.settleCustomerDue(selectedCustomer.id, parseFloat(settleAmount))
+                                        if (res.success) {
+                                            await fetchData()
+                                            setShowSettleModal(false)
+                                        }
+                                    } catch (err) {
+                                        console.error("Settle failed", err)
+                                    } finally {
+                                        setSettleLoading(false)
+                                    }
+                                }}
+                                disabled={settleLoading || !settleAmount || parseFloat(settleAmount) <= 0}
+                                className="w-full py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-dark transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {settleLoading ? <Loader2 className="animate-spin" size={20} /> : "Confirm Settlement"}
                             </button>
                         </div>
                     </div>

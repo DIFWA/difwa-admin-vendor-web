@@ -1,9 +1,11 @@
 import axios from "axios";
 const apiClient = axios.create({
-    // baseURL: "https://shrimpbite-backend.vercel.app/api",
-    baseURL:  "https://difwa-backend.vercel.app/api",
+    // baseURL:  "https://difwa-backend.vercel.app/api",
+    // https://nontragic-rodney-allogenically.ngrok-free.dev
+    baseURL: "https://nontragic-rodney-allogenically.ngrok-free.dev/api",
     headers: {
         "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
     },
 });
 

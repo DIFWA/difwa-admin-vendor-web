@@ -137,6 +137,32 @@ const retailerService = {
     deleteRider: async (riderId) => {
         const response = await apiClient.delete(`/rider/retailer/${riderId}`);
         return response.data;
+    },
+
+    addManualCustomer: async (customerData) => {
+        const response = await apiClient.post("/retailer/customers", customerData);
+        return response.data;
+    },
+
+    createManualOrder: async (orderData) => {
+        const response = await apiClient.post("/retailer/orders/manual", orderData);
+        return response.data;
+    },
+
+    settleCustomerDue: async (customerId, amount) => {
+        const response = await apiClient.post("/retailer/customers/settle-due", { customerId, amount });
+        return response.data;
+    },
+
+    createManualSubscription: async (subscriptionData) => {
+        const response = await apiClient.post("/retailer/subscriptions/manual", subscriptionData);
+        return response.data;
+    },
+
+    getRetailerSubscriptions: async (customerId) => {
+        const url = customerId ? `/retailer/subscriptions?customerId=${customerId}` : "/retailer/subscriptions";
+        const response = await apiClient.get(url);
+        return response.data;
     }
 };
 
