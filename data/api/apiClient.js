@@ -1,11 +1,13 @@
 import axios from "axios";
+
+const baseURL = "https://difwa-backend.vercel.app/api";
+// const baseURL = "https://nontragic-rodney-allogenically.ngrok-free.dev/api";
+
 const apiClient = axios.create({
-    // baseURL:  "https://difwa-backend.vercel.app/api",
-    // https://nontragic-rodney-allogenically.ngrok-free.dev
-    baseURL: "https://nontragic-rodney-allogenically.ngrok-free.dev/api",
+    baseURL,
     headers: {
         "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "true",
+        ...(baseURL.includes("ngrok") && { "ngrok-skip-browser-warning": "true" }),
     },
 });
 
