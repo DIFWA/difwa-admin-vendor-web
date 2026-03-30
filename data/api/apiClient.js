@@ -1,7 +1,7 @@
 import axios from "axios";
 
-const baseURL = "https://difwa-backend.vercel.app/api";
-// const baseURL = "https://nontragic-rodney-allogenically.ngrok-free.dev/api";
+// const baseURL = "https://difwa-backend.vercel.app/api";
+const baseURL = "https://nontragic-rodney-allogenically.ngrok-free.dev/api";
 
 const apiClient = axios.create({
     baseURL,
