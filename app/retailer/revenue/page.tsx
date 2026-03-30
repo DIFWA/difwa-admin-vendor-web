@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Wallet, ArrowUpRight, Clock, CheckCircle2, DollarSign, Download, Filter, Plus, X } from "lucide-react"
+import { Wallet, ArrowUpRight, Clock, CheckCircle2, DollarSign, Download, Filter, Plus, X, Percent } from "lucide-react"
 import { cn } from "@/lib/utils"
 import retailerService from "@/data/services/retailerService"
 
@@ -21,7 +21,19 @@ export default function RetailerRevenuePage() {
         availableBalance: 0,
         estimatedEarnings: 0,
         totalSettled: 0,
-        totalEarnings: 0
+        totalEarnings: 0,
+        totalGrossEarnings: 0, // Raw revenue before commission
+        totalCommissionDeducted: 0,
+        commissionRate: 0,
+        earningsBreakdown: []
+    })
+
+    const [showBreakdownModal, setShowBreakdownModal] = useState(false)
+    const [breakdownTitle, setBreakdownTitle] = useState("")
+    const [currentRange, setCurrentRange] = useState("month")
+    const [customRange, setCustomRange] = useState({
+        startDate: "",
+        endDate: ""
     })
 
     const [showPayoutModal, setShowPayoutModal] = useState(false)
@@ -35,13 +47,22 @@ export default function RetailerRevenuePage() {
 
     useEffect(() => {
         fetchPayoutHistory()
-        fetchRevenueStats()
     }, [])
+
+    useEffect(() => {
+        if (currentRange !== 'custom' || (customRange.startDate && customRange.endDate)) {
+            fetchRevenueStats()
+        }
+    }, [currentRange, customRange])
 
     const fetchRevenueStats = async () => {
         setLoadingStats(true)
         try {
-            const res = await retailerService.getRevenueStats()
+            // Use undefined instead of empty string for the service to handle defaults correctly
+            const start = currentRange === 'custom' ? customRange.startDate : undefined;
+            const end = currentRange === 'custom' ? customRange.endDate : undefined;
+            
+            const res = await (retailerService as any).getRevenueStats(currentRange, start, end)
             if (res.success) {
                 setRevenueStats(res.data)
             }
@@ -91,10 +112,39 @@ export default function RetailerRevenuePage() {
                     <h1 className="text-3xl font-bold tracking-tight text-primary">Revenue & Settlements</h1>
                     <p className="text-text-muted mt-1">Track your earnings and manage your payouts.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                    {currentRange === 'custom' && (
+                        <div className="flex items-center gap-2 animate-in slide-in-from-right-2 duration-300">
+                            <input 
+                                type="date"
+                                value={customRange.startDate}
+                                onChange={(e) => setCustomRange({ ...customRange, startDate: e.target.value })}
+                                className="px-3 py-3 bg-white border border-border-custom rounded-2xl font-bold text-xs text-primary outline-none shadow-sm"
+                            />
+                            <span className="text-[10px] font-black text-text-muted uppercase">To</span>
+                            <input 
+                                type="date"
+                                value={customRange.endDate}
+                                onChange={(e) => setCustomRange({ ...customRange, endDate: e.target.value })}
+                                className="px-3 py-3 bg-white border border-border-custom rounded-2xl font-bold text-xs text-primary outline-none shadow-sm"
+                            />
+                        </div>
+                    )}
+                    <select 
+                        value={currentRange}
+                        onChange={(e) => setCurrentRange(e.target.value)}
+                        className="px-4 py-3 bg-white border border-border-custom rounded-2xl font-bold text-xs text-primary outline-none focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer shadow-sm"
+                    >
+                        <option value="today">EARNINGS: TODAY</option>
+                        <option value="yesterday">EARNINGS: YESTERDAY</option>
+                        <option value="tomorrow">EXPECTED: TOMORROW</option>
+                        <option value="week">THIS WEEK</option>
+                        <option value="month">THIS MONTH</option>
+                        <option value="custom">DATE RANGE: CUSTOM</option>
+                    </select>
                     <button
                         onClick={() => setShowPayoutModal(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                        className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
                     >
                         <Plus size={18} /> Request Payout
                     </button>
@@ -103,7 +153,13 @@ export default function RetailerRevenuePage() {
 
             {/* Top Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-primary rounded-[32px] p-8 text-white shadow-xl shadow-primary/20 relative overflow-hidden group">
+                <div 
+                    onClick={() => {
+                        setBreakdownTitle("Available for Payout - Detailed Breakdown")
+                        setShowBreakdownModal(true)
+                    }}
+                    className="bg-primary rounded-[32px] p-8 text-white shadow-xl shadow-primary/20 relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-all"
+                >
                     <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
                         <Wallet size={80} />
                     </div>
@@ -118,24 +174,72 @@ export default function RetailerRevenuePage() {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-[32px] p-8 border border-border-custom shadow-sm flex flex-col justify-center">
+                <div 
+                    onClick={() => {
+                        setBreakdownTitle("Monthly Estimated Earnings - Detailed Breakdown")
+                        setShowBreakdownModal(true)
+                    }}
+                    className="bg-white rounded-[32px] p-8 border border-border-custom shadow-sm flex flex-col justify-center cursor-pointer hover:border-primary/30 transition-all"
+                >
                     <p className="text-xs font-black text-text-muted uppercase tracking-widest mb-2">Estimated Earnings</p>
                     {loadingStats ? (
                         <div className="h-9 bg-background-soft rounded animate-pulse w-32" />
                     ) : (
                         <h2 className="text-3xl font-black text-primary">₹{revenueStats.estimatedEarnings.toLocaleString()}</h2>
                     )}
-                    <p className="mt-2 text-xs font-bold text-text-muted uppercase">This Month</p>
+                    <p className="mt-2 text-xs font-bold text-text-muted uppercase">
+                        {currentRange === 'today' ? 'Today\'s Earnings' : 
+                         currentRange === 'tomorrow' ? 'Expected Tomorrow' : 
+                         currentRange === 'yesterday' ? 'Yesterday\'s Total' : 
+                         currentRange === 'week' ? 'Last 7 Days' : 
+                         currentRange === 'custom' ? `From ${customRange.startDate} to ${customRange.endDate}` : 'This Month'}
+                    </p>
                 </div>
 
                 <div className="bg-white rounded-[32px] p-8 border border-border-custom shadow-sm flex flex-col justify-center">
-                    <p className="text-xs font-black text-text-muted uppercase tracking-widest mb-2">Total Settled</p>
+                    <p className="text-xs font-black text-text-muted uppercase tracking-widest mb-2">Total Settlements</p>
                     {loadingStats ? (
                         <div className="h-9 bg-background-soft rounded animate-pulse w-32" />
                     ) : (
                         <h2 className="text-3xl font-black text-blue-600">₹{revenueStats.totalSettled.toLocaleString()}</h2>
                     )}
-                    <p className="mt-2 text-xs font-bold text-text-muted uppercase">Lifetime Earnings: ₹{revenueStats.totalEarnings.toLocaleString()}</p>
+                    <p className="mt-2 text-xs font-bold text-text-muted uppercase">Net Lifetime: ₹{revenueStats.totalEarnings.toLocaleString()}</p>
+                </div>
+            </div>
+
+            {/* Commission & Details Card */}
+            <div 
+                onClick={() => {
+                    setBreakdownTitle("Lifetime Commission Breakdown")
+                    setShowBreakdownModal(true)
+                }}
+                className="bg-white rounded-[32px] p-8 border-l-4 border-l-amber-400 border border-border-custom shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative cursor-pointer hover:bg-amber-50/20 transition-all"
+            >
+                <div className="flex items-center gap-6 relative z-10 w-full md:w-auto">
+                    <div className="w-16 h-16 rounded-3xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+                        <Percent size={32} />
+                    </div>
+                    <div>
+                        <h4 className="text-xl font-black text-primary uppercase leading-tight">Platform Commission</h4>
+                        <p className="text-xs font-bold text-text-muted uppercase tracking-widest mt-1">Current Active Rate: <span className="text-amber-600">{revenueStats.commissionRate}%</span></p>
+                    </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-8 w-full md:w-auto md:items-center">
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Gross Lifetime Revenue</p>
+                        <p className="text-xl font-black text-primary">₹{revenueStats.totalGrossEarnings.toLocaleString()}</p>
+                    </div>
+                    <div className="h-8 w-[1px] bg-border-custom hidden md:block" />
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black text-text-muted uppercase tracking-widest text-amber-600">Total Commission Paid</p>
+                        <p className="text-xl font-black text-amber-600">- ₹{revenueStats.totalCommissionDeducted.toLocaleString()}</p>
+                    </div>
+                    <div className="h-8 w-[1px] bg-border-custom hidden md:block" />
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black text-text-muted uppercase tracking-widest text-blue-600">Net Earnings (After Commission)</p>
+                        <p className="text-xl font-black text-blue-600">₹{revenueStats.totalEarnings.toLocaleString()}</p>
+                    </div>
                 </div>
             </div>
 
@@ -280,6 +384,72 @@ export default function RetailerRevenuePage() {
                             </button>
                         </div>
                     </form>
+                </div>
+            )}
+            {/* Detailed Breakdown Modal */}
+            {showBreakdownModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[110] flex items-center justify-center p-4 overflow-hidden">
+                    <div className="bg-white rounded-[40px] w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col">
+                        <div className="p-8 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+                            <div>
+                                <h2 className="text-2xl font-black text-primary uppercase tracking-tight">{breakdownTitle}</h2>
+                                <p className="text-xs font-bold text-text-muted uppercase tracking-widest mt-1">Full transaction history for your revenue</p>
+                            </div>
+                            <button onClick={() => setShowBreakdownModal(false)} className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors group">
+                                <X size={24} className="text-text-muted group-hover:text-primary" />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+                            <table className="w-full text-left">
+                                <thead className="sticky top-0 bg-white z-10">
+                                    <tr className="bg-background-soft">
+                                        <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest rounded-l-2xl">Order ID</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest">Date</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest text-right">Gross</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-amber-600 uppercase tracking-widest text-right">Commission</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-blue-600 uppercase tracking-widest text-right">Net Credit</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest text-center rounded-r-2xl">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {(revenueStats as any).earningsBreakdown?.map((item: any) => (
+                                        <tr key={item.orderId} className="hover:bg-gray-50 transition-colors group">
+                                            <td className="px-6 py-5 text-sm font-bold text-primary">#{item.orderNumber.split('-').slice(-1)}</td>
+                                            <td className="px-6 py-5 text-sm text-text-muted font-medium">{new Date(item.date).toLocaleDateString()}</td>
+                                            <td className="px-6 py-5 text-sm font-black text-right">₹{item.gross}</td>
+                                            <td className="px-6 py-5 text-sm font-black text-right text-amber-600">- ₹{item.commission} ({item.commissionRate}%)</td>
+                                            <td className="px-6 py-5 text-sm font-black text-right text-blue-600">₹{item.net}</td>
+                                            <td className="px-6 py-5 text-center">
+                                                <span className={cn(
+                                                    "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
+                                                    item.status === 'Cleared' ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"
+                                                )}>
+                                                    {item.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {(!(revenueStats as any).earningsBreakdown || (revenueStats as any).earningsBreakdown.length === 0) && (
+                                        <tr>
+                                            <td colSpan={6} className="px-6 py-20 text-center text-text-muted font-bold">
+                                                No breakdown history available yet.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="p-8 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
+                            <p className="text-xs font-bold text-text-muted uppercase tracking-widest">
+                                Total Orders Processed: <span className="text-primary">{(revenueStats as any).earningsBreakdown?.length || 0}</span>
+                            </p>
+                            <button onClick={() => setShowBreakdownModal(false)} className="px-8 py-3 bg-primary text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:scale-105 transition-all">
+                                Close View
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

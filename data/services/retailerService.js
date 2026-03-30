@@ -23,8 +23,10 @@ const retailerService = {
         return response.data;
     },
 
-    getRevenueStats: async () => {
-        const response = await apiClient.get("/retailer/revenue-stats");
+    getRevenueStats: async (range = 'month', startDate = null, endDate = null) => {
+        const response = await apiClient.get("/retailer/revenue-stats", { 
+            params: { range, startDate, endDate } 
+        });
         return response.data;
     },
 
@@ -167,6 +169,11 @@ const retailerService = {
     
     searchAnything: async (query) => {
         const response = await apiClient.get("/retailer/search", { params: { q: query } });
+        return response.data;
+    },
+
+    getDueOrdersForCustomer: async (customerId) => {
+        const response = await apiClient.get(`/retailer/customers/${customerId}/due-orders`);
         return response.data;
     }
 };

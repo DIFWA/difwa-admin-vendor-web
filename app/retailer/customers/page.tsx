@@ -16,8 +16,12 @@ import {
     RefreshCw,
     Download,
     X,
-    Loader2
+    Loader2,
+    FileText,
+    Share2,
+    Printer
 } from "lucide-react"
+import { useReactToPrint } from "react-to-print"
 import { toast } from "sonner"
 import {
     AreaChart,
@@ -53,7 +57,16 @@ function CustomersContent() {
     const [settleLoading, setSettleLoading] = useState(false)
     const [customerForOrder, setCustomerForOrder] = useState<any>(null)
     const [showMoreMenu, setShowMoreMenu] = useState(false)
+    const [showInvoiceModal, setShowInvoiceModal] = useState(false)
+    const [invoiceData, setInvoiceData] = useState<any>(null)
+    const [invoiceLoading, setInvoiceLoading] = useState(false)
     const moreMenuRef = useRef<HTMLDivElement>(null)
+    const invoicePrintRef = useRef<HTMLDivElement>(null)
+
+    const handlePrint = useReactToPrint({
+        contentRef: invoicePrintRef,
+        documentTitle: `due_balance_invoice_${selectedCustomer?.name || 'customer'}`,
+    });
 
     useEffect(() => {
         setMounted(true)
@@ -386,17 +399,42 @@ function CustomersContent() {
                                         ₹{selectedCustomer.balance}
                                     </p>
                                 </div>
-                                {parseFloat(selectedCustomer.balance) > 0 && (
-                                    <button
-                                        onClick={() => {
-                                            setSettleAmount(selectedCustomer.balance)
-                                            setShowSettleModal(true)
-                                        }}
-                                        className="px-4 py-2 bg-orange-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-orange-700 transition-all"
-                                    >
-                                        Settle
-                                    </button>
-                                )}
+                                <div className="flex flex-col gap-2">
+                                    {parseFloat(selectedCustomer.balance) > 0 && (
+                                        <button
+                                            onClick={() => {
+                                                setSettleAmount(selectedCustomer.balance)
+                                                setShowSettleModal(true)
+                                            }}
+                                            className="w-full py-2 px-4 bg-orange-600 text-white rounded-lg text-[10px] font-black uppercase shadow-sm hover:bg-orange-700 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            Settle Balance
+                                        </button>
+                                    )}
+                                    {parseFloat(selectedCustomer.balance) > 0 && (
+                                        <button
+                                            onClick={async () => {
+                                                setInvoiceLoading(true)
+                                                setShowInvoiceModal(true)
+                                                try {
+                                                    const res = await retailerService.getDueOrdersForCustomer(selectedCustomer.id)
+                                                    if (res.success) {
+                                                        setInvoiceData(res.data)
+                                                    }
+                                                } catch (err) {
+                                                    console.error("Failed to fetch invoice", err)
+                                                    toast.error("Failed to generate invoice")
+                                                } finally {
+                                                    setInvoiceLoading(false)
+                                                }
+                                            }}
+                                            className="w-full py-2 px-4 bg-white border border-border-custom text-text rounded-lg text-[10px] font-black uppercase hover:bg-background-soft transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <FileText size={14} className="text-primary" />
+                                            Generate Invoice
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         <button
@@ -578,6 +616,177 @@ function CustomersContent() {
                     </div>
                 </div>
             )}
+
+            {/* Invoice Modal */}
+            {showInvoiceModal && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl relative flex flex-col animate-in zoom-in-95 duration-300">
+                        <div className="p-6 border-b border-border-custom flex items-center justify-between sticky top-0 bg-white z-10 no-print">
+                            <h3 className="text-xl font-bold flex items-center gap-2">
+                                <FileText className="text-primary" />
+                                Due Balance Invoice
+                            </h3>
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => handlePrint()}
+                                    className="p-2.5 rounded-xl bg-white border border-border-custom hover:border-primary hover:text-primary transition-all text-text-muted flex items-center gap-2 text-xs font-bold shadow-sm"
+                                    title="Print Invoice"
+                                >
+                                    <Printer size={16} />
+                                    Print
+                                </button>
+                                <button onClick={() => setShowInvoiceModal(false)} className="p-2 rounded-lg hover:bg-background-soft transition-colors text-text-muted">
+                                    <X size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <style jsx global>{`
+                            @media print {
+                                @page {
+                                    margin: 0; /* This removes browser headers and footers */
+                                    size: portrait;
+                                }
+                                body {
+                                    margin: 0;
+                                    padding: 0;
+                                    background: white !important;
+                                }
+                                body * {
+                                    visibility: hidden;
+                                }
+                                #invoice-document, #invoice-document * {
+                                    visibility: visible;
+                                }
+                                #invoice-document {
+                                    position: absolute;
+                                    left: 50%;
+                                    top: 10mm;
+                                    transform: translateX(-50%);
+                                    width: 190mm; /* Standard A4 width minus padding */
+                                    margin: 0 auto;
+                                    padding: 15mm !important;
+                                    background: white !important;
+                                    box-shadow: none !important;
+                                    border: none !important;
+                                    height: auto;
+                                }
+                                .no-print {
+                                    display: none !important;
+                                }
+                            }
+                        `}</style>
+
+                        <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50/50">
+                            {invoiceLoading ? (
+                                <div className="flex flex-col items-center justify-center py-20 text-text-muted">
+                                    <Loader2 className="animate-spin mb-4" size={40} />
+                                    <p className="font-medium">Preparing your invoice...</p>
+                                </div>
+                            ) : invoiceData ? (
+                                <div id="invoice-document" ref={invoicePrintRef} className="bg-white shadow-xl rounded-xl p-8 border border-border-custom max-w-2xl mx-auto print:shadow-none print:border-none print:p-0">
+                                    {/* Invoice Header */}
+                                    <div className="flex justify-between items-start mb-8 pb-8 border-b border-dashed">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                                                    <span className="text-white font-black text-xs">D</span>
+                                                </div>
+                                                <h2 className="text-xl font-black text-primary tracking-tighter uppercase">Difwa Invoice</h2>
+                                            </div>
+                                            <p className="text-2xl font-black text-text uppercase">{invoiceData.retailer.name}</p>
+                                            <p className="text-xs text-text-muted">{invoiceData.retailer.email}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <h4 className="text-xs font-black text-text-muted uppercase tracking-widest mb-1">Date Generated</h4>
+                                            <p className="font-bold">{new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                                            <p className="text-[10px] text-text-muted">{new Date().toLocaleTimeString()}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Billing Details */}
+                                    <div className="grid grid-cols-2 gap-8 mb-8 pb-8 border-b border-dashed">
+                                        <div>
+                                            <h4 className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Billed To</h4>
+                                            <p className="font-black text-lg">{invoiceData.customer.fullName}</p>
+                                            <p className="text-sm text-text-muted">{invoiceData.customer.phoneNumber}</p>
+                                            {invoiceData.customer.addresses?.[0] && (
+                                                <p className="text-xs text-text-muted mt-1">{invoiceData.customer.addresses[0].fullAddress}</p>
+                                            )}
+                                        </div>
+                                        <div className="text-right flex flex-col items-end">
+                                            <h4 className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Payment Status</h4>
+                                            <div className="px-3 py-1.5 rounded-lg bg-orange-100 text-orange-600 font-black text-xs uppercase flex items-center gap-2 w-fit">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-orange-600 animate-pulse" />
+                                                Outstanding Balance
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Order Table */}
+                                    <table className="w-full mb-8">
+                                        <thead className="bg-gray-50 border-y border-border-custom">
+                                            <tr>
+                                                <th className="px-4 py-3 text-left text-[10px] font-black uppercase text-text-muted">Order ID</th>
+                                                <th className="px-4 py-3 text-left text-[10px] font-black uppercase text-text-muted">Date</th>
+                                                <th className="px-4 py-3 text-right text-[10px] font-black uppercase text-text-muted">Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100">
+                                            {invoiceData.orders.map((order: any) => (
+                                                <tr key={order._id}>
+                                                    <td className="px-4 py-4 text-xs font-mono font-bold text-text-muted">#{order.orderId.split('-').slice(-1)}</td>
+                                                    <td className="px-4 py-4 text-xs text-text-muted">
+                                                        {new Date(order.createdAt).toLocaleDateString('en-IN')}
+                                                    </td>
+                                                    <td className="px-4 py-4 text-right font-bold">₹{order.totalAmount.toFixed(2)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot className="border-t-2 border-text pt-4">
+                                            <tr>
+                                                <td colSpan={2} className="px-4 py-4 text-sm font-black text-text uppercase tracking-widest">Total Outstanding Due</td>
+                                                <td className="px-4 py-4 text-right text-2xl font-black text-primary">₹{invoiceData.totalDue.toFixed(2)}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+
+                                    {/* Footer */}
+                                    <div className="text-center bg-primary/5 rounded-xl p-4">
+                                        <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mb-1">Important Note</p>
+                                        <p className="text-[10px] text-text-muted max-w-sm mx-auto">
+                                            This is a computer-generated summary of unpaid deliveries. Please settle the balance with your delivery rider or visit {invoiceData.retailer.name} shop.
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : null}
+                        </div>
+
+                        <div className="p-6 border-t border-border-custom bg-white flex flex-col md:flex-row gap-3 no-print">
+                            <button
+                                onClick={() => {
+                                    const message = `*INVOICE FROM ${invoiceData.retailer.name.toUpperCase()}*%0A%0AHello *${invoiceData.customer.fullName}*,%0A%0AYour current outstanding balance is *₹${invoiceData.totalDue.toFixed(2)}*.%0A%0APlease find the summary of your orders below:%0A${invoiceData.orders.slice(0, 5).map((o: any) => `- ₹${o.totalAmount} (${new Date(o.createdAt).toLocaleDateString()})`).join('%0A')}${invoiceData.orders.length > 5 ? '%0A- ...and more' : ''}%0A%0A*Total Due: ₹${invoiceData.totalDue.toFixed(2)}*%0A%0APlease settle it at your earliest convenience. Thank you!`;
+                                    window.open(`https://wa.me/${invoiceData.customer.phoneNumber.replace(/[^0-9]/g, '')}?text=${message}`, '_blank');
+                                }}
+                                disabled={!invoiceData}
+                                className="flex-1 py-3 bg-[#25D366] text-white rounded-xl text-sm font-black shadow-lg shadow-[#25D366]/20 hover:bg-[#20bd5c] transition-all flex items-center justify-center gap-2 uppercase tracking-wide disabled:opacity-50"
+                            >
+                                <Share2 size={18} />
+                                Share on WhatsApp
+                            </button>
+                            <button
+                                onClick={() => handlePrint()}
+                                disabled={!invoiceData}
+                                className="flex-1 py-3 bg-primary text-white rounded-xl text-sm font-black shadow-lg shadow-primary/20 hover:bg-primary-dark transition-all flex items-center justify-center gap-2 uppercase tracking-wide disabled:opacity-50"
+                            >
+                                <Download size={18} />
+                                Download PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     )
 }

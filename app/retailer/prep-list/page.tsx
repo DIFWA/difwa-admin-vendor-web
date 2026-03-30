@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Fish, Package, ChevronRight, CheckCircle2, AlertCircle, Clock, Printer } from "lucide-react"
+import { Droplets, Package, ChevronRight, CheckCircle2, AlertCircle, Clock, Printer } from "lucide-react"
 import { cn } from "@/lib/utils"
 import retailerService from "@/data/services/retailerService"
 
@@ -14,6 +14,7 @@ interface PrepItem {
     orderCount: number;
     subscriptionCount: number;
     oneTimeCount: number;
+    totalRevenue?: number;
     status: 'Pending' | 'Ready' | 'Shortage';
 }
 
@@ -36,6 +37,10 @@ export default function DailyPrepListPage() {
             setIsLoading(false)
         }
     }
+
+    const totalVolume = prepItems.reduce((acc, item) => acc + item.quantity, 0)
+    const totalOrders = prepItems.reduce((acc, item) => acc + item.orderCount, 0)
+    const totalRevenue = prepItems.reduce((acc, item) => acc + (item.totalRevenue || 0), 0)
 
     const toggleStatus = (id: string) => {
         setPrepItems(items => items.map(item => {
@@ -79,16 +84,16 @@ export default function DailyPrepListPage() {
                     <h3 className="text-2xl font-black text-primary">{prepItems.length}</h3>
                 </div>
                 <div className="bg-white p-6 rounded-[32px] border border-border-custom shadow-sm">
-                    <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Total Weight</p>
-                    <h3 className="text-2xl font-black text-primary">41.2 kg</h3>
+                    <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Total Volume</p>
+                    <h3 className="text-2xl font-black text-primary">{totalVolume.toFixed(1)} {prepItems[0]?.unit || 'L'}</h3>
                 </div>
                 <div className="bg-white p-6 rounded-[32px] border border-border-custom shadow-sm">
                     <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Total Orders</p>
-                    <h3 className="text-2xl font-black text-primary">74</h3>
+                    <h3 className="text-2xl font-black text-primary">{totalOrders}</h3>
                 </div>
                 <div className="bg-white p-6 rounded-[32px] border border-border-custom shadow-sm">
                     <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Est. Revenue</p>
-                    <h3 className="text-2xl font-black text-blue-600">₹32,450</h3>
+                    <h3 className="text-2xl font-black text-blue-600">₹{totalRevenue.toLocaleString('en-IN')}</h3>
                 </div>
             </div>
 
@@ -111,7 +116,7 @@ export default function DailyPrepListPage() {
                                     item.status === 'Ready' ? "bg-blue-100 text-blue-600" :
                                         item.status === 'Shortage' ? "bg-red-100 text-red-600" : "bg-primary/10 text-primary"
                                 )}>
-                                    <Fish size={24} />
+                                    <Droplets size={24} />
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">{item.category}</p>
@@ -169,7 +174,7 @@ export default function DailyPrepListPage() {
                 <div>
                     <h5 className="font-black text-amber-900 uppercase tracking-tight">Logistics Notice</h5>
                     <p className="text-sm text-amber-800 leading-relaxed mt-1">
-                        Please ensure all &quot;Ready&quot; items are packed with correct weight variation tags by 05:00 AM.
+                        Please ensure all &quot;Ready&quot; items are packed with correct volume variation tags by 05:00 AM.
                         Shortage items will automatically notify customers of late delivery or partial refund at 06:00 AM.
                     </p>
                 </div>

@@ -148,6 +148,17 @@ const adminService = {
     changePassword: async (currentPassword, newPassword) => {
         const response = await apiClient.put("/admin/change-password", { currentPassword, newPassword });
         return response.data;
+    },
+
+    // Commission Management
+    getCommissionSetting: async () => {
+        const response = await apiClient.get("/commission");
+        return response.data;
+    },
+
+    updateCommissionRate: async (rate, description = "", note = "") => {
+        const response = await apiClient.put("/commission", { rate, description, note });
+        return response.data;
     }
 };
 

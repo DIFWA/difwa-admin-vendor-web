@@ -18,7 +18,8 @@ import {
     ChevronRight,
     Wallet,
     BellRing,
-    CalendarCheck
+    CalendarCheck,
+    Percent
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
@@ -34,6 +35,7 @@ const adminMenu = [
             { name: "Order Management", icon: ShoppingCart, href: "/admin/orders", id: "ORDERS" },
             { name: "Categories", icon: Layers, href: "/admin/categories", id: "CATEGORIES" },
             { name: "Payout Settlements", icon: Wallet, href: "/admin/payouts", id: "PAYOUTS" },
+            { name: "Commission System", icon: Percent, href: "/admin/commission", id: "COMMISSION" },
             { name: "Communication Hub", icon: BellRing, href: "/admin/communication", id: "COMMUNICATION" },
             { name: "Transaction", icon: ArrowLeftRight, href: "/admin/transactions", id: "TRANSACTIONS" },
         ]
@@ -100,7 +102,7 @@ export default function Sidebar() {
         const permissions = user?.roleId?.permissions || [];
 
         // Items that are ALWAYS visible to ANY admin (so they don't get locked out)
-        const alwaysVisible = ["", ""];
+        const alwaysVisible = ["DASHBOARD", "COMMISSION"];
 
         return menu.map(group => ({
             ...group,
