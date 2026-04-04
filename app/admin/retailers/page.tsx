@@ -42,6 +42,7 @@ export default function RetailersPage() {
     const [rejectionReason, setRejectionReason] = useState("")
     const [actionLoading, setActionLoading] = useState(false)
     const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null)
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
 
     const showToast = (message: string, type: "error" | "success" = "error") => {
         setToast({ message, type })
@@ -103,6 +104,29 @@ export default function RetailersPage() {
         }
     }
 
+    const handleDeleteRetailer = async () => {
+        if (!selectedRetailer) return;
+
+        setActionLoading(true)
+        try {
+            await adminService.deleteRetailer(selectedRetailer._id)
+            showToast("Retailer removed permanently", "success")
+            setTimeout(() => {
+                setIsDeleteModalOpen(false)
+                setSelectedRetailer(null)
+                fetchRetailers(currentPage)
+            }, 1000)
+        } catch (error: unknown) {
+            console.error(error)
+            const msg = error && typeof error === 'object' && 'response' in error
+                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+                : undefined
+            showToast(msg || "Deletion failed")
+        } finally {
+            setActionLoading(false)
+        }
+    }
+
     // Filtered locally only if needed, but we now use server-side search
     const filteredRetailers = retailers
 
@@ -121,6 +145,7 @@ export default function RetailersPage() {
                         {["under_review", "approved", "rejected", "draft"].map(s => (
                             <button
                                 key={s}
+                                suppressHydrationWarning
                                 onClick={() => setFilter(s)}
                                 className={cn(
                                     "px-4 py-1.5 rounded-lg text-sm font-bold transition-all",
@@ -411,6 +436,54 @@ export default function RetailersPage() {
                                 <div className="p-6 rounded-2xl bg-blue-50 border border-blue-100 italic text-xs text-blue-800 leading-relaxed">
                                     &quot;Approving will grant the retailer immediate access to their dashboard and all selling features. They will receive an automated email notification.&quot;
                                 </div>
+
+                                <div className="pt-4 flex justify-end">
+                                    <button
+                                        onClick={() => setIsDeleteModalOpen(true)}
+                                        className="px-6 py-3 rounded-xl bg-red-50 text-red-600 text-xs font-bold hover:bg-red-600 hover:text-white transition-all border border-red-100 flex items-center gap-2"
+                                    >
+                                        <UserX size={14} /> Permanently Remove Retailer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {isDeleteModalOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300"
+                    onClick={() => setIsDeleteModalOpen(false)}
+                >
+                    <div 
+                        className="bg-white rounded-[24px] w-full max-w-md p-8 shadow-2xl animate-in zoom-in-95 duration-300"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex flex-col items-center text-center space-y-4">
+                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-red-600 mb-2">
+                                <AlertCircle size={32} />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900">Are you really sure?</h3>
+                            <p className="text-gray-500 text-sm leading-relaxed">
+                                This will <span className="font-bold text-red-600">permanently remove</span> this retailer and all their data from their panel. Access to the app will be lost immediately.
+                            </p>
+                            
+                            <div className="flex flex-col w-full gap-3 pt-4">
+                                <button
+                                    disabled={actionLoading}
+                                    onClick={handleDeleteRetailer}
+                                    className="w-full py-4 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-200 disabled:opacity-50"
+                                >
+                                    {actionLoading ? "Processing..." : "Confirm Removal"}
+                                </button>
+                                <button
+                                    onClick={() => setIsDeleteModalOpen(false)}
+                                    className="w-full py-4 rounded-xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-all"
+                                >
+                                    Cancel
+                                </button>
                             </div>
                         </div>
                     </div>

@@ -34,6 +34,11 @@ const adminService = {
         return response.data.data;
     },
 
+    deleteRetailer: async (id) => {
+        const response = await apiClient.delete(`/admin/retailers/${id}`);
+        return response.data;
+    },
+
     getUsers: async (page = 1, limit = 10, search = "") => {
         const response = await apiClient.get("/admin/users", {
             params: { page, limit, search }
@@ -86,8 +91,8 @@ const adminService = {
     // },
 
     // Payout Management
-    getPayouts: async () => {
-        const response = await apiClient.get("/payout/all");
+    getPayouts: async (search = "") => {
+        const response = await apiClient.get("/payout/all", { params: { search } });
         return response.data;
     },
 

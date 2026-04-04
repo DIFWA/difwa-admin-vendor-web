@@ -257,7 +257,7 @@ export default function CategoriesPage() {
                                 <input
                                     autoFocus
                                     type="text"
-                                    placeholder="Enter category name (e.g. Tiger Shrimp)"
+                                    placeholder="Enter category name (e.g. 20L Water Can)"
                                     value={categoryName}
                                     onChange={e => setCategoryName(e.target.value)}
                                     className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-transparent focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all font-medium"

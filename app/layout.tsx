@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Difwa | Admin Panel",
-  description: "Admin management panel for Shrimpbite inventory and orders.",
+  title: "Difwa Water Admin",
+  description: "Premium Water Distribution Platform",
 };
 
 import AuthProvider from "@/components/AuthProvider";

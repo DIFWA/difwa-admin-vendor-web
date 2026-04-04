@@ -1,28 +1,65 @@
 "use client"
 
-import { useState } from "react"
-import { ArrowLeftRight, Search, Filter, Download, MoreVertical, ArrowUpRight, ArrowDownRight, CreditCard, DollarSign } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Search, ArrowUpRight, ArrowDownRight, DollarSign, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
+import adminService from "@/data/services/adminService"
 
-const transactions = [
-    { id: "#TXN-9081", shop: "Coastal Harvest", date: "25 Feb 2026", amount: "₹1,200.00", type: "Credit", status: "Settled" },
-    { id: "#TXN-9082", shop: "Deep Sea Delights", date: "24 Feb 2026", amount: "₹3,450.00", type: "Withdraw", status: "Pending" },
-    { id: "#TXN-9083", shop: "Fresh Catch Co.", date: "24 Feb 2026", amount: "₹850.50", type: "Credit", status: "Settled" },
-    { id: "#TXN-9084", shop: "Blue Water Shrimps", date: "23 Feb 2026", amount: "₹2,100.00", type: "Withdraw", status: "Settled" },
-]
+interface Transaction {
+    _id: string;
+    transactionId?: string;
+    retailer: {
+        _id: string;
+        name: string;
+        businessDetails: {
+            businessName: string;
+        }
+    };
+    amount: number;
+    status: string;
+    createdAt: string;
+}
 
 export default function AdminTransactionsPage() {
+    const [transactions, setTransactions] = useState<Transaction[]>([])
+    const [loading, setLoading] = useState(true)
+    const [searchTerm, setSearchTerm] = useState("")
+
+    useEffect(() => {
+        fetchTransactions()
+    }, [searchTerm])
+
+    const fetchTransactions = async () => {
+        setLoading(true)
+        try {
+            const data = await adminService.getPayouts(searchTerm)
+            setTransactions(data)
+        } catch (error) {
+            console.error("Error fetching transactions:", error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // Calculated Stats
+    const totalVolume = transactions.reduce((acc, curr) => acc + curr.amount, 0)
+    const settledAmount = transactions.filter(t => t.status === "Approved" || t.status === "Paid").reduce((acc, curr) => acc + curr.amount, 0)
+    const pendingAmount = transactions.filter(t => t.status === "Pending").reduce((acc, curr) => acc + curr.amount, 0)
+
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        })
+    }
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Financial Transactions</h1>
                     <p className="text-text-muted">Track all shop settlements and platform withdrawals.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg border bg-white hover:bg-background-soft transition-all text-sm font-medium">
-                        <Download size={16} /> Export CSV
-                    </button>
                 </div>
             </div>
 
@@ -32,8 +69,8 @@ export default function AdminTransactionsPage() {
                         <DollarSign size={24} />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-text-muted">Total Volume</p>
-                        <h3 className="text-2xl font-bold">₹142,500</h3>
+                        <p className="text-sm font-semibold text-text-muted">Requested Volume</p>
+                        <h3 className="text-2xl font-bold">₹{totalVolume.toLocaleString()}</h3>
                     </div>
                 </div>
                 <div className="bg-white p-6 rounded-2xl border border-border-custom shadow-sm flex items-center gap-4">
@@ -41,8 +78,8 @@ export default function AdminTransactionsPage() {
                         <ArrowUpRight size={24} />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-text-muted">Total Credited</p>
-                        <h3 className="text-2xl font-bold">₹120,400</h3>
+                        <p className="text-sm font-semibold text-text-muted">Settled Amount</p>
+                        <h3 className="text-2xl font-bold">₹{settledAmount.toLocaleString()}</h3>
                     </div>
                 </div>
                 <div className="bg-white p-6 rounded-2xl border border-border-custom shadow-sm flex items-center gap-4">
@@ -50,72 +87,77 @@ export default function AdminTransactionsPage() {
                         <ArrowDownRight size={24} />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-text-muted">Total Withdrawals</p>
-                        <h3 className="text-2xl font-bold">₹22,100</h3>
+                        <p className="text-sm font-semibold text-text-muted">Pending Payouts</p>
+                        <h3 className="text-2xl font-bold">₹{pendingAmount.toLocaleString()}</h3>
                     </div>
                 </div>
             </div>
 
             <div className="bg-white rounded-2xl border border-border-custom shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-border-custom flex items-center justify-between">
+                <div className="p-6 border-b border-border-custom flex flex-wrap items-center justify-between gap-4">
                     <h3 className="text-lg font-bold">Transaction History</h3>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
                         <input
                             type="text"
-                            placeholder="Search by Shop or TXN ID"
-                            className="pl-9 pr-4 py-1.5 rounded-lg bg-background-soft border-transparent text-sm outline-none w-64"
+                            placeholder="Search by Shop or Transaction ID"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-9 pr-4 py-1.5 rounded-lg bg-background-soft border-transparent text-sm outline-none w-64 focus:ring-2 focus:ring-primary/10 transition-all"
                         />
                     </div>
                 </div>
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-primary/5 text-xs font-bold text-primary uppercase">
-                            <tr>
-                                <th className="px-6 py-4">Transaction ID</th>
-                                <th className="px-6 py-4">Shop Name</th>
-                                <th className="px-6 py-4">Date</th>
-                                <th className="px-6 py-4">Amount</th>
-                                <th className="px-6 py-4 text-center">Type</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4 text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border-custom text-sm">
-                            {transactions.map((txn) => (
-                                <tr key={txn.id} className="hover:bg-background-soft transition-colors">
-                                    <td className="px-6 py-4 font-bold text-primary">{txn.id}</td>
-                                    <td className="px-6 py-4 font-semibold">{txn.shop}</td>
-                                    <td className="px-6 py-4 text-text-muted">{txn.date}</td>
-                                    <td className="px-6 py-4 font-bold">{txn.amount}</td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className={cn(
-                                            "px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest transition-all",
-                                            txn.type === "Credit" ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-purple-50 text-purple-600 border-purple-100"
-                                        )}>
-                                            {txn.type}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={cn(
-                                            "px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest transition-all",
-                                            txn.status === "Settled" ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-red-50 text-red-600 border-red-100"
-                                        )}>
-                                            {txn.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <button className={cn(
-                                            "px-4 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest transition-all",
-                                            "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-600 hover:text-white"
-                                        )}>
-                                            View
-                                        </button>
-                                    </td>
+                    {loading ? (
+                        <div className="p-20 flex justify-center"><Clock className="animate-spin text-primary" /></div>
+                    ) : (
+                        <table className="w-full text-left">
+                            <thead className="bg-primary/5 text-xs font-bold text-primary uppercase border-b border-border-custom">
+                                <tr>
+                                    <th className="px-6 py-4">Transaction ID</th>
+                                    <th className="px-6 py-4">Shop Name</th>
+                                    <th className="px-6 py-4">Date</th>
+                                    <th className="px-6 py-4">Amount</th>
+                                    <th className="px-6 py-4">Type</th>
+                                    <th className="px-6 py-4">Status</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-border-custom text-sm">
+                                {transactions.map((txn) => (
+                                    <tr key={txn._id} className="hover:bg-background-soft/50 transition-colors">
+                                        <td className="px-6 py-4 font-mono text-xs text-primary font-bold">{txn.transactionId || txn._id.slice(-8).toUpperCase()}</td>
+                                        <td className="px-6 py-4 font-bold">{txn.retailer?.businessDetails?.businessName || "No Shop Name"}</td>
+                                        <td className="px-6 py-4 text-text-muted">{formatDate(txn.createdAt)}</td>
+                                        <td className="px-6 py-4 font-bold text-md">₹{txn.amount.toLocaleString()}</td>
+                                        <td className="px-6 py-4">
+                                            <span className="px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest bg-purple-50 text-purple-600 border-purple-100">
+                                                Withdraw
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={cn(
+                                                "px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest transition-all",
+                                                txn.status === "Approved" || txn.status === "Settled" || txn.status === "Paid" 
+                                                    ? "bg-blue-50 text-blue-600 border-blue-100" 
+                                                    : txn.status === "Pending" 
+                                                        ? "bg-yellow-50 text-yellow-600 border-yellow-100" 
+                                                        : "bg-red-50 text-red-600 border-red-100"
+                                            )}>
+                                                {txn.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {transactions.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-20 text-center text-text-muted font-medium">
+                                            No transactions found matching your search.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
         </div>

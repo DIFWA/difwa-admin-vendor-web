@@ -19,11 +19,11 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 
 const products = [
-    { id: 1, name: "Premium Whiteleg Shrimp (40/50)", category: "Fresh Shrimp", price: "24.99", stock: 145, status: "In Stock", image: "https://images.unsplash.com/photo-1559742811-822873691df8?q=80&w=100&h=100&auto=format&fit=crop" },
-    { id: 2, name: "Giant Tiger Shrimp (U-10)", category: "Premium Seafood", price: "45.00", stock: 12, status: "Low Stock", image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80" },
-    { id: 3, name: "Peeled & Deveined (Tail-on)", category: "Ready to Cook", price: "19.99", stock: 85, status: "In Stock", image: "https://images.unsplash.com/photo-1582982200325-188b3f2be666?q=80&w=100&h=100&auto=format&fit=crop" },
-    { id: 4, name: "Indian Mackerel (Whole)", category: "Sea Fish", price: "12.00", stock: 0, status: "Out of Stock", image: "https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?q=80&w=100&h=100&auto=format&fit=crop" },
-    { id: 5, name: "Squid Rings (Cleaned)", category: "Processed", price: "22.00", stock: 45, status: "In Stock", image: "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?q=80&w=100&h=100&auto=format&fit=crop" },
+    { id: 1, name: "20L Mineral Water Can", category: "Water Cans", price: "40.00", stock: 145, status: "In Stock", image: "https://images.unsplash.com/photo-1523362628242-f513a009a0e1?q=80&w=100&h=100&auto=format&fit=crop" },
+    { id: 2, name: "500ml Bottled Water (Pack of 24)", category: "Bottled Water", price: "280.00", stock: 12, status: "Low Stock", image: "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?auto=format&fit=crop&w=1200&q=80" },
+    { id: 3, name: "1L Drinking Water Bottle", category: "Bottled Water", price: "20.00", stock: 85, status: "In Stock", image: "https://images.unsplash.com/photo-1616118132296-38e196e7ef4e?q=80&w=100&h=100&auto=format&fit=crop" },
+    { id: 4, name: "Distilled Water 5L", category: "Industrial", price: "120.00", stock: 0, status: "Out of Stock", image: "https://images.unsplash.com/photo-1551842866-9304a0e7136f?q=80&w=100&h=100&auto=format&fit=crop" },
+    { id: 5, name: "Water Dispenser Pump", category: "Accessories", price: "450.00", stock: 45, status: "In Stock", image: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=100&h=100&auto=format&fit=crop" },
 ]
 
 export default function ProductsPage() {
