@@ -81,17 +81,19 @@ const useAuthStore = create(
                 const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
 
                 if (userId && token) {
+                    set({ loading: true })
                     try {
                         const userData = await authService.getMe(userId)
-                        set({ user: userData, token: token })
+                        set({ user: userData.data || userData.user || userData, token: token, loading: false })
                     } catch (err) {
                         get().logout()
+                        set({ loading: false })
                     }
                 }
             }
         }),
         {
-            name: 'shrimpbite-auth', // name of the item in the storage (must be unique)
+            name: 'shrimpbite-auth',
             storage: createJSONStorage(() => localStorage), // (optional) by default, 'localStorage' is used
         }
     )

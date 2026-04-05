@@ -13,20 +13,19 @@ interface Payout {
     transactionId?: string;
 }
 
+import useRetailerStore from "@/data/store/useRetailerStore"
+
 export default function RetailerRevenuePage() {
-    const [payouts, setPayouts] = useState<Payout[]>([])
-    const [loadingPayouts, setLoadingPayouts] = useState(true)
-    const [loadingStats, setLoadingStats] = useState(true)
-    const [revenueStats, setRevenueStats] = useState({
-        availableBalance: 0,
-        estimatedEarnings: 0,
-        totalSettled: 0,
-        totalEarnings: 0,
-        totalGrossEarnings: 0, // Raw revenue before commission
-        totalCommissionDeducted: 0,
-        commissionRate: 0,
-        earningsBreakdown: []
-    })
+    const [mounted, setMounted] = useState(false)
+    const {
+        revenueData,
+        loadingStats,
+        payouts,
+        loadingPayouts,
+        fetchRevenueStats,
+        fetchPayoutHistory,
+        requestPayout: requestPayoutFromStore
+    } = useRetailerStore()
 
     const [showBreakdownModal, setShowBreakdownModal] = useState(false)
     const [breakdownTitle, setBreakdownTitle] = useState("")
@@ -46,55 +45,39 @@ export default function RetailerRevenuePage() {
     const [submitting, setSubmitting] = useState(false)
 
     useEffect(() => {
+        setMounted(true)
         fetchPayoutHistory()
-    }, [])
+    }, [fetchPayoutHistory])
 
     useEffect(() => {
         if (currentRange !== 'custom' || (customRange.startDate && customRange.endDate)) {
-            fetchRevenueStats()
+            fetchRevenueStats(currentRange,
+                currentRange === 'custom' ? customRange.startDate : undefined,
+                currentRange === 'custom' ? customRange.endDate : undefined,
+                true
+            )
         }
-    }, [currentRange, customRange])
+    }, [currentRange, customRange, fetchRevenueStats])
 
-    const fetchRevenueStats = async () => {
-        setLoadingStats(true)
-        try {
-            // Use undefined instead of empty string for the service to handle defaults correctly
-            const start = currentRange === 'custom' ? customRange.startDate : undefined;
-            const end = currentRange === 'custom' ? customRange.endDate : undefined;
-            
-            const res = await (retailerService as any).getRevenueStats(currentRange, start, end)
-            if (res.success) {
-                setRevenueStats(res.data)
-            }
-        } catch (error) {
-            console.error("Error fetching revenue stats:", error)
-        } finally {
-            setLoadingStats(false)
-        }
-    }
-
-    const fetchPayoutHistory = async () => {
-        setLoadingPayouts(true)
-        try {
-            const data = await retailerService.getPayoutHistory()
-            setPayouts(data)
-        } catch (error) {
-            console.error("Error fetching payouts:", error)
-        } finally {
-            setLoadingPayouts(false)
-        }
+    const revenueStats = revenueData || {
+        availableBalance: 0,
+        estimatedEarnings: 0,
+        totalSettled: 0,
+        totalEarnings: 0,
+        totalGrossEarnings: 0,
+        totalCommissionDeducted: 0,
+        commissionRate: 0,
+        earningsBreakdown: []
     }
 
     const handleRequestPayout = async (e: React.FormEvent) => {
         e.preventDefault()
         setSubmitting(true)
         try {
-            await retailerService.requestPayout({
+            await requestPayoutFromStore({
                 amount: Number(payoutAmount),
                 bankDetails
             })
-            fetchPayoutHistory()
-            fetchRevenueStats() // Refresh balances
             setShowPayoutModal(false)
             setPayoutAmount("")
         } catch (error) {
@@ -115,14 +98,14 @@ export default function RetailerRevenuePage() {
                 <div className="flex flex-wrap items-center gap-3">
                     {currentRange === 'custom' && (
                         <div className="flex items-center gap-2 animate-in slide-in-from-right-2 duration-300">
-                            <input 
+                            <input
                                 type="date"
                                 value={customRange.startDate}
                                 onChange={(e) => setCustomRange({ ...customRange, startDate: e.target.value })}
                                 className="px-3 py-3 bg-white border border-border-custom rounded-2xl font-bold text-xs text-primary outline-none shadow-sm"
                             />
                             <span className="text-[10px] font-black text-text-muted uppercase">To</span>
-                            <input 
+                            <input
                                 type="date"
                                 value={customRange.endDate}
                                 onChange={(e) => setCustomRange({ ...customRange, endDate: e.target.value })}
@@ -130,7 +113,7 @@ export default function RetailerRevenuePage() {
                             />
                         </div>
                     )}
-                    <select 
+                    <select
                         value={currentRange}
                         onChange={(e) => setCurrentRange(e.target.value)}
                         className="px-4 py-3 bg-white border border-border-custom rounded-2xl font-bold text-xs text-primary outline-none focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer shadow-sm"
@@ -153,7 +136,7 @@ export default function RetailerRevenuePage() {
 
             {/* Top Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div 
+                <div
                     onClick={() => {
                         setBreakdownTitle("Available for Payout - Detailed Breakdown")
                         setShowBreakdownModal(true)
@@ -174,7 +157,7 @@ export default function RetailerRevenuePage() {
                     </div>
                 </div>
 
-                <div 
+                <div
                     onClick={() => {
                         setBreakdownTitle("Monthly Estimated Earnings - Detailed Breakdown")
                         setShowBreakdownModal(true)
@@ -188,11 +171,11 @@ export default function RetailerRevenuePage() {
                         <h2 className="text-3xl font-black text-primary">₹{revenueStats.estimatedEarnings.toLocaleString()}</h2>
                     )}
                     <p className="mt-2 text-xs font-bold text-text-muted uppercase">
-                        {currentRange === 'today' ? 'Today\'s Earnings' : 
-                         currentRange === 'tomorrow' ? 'Expected Tomorrow' : 
-                         currentRange === 'yesterday' ? 'Yesterday\'s Total' : 
-                         currentRange === 'week' ? 'Last 7 Days' : 
-                         currentRange === 'custom' ? `From ${customRange.startDate} to ${customRange.endDate}` : 'This Month'}
+                        {currentRange === 'today' ? 'Today\'s Earnings' :
+                            currentRange === 'tomorrow' ? 'Expected Tomorrow' :
+                                currentRange === 'yesterday' ? 'Yesterday\'s Total' :
+                                    currentRange === 'week' ? 'Last 7 Days' :
+                                        currentRange === 'custom' ? `From ${customRange.startDate} to ${customRange.endDate}` : 'This Month'}
                     </p>
                 </div>
 
@@ -208,7 +191,7 @@ export default function RetailerRevenuePage() {
             </div>
 
             {/* Commission & Details Card */}
-            <div 
+            <div
                 onClick={() => {
                     setBreakdownTitle("Lifetime Commission Breakdown")
                     setShowBreakdownModal(true)
@@ -282,7 +265,7 @@ export default function RetailerRevenuePage() {
                                     </td>
                                 </tr>
                             ) : (
-                                payouts.map((payout) => (
+                                payouts.map((payout: Payout) => (
                                     <tr key={payout._id} className="hover:bg-background-soft/20 transition-colors">
                                         <td className="px-8 py-6 text-sm font-bold text-primary truncate max-w-[150px]">
                                             #{payout._id.slice(-8).toUpperCase()}

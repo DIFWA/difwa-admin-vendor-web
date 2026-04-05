@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Clock, Plus, Edit2, Trash2, X } from "lucide-react"
+import { Search, Clock, Plus, Edit2, Trash2, X, Layers, Shield } from "lucide-react"
 import { cn } from "@/lib/utils"
 import adminService from "@/data/services/adminService"
+import useAuthStore from "@/data/store/useAuthStore"
 
 interface Category {
     _id: string;
@@ -12,9 +13,26 @@ interface Category {
     createdAt: string;
 }
 
+import useAdminStore from "@/data/store/useAdminStore"
+
 export default function CategoriesPage() {
-    const [categories, setCategories] = useState<Category[]>([])
-    const [loading, setLoading] = useState(true)
+    const [mounted, setMounted] = useState(false)
+    const { user } = useAuthStore()
+    const { 
+        categoriesData, 
+        loadingCategories: loading, 
+        fetchCategories 
+    } = useAdminStore()
+
+    const currentUserPermissions = user?.permissions && user.permissions.length > 0
+        ? user.permissions
+        : (user?.roleId?.permissions || []);
+
+    const canView = currentUserPermissions.includes("CATEGORIES_VIEW")
+    const canCreate = currentUserPermissions.includes("CATEGORIES_CREATE")
+    const canEdit = currentUserPermissions.includes("CATEGORIES_EDIT")
+    const canDelete = currentUserPermissions.includes("CATEGORIES_DELETE")
+
     const [searchTerm, setSearchTerm] = useState("")
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [editingCategory, setEditingCategory] = useState<Category | null>(null)
@@ -25,32 +43,20 @@ export default function CategoriesPage() {
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1)
-    const [totalPages, setTotalPages] = useState(1)
-    const [totalItems, setTotalItems] = useState(0)
     const limit = 10
 
     useEffect(() => {
-        setCurrentPage(1)
-        fetchCategories(1)
-    }, [searchTerm])
+        setMounted(true)
+        fetchCategories(currentPage, limit, searchTerm)
+    }, [fetchCategories, currentPage, searchTerm])
 
     useEffect(() => {
-        fetchCategories(currentPage)
-    }, [currentPage])
+        setCurrentPage(1)
+    }, [searchTerm])
 
-    const fetchCategories = async (page: number) => {
-        setLoading(true)
-        try {
-            const response = await adminService.getCategories(page, limit, searchTerm)
-            setCategories(response.data)
-            setTotalPages(response.pagination.totalPages)
-            setTotalItems(response.pagination.totalCategories)
-        } catch (error) {
-            console.error("Error fetching categories:", error)
-        } finally {
-            setLoading(false)
-        }
-    }
+    const categories = categoriesData?.data || []
+    const totalPages = categoriesData?.pagination?.totalPages || 1
+    const totalItems = categoriesData?.pagination?.totalCategories || 0
 
     const handleOpenModal = (category: Category | null = null) => {
         setEditingCategory(category)
@@ -87,7 +93,7 @@ export default function CategoriesPage() {
                 await adminService.createCategory(categoryName, categoryImage)
             }
             setIsModalOpen(false)
-            fetchCategories(currentPage)
+            fetchCategories(currentPage, limit, searchTerm, true) // Force refresh
         } catch (error: unknown) {
             console.error(error)
             const msg = error && typeof error === 'object' && 'response' in error
@@ -104,7 +110,7 @@ export default function CategoriesPage() {
 
         try {
             await adminService.deleteCategory(id)
-            fetchCategories(currentPage)
+            fetchCategories(currentPage, limit, searchTerm, true) // Force refresh
         } catch (error: unknown) {
             const msg = error && typeof error === 'object' && 'response' in error
                 ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
@@ -113,6 +119,16 @@ export default function CategoriesPage() {
         }
     }
 
+    if (!canView) return (
+        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-border-custom shadow-sm text-center my-12">
+            <div className="w-16 h-16 bg-red-50 text-red-400 rounded-full flex items-center justify-center mb-4">
+                <Layers size={32} />
+            </div>
+            <h2 className="text-xl font-bold text-foreground">Access Restricted</h2>
+            <p className="text-text-muted mt-2 max-w-xs">You do not have permission to view or manage the Category module.</p>
+        </div>
+    )
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -120,13 +136,15 @@ export default function CategoriesPage() {
                     <h1 className="text-2xl font-bold tracking-tight">Category Management</h1>
                     <p className="text-text-muted">Create and manage product categories for the platform.</p>
                 </div>
-                <button
-                    onClick={() => handleOpenModal()}
-                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#1B2D1F] text-white font-bold hover:bg-[#2A3E2D] transition-all shadow-lg shadow-black/5"
-                >
-                    <Plus size={18} />
-                    Add Category
-                </button>
+                {canCreate && (
+                    <button
+                        onClick={() => handleOpenModal()}
+                        className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#1B2D1F] text-white font-bold hover:bg-[#2A3E2D] transition-all shadow-lg shadow-black/5"
+                    >
+                        <Plus size={18} />
+                        Add Category
+                    </button>
+                )}
             </div>
 
             <div className="bg-white rounded-2xl border border-border-custom overflow-hidden">
@@ -159,7 +177,7 @@ export default function CategoriesPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border-custom text-sm">
-                                {categories.map((cat) => (
+                                {categories.map((cat: Category) => (
                                     <tr key={cat._id} className="hover:bg-background-soft/50 transition-colors">
                                         <td className="px-6 py-4">
                                             {cat.image ? (
@@ -175,19 +193,24 @@ export default function CategoriesPage() {
                                             {new Date(cat.createdAt).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button
-                                                    onClick={() => handleOpenModal(cat)}
-                                                    className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors" title="Edit"
-                                                >
-                                                    <Edit2 size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(cat._id)}
-                                                    className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors" title="Delete"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
+                                            <div className="flex items-center justify-end gap-2 text-text-muted">
+                                                {canEdit && (
+                                                    <button
+                                                        onClick={() => handleOpenModal(cat)}
+                                                        className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors" title="Edit"
+                                                    >
+                                                        <Edit2 size={18} />
+                                                    </button>
+                                                )}
+                                                {canDelete && (
+                                                    <button
+                                                        onClick={() => handleDelete(cat._id)}
+                                                        className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors" title="Delete"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                )}
+                                                {!canEdit && !canDelete && <span className="text-xs italic">View Only</span>}
                                             </div>
                                         </td>
                                     </tr>

@@ -1,34 +1,78 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Shield, UserPlus, MoreVertical, Edit2, Trash2, Key, Users, X, Mail, ShieldCheck } from "lucide-react"
+import { Shield, UserPlus, MoreVertical, Edit2, Trash2, Key, Users, X, Mail, ShieldCheck, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import adminService from "@/data/services/adminService"
 import { toast } from "sonner"
+import useAuthStore from "@/data/store/useAuthStore"
+
+import useAdminStore from "@/data/store/useAdminStore"
 
 export default function AdminRolesPage() {
-    const [roles, setRoles] = useState([])
-    const [loading, setLoading] = useState(true)
+    const [mounted, setMounted] = useState(false)
+    const { user } = useAuthStore()
+    const { 
+        roles, 
+        adminsData: admins, 
+        loadingRoles: loadingRoleState, 
+        loadingAdmins: loadingAdminState,
+        fetchRoles, 
+        fetchAdmins 
+    } = useAdminStore()
+
+    const loading = (loadingRoleState && roles.length === 0) || (loadingAdminState && admins.length === 0)
+
+    const currentUserPermissions = user?.permissions && user.permissions.length > 0
+        ? user.permissions
+        : (user?.roleId?.permissions || []);
+
+    const canView = currentUserPermissions.includes("ROLES_EDIT") || currentUserPermissions.includes("AUTHORITY_EDIT")
+    const canEditRoles = currentUserPermissions.includes("ROLES_EDIT")
+
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
     const [newRole, setNewRole] = useState({ name: "", description: "", permissions: [], securityLevel: 1 })
     const [inviteData, setInviteData] = useState({ name: "", email: "", roleId: "" })
+    const [selectedAdmin, setSelectedAdmin] = useState<any>(null)
+    const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false)
+    const [editedPermissions, setEditedPermissions] = useState<string[]>([])
+    
+    // Permission Matrix
+    const [allPossiblePermissions] = useState<any[]>([
+        { id: "DASHBOARD_VIEW", name: "View Dashboard", group: "Dashboard", description: "Revenue charts and platform stats" },
+        { id: "COMMUNICATION_SEND", name: "Broadcast Hub", group: "Communication", description: "Mass push & email campaigns" },
+        { id: "RETAILERS_VIEW", name: "View Retailers", group: "Retailers", description: "Browse registered retailers" },
+        { id: "RETAILERS_EDIT", name: "Edit Retailers", group: "Retailers", description: "Modify retailer profiles" },
+        { id: "RETAILERS_APPROVE", name: "Approve/Reject", group: "Retailers", description: "Verify new retailer apps" },
+        { id: "ORDERS_VIEW", name: "View Orders", group: "Orders", description: "Live tracking & order history" },
+        { id: "ORDERS_EDIT", name: "Manage Status", group: "Orders", description: "Change preparation/delivery status" },
+        { id: "ORDERS_CANCEL", name: "Cancel Orders", group: "Orders", description: "Refund & cancellation authority" },
+        { id: "CATEGORIES_VIEW", name: "View Categories", group: "Categories", description: "View category list" },
+        { id: "CATEGORIES_CREATE", name: "Add New", group: "Categories", description: "Create new categories" },
+        { id: "CATEGORIES_EDIT", name: "Edit Details", group: "Categories", description: "Rename/Change images" },
+        { id: "CATEGORIES_DELETE", name: "Delete", group: "Categories", description: "Permanently remove categories" },
+        { id: "PAYOUTS_VIEW", name: "View Payouts", group: "Finance", description: "See settlement history" },
+        { id: "PAYOUTS_PROCESS", name: "Process Payouts", group: "Finance", description: "Fulfill payout requests" },
+        { id: "COMMISSION_EDIT", name: "Adjust Commission", group: "Finance", description: "Set system commission rates" },
+        { id: "APP_USERS_VIEW", name: "View Customers", group: "Users", description: "See app user profiles" },
+        { id: "APP_USERS_EDIT", name: "Manage Users", group: "Users", description: "Block/unblock & wallet access" },
+        { id: "ROLES_EDIT", name: "Manage Roles", group: "System", description: "Create/edit role templates" },
+        { id: "AUTHORITY_EDIT", name: "Control Authority", group: "System", description: "Modify permissions matrix" },
+    ])
 
     useEffect(() => {
+        setMounted(true)
         fetchRoles()
-    }, [])
+        fetchAdmins()
+    }, [fetchRoles, fetchAdmins])
 
-    const fetchRoles = async () => {
-        try {
-            const res = await adminService.getRoles()
-            if (res.success) {
-                setRoles(res.data)
-            }
-        } catch (error) {
-            toast.error("Failed to fetch roles")
-        } finally {
-            setLoading(false)
-        }
+    const fetchAdminsList = async (force = false) => {
+        await fetchAdmins(force)
+    }
+
+    const fetchRolesList = async (force = false) => {
+        await fetchRoles(force)
     }
 
     const handleCreateRole = async (e: React.FormEvent) => {
@@ -39,7 +83,7 @@ export default function AdminRolesPage() {
                 toast.success("Role created successfully")
                 setIsCreateModalOpen(false)
                 setNewRole({ name: "", description: "", permissions: [], securityLevel: 1 })
-                fetchRoles()
+                fetchRoles(true)
             }
         } catch (error) {
             toast.error("Failed to create role")
@@ -54,7 +98,8 @@ export default function AdminRolesPage() {
                 toast.success("Invitation sent successfully")
                 setIsInviteModalOpen(false)
                 setInviteData({ name: "", email: "", roleId: "" })
-                fetchRoles() // Refresh to see updated "Active Capacity" if user count is returned
+                fetchRoles(true)
+                fetchAdmins(true)
             }
         } catch (error) {
             toast.error("Failed to send invitation")
@@ -67,14 +112,79 @@ export default function AdminRolesPage() {
             const res = await adminService.deleteRole(id)
             if (res.success) {
                 toast.success("Role deleted successfully")
-                fetchRoles()
+                fetchRoles(true)
             }
         } catch (error) {
             toast.error("Failed to delete role")
         }
     }
 
-    if (loading) return <div className="p-8 text-center animate-pulse">Loading Access Control...</div>
+    const handleDeleteAdmin = async (id: string) => {
+        if (!confirm("Are you sure you want to remove this administrator?")) return
+        try {
+            const res = await adminService.deleteAdmin(id)
+            if (res.success) {
+                toast.success("Administrator removed successfully")
+                fetchAdmins(true)
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to remove administrator")
+        }
+    }
+
+    const handleChangeAdminRole = async (adminId: string, roleId: string) => {
+        try {
+            const res = await adminService.updateAdminUser(adminId, { roleId })
+            if (res.success) {
+                toast.success("Administrator role updated")
+                fetchAdmins(true)
+            }
+        } catch (error) {
+            toast.error("Failed to update role")
+        }
+    }
+
+    const openPermissionModal = (admin: any) => {
+        const adminPerms = admin.permissions && admin.permissions.length > 0
+            ? admin.permissions
+            : (admin.roleId?.permissions || [])
+        setSelectedAdmin(admin)
+        setEditedPermissions([...adminPerms])
+        setIsPermissionModalOpen(true)
+    }
+
+    const savePermissions = async () => {
+        try {
+            const res = await adminService.updateAdminUser(selectedAdmin._id, { permissions: editedPermissions })
+            if (res.success) {
+                toast.success("Granular permissions updated successfully")
+                setIsPermissionModalOpen(false)
+                fetchAdmins(true)
+            }
+        } catch (error) {
+            toast.error("Failed to update permissions")
+        }
+    }
+
+    const togglePermission = (perm: string) => {
+        setEditedPermissions(prev =>
+            prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]
+        )
+    }
+
+    if (!mounted) return null
+
+    if (loading) return <div className="p-8 text-center animate-pulse">Loading Staff Management...</div>
+
+    if (!canView) return (
+        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-border-custom shadow-sm text-center my-12 mx-auto max-w-lg">
+            <div className="w-16 h-16 bg-red-50 text-red-400 rounded-full flex items-center justify-center mb-4">
+                <Shield size={32} />
+            </div>
+            <h2 className="text-xl font-bold text-foreground">Access Restricted</h2>
+            <p className="text-text-muted mt-2">You do not have permission to manage administration roles or staff members.</p>
+        </div>
+    )
 
     return (
         <div className="space-y-6">
@@ -83,20 +193,22 @@ export default function AdminRolesPage() {
                     <h1 className="text-2xl font-bold tracking-tight">Access Control</h1>
                     <p className="text-text-muted">Command center for platform permissions and administrative hierarchy.</p>
                 </div>
-                <div className="flex gap-3">
-                    <button
-                        onClick={() => setIsInviteModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 transition-all text-sm font-medium"
-                    >
-                        <Mail size={16} /> Invite Admin
-                    </button>
-                    <button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-all text-sm font-medium shadow-md shadow-primary/20"
-                    >
-                        <UserPlus size={16} /> Create New Role
-                    </button>
-                </div>
+                {canEditRoles && (
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setIsInviteModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 transition-all text-sm font-medium"
+                        >
+                            <Mail size={16} /> Invite Admin
+                        </button>
+                        <button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-all text-sm font-medium shadow-md shadow-primary/20"
+                        >
+                            <UserPlus size={16} /> Create New Role
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Role Insights */}
@@ -151,7 +263,10 @@ export default function AdminRolesPage() {
                                             </div>
                                             <div>
                                                 <p className="font-bold text-foreground">{role.name}</p>
-                                                <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest truncate max-w-[150px]">{role.description || "No description"}</p>
+                                                <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest truncate max-w-[150px]">
+                                                    {role.description || "No description"}
+                                                    {role.updatedBy?.name && <span className="lowercase italic font-normal ml-2 opacity-60">· by {role.updatedBy.name}</span>}
+                                                </p>
                                             </div>
                                         </div>
                                     </td>
@@ -176,16 +291,98 @@ export default function AdminRolesPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button className="p-2 hover:bg-primary-light hover:text-primary rounded-lg transition-colors">
-                                                <Edit2 size={16} />
-                                            </button>
+                                        <div className="flex items-center justify-end gap-2">
+                                            {canEditRoles ? (
+                                                <button
+                                                    onClick={() => handleDeleteRole(role._id)}
+                                                    className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors group/trash" title="Delete Role"
+                                                >
+                                                    <Trash2 size={18} className="transition-transform group-hover/trash:scale-110" />
+                                                </button>
+                                            ) : (
+                                                <span className="text-[10px] text-text-muted italic">ReadOnly</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Active Administrators Section */}
+            <div className="bg-white rounded-2xl border border-border-custom shadow-sm overflow-hidden mt-8">
+                <div className="p-6 border-b border-border-custom flex items-center justify-between bg-blue-50/30">
+                    <div className="flex items-center gap-3">
+                        <Users className="text-blue-600" size={20} />
+                        <h3 className="text-lg font-bold">Active Administrators</h3>
+                    </div>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-blue-50/50 text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                            <tr>
+                                <th className="px-6 py-4">Administrator</th>
+                                <th className="px-6 py-4">Assigned Role</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border-custom text-sm">
+                            {admins.length === 0 ? (
+                                <tr>
+                                    <td colSpan={4} className="px-6 py-8 text-center text-text-muted italic">No administrators found.</td>
+                                </tr>
+                            ) : admins.map((admin: any) => (
+                                <tr key={admin._id} className="hover:bg-blue-50/20 transition-colors group">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                                                {admin.name?.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-foreground">{admin.name}</p>
+                                                <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest">
+                                                    {admin.email}
+                                                    {admin.updatedBy?.name && <span className="lowercase italic font-normal ml-2 opacity-60">· updated by {admin.updatedBy.name}</span>}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <select
+                                            className="bg-transparent border-none outline-none font-bold text-primary cursor-pointer hover:underline"
+                                            value={admin.roleId?._id || ""}
+                                            onChange={(e) => handleChangeAdminRole(admin._id, e.target.value)}
+                                            disabled={!canEditRoles}
+                                        >
+                                            {roles.map((role: any) => (
+                                                <option key={role._id} value={role._id} className="text-foreground">{role.name}</option>
+                                            ))}
+                                        </select>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="px-2.5 py-1 bg-green-100 text-green-600 rounded-full text-[10px] uppercase font-black tracking-wider">Active</span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <div className="flex items-center justify-center gap-2">
                                             <button
-                                                onClick={() => handleDeleteRole(role._id)}
-                                                className="p-2 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors"
+                                                onClick={() => openPermissionModal(admin)}
+                                                className="p-2 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-text-muted"
+                                                title="Edit Detailed Permissions"
                                             >
-                                                <Trash2 size={16} />
+                                                <Key size={16} />
                                             </button>
+                                            {canEditRoles && (
+                                                <button
+                                                    onClick={() => handleDeleteAdmin(admin._id)}
+                                                    className="p-2 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors text-text-muted"
+                                                    title="Delete Administrator"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -308,6 +505,84 @@ export default function AdminRolesPage() {
                                 Send Invitation
                             </button>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* Granular Permission Modal */}
+            {isPermissionModalOpen && selectedAdmin && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-border-custom flex items-center justify-between bg-primary/5">
+                            <div>
+                                <h3 className="text-lg font-bold">Permissions Override</h3>
+                                <p className="text-xs text-text-muted">Setting specific permissions for {selectedAdmin.name}</p>
+                            </div>
+                            <button onClick={() => setIsPermissionModalOpen(false)} className="p-2 hover:bg-white rounded-full transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-xl mb-6">
+                                <p className="text-xs text-yellow-600 font-medium">
+                                    Saving these overrides will ignore the user's role-based defaults and use this specific list instead.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                                {allPossiblePermissions.map((perm, idx) => {
+                                    const showGroup = idx === 0 || allPossiblePermissions[idx - 1].group !== perm.group;
+                                    return (
+                                        <div key={perm.id}>
+                                            {showGroup && (
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 mt-4 px-1">{perm.group}</h4>
+                                            )}
+                                            <label className={cn(
+                                                "flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer group/item",
+                                                editedPermissions.includes(perm.id)
+                                                    ? "bg-primary/5 border-primary/20 ring-4 ring-primary/5"
+                                                    : "bg-white border-border-custom hover:border-text-muted/30"
+                                            )}>
+                                                <div className={cn(
+                                                    "mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all",
+                                                    editedPermissions.includes(perm.id) ? "bg-primary border-primary" : "border-border-custom"
+                                                )}>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="hidden"
+                                                        checked={editedPermissions.includes(perm.id)}
+                                                        onChange={() => togglePermission(perm.id)}
+                                                    />
+                                                    {editedPermissions.includes(perm.id) && <Check size={14} className="text-white" />}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="text-xs font-bold text-foreground flex items-center gap-2">
+                                                        {perm.name}
+                                                    </div>
+                                                    <div className="text-[10px] text-text-muted font-medium mt-0.5 leading-relaxed">
+                                                        {perm.description}
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+
+                            <div className="flex gap-3 mt-8">
+                                <button
+                                    onClick={() => setIsPermissionModalOpen(false)}
+                                    className="flex-1 py-3 border border-border-custom text-text-muted rounded-xl font-bold hover:bg-background-soft transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={savePermissions}
+                                    className="flex-1 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition-all shadow-md shadow-primary/20"
+                                >
+                                    Save Overrides
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

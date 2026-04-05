@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, User, UserCheck, UserX, Clock, X, CheckSquare, AlertCircle, Building, FileText } from "lucide-react"
+import { Search, User, UserCheck, UserX, Clock, X, CheckSquare, AlertCircle, Building, FileText, Shield } from "lucide-react"
 import { cn } from "@/lib/utils"
 import adminService from "@/data/services/adminService"
+import useAuthStore from "@/data/store/useAuthStore"
 
 interface Retailer {
     _id: string;
@@ -33,11 +34,29 @@ interface Retailer {
     };
 }
 
+import useAdminStore from "@/data/store/useAdminStore"
+
 export default function RetailersPage() {
-    const [retailers, setRetailers] = useState<Retailer[]>([])
-    const [loading, setLoading] = useState(true)
-    const [filter, setFilter] = useState("under_review")
-    const [searchTerm, setSearchTerm] = useState("")
+    const [mounted, setMounted] = useState(false)
+    const { user } = useAuthStore()
+    const { 
+        retailersData, 
+        loadingRetailers: loading, 
+        fetchRetailers,
+        retailersSearchQuery: searchTerm,
+        setRetailersSearchQuery: setSearchTerm,
+        activeRetailerTab: filter,
+        setActiveRetailerTab: setFilter
+    } = useAdminStore()
+
+    const currentUserPermissions = user?.permissions && user.permissions.length > 0
+        ? user.permissions
+        : (user?.roleId?.permissions || []);
+
+    const canView = currentUserPermissions.includes("RETAILERS_VIEW")
+    const canEdit = currentUserPermissions.includes("RETAILERS_EDIT")
+    const canApprove = currentUserPermissions.includes("RETAILERS_APPROVE")
+
     const [selectedRetailer, setSelectedRetailer] = useState<Retailer | null>(null)
     const [rejectionReason, setRejectionReason] = useState("")
     const [actionLoading, setActionLoading] = useState(false)
@@ -51,32 +70,20 @@ export default function RetailersPage() {
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1)
-    const [totalPages, setTotalPages] = useState(1)
-    const [totalItems, setTotalItems] = useState(0)
     const limit = 10
 
     useEffect(() => {
-        setCurrentPage(1)
-        fetchRetailers(1)
-    }, [filter, searchTerm])
+        setMounted(true)
+        fetchRetailers(filter, currentPage, limit, searchTerm)
+    }, [fetchRetailers, filter, currentPage, searchTerm])
 
     useEffect(() => {
-        fetchRetailers(currentPage)
-    }, [currentPage])
+        setCurrentPage(1)
+    }, [filter, searchTerm])
 
-    const fetchRetailers = async (page: number) => {
-        setLoading(true)
-        try {
-            const response = await adminService.getRetailers(filter, page, limit, searchTerm)
-            setRetailers(response.data)
-            setTotalPages(response.pagination.totalPages)
-            setTotalItems(response.pagination.totalRetailers)
-        } catch (error) {
-            console.error("Error fetching retailers:", error)
-        } finally {
-            setLoading(false)
-        }
-    }
+    const retailers = retailersData?.data || []
+    const totalPages = retailersData?.pagination?.totalPages || 1
+    const totalItems = retailersData?.pagination?.totalRetailers || 0
 
     const handleUpdateStatus = async (userId: string, status: string) => {
         if (status === "rejected" && !rejectionReason) {
@@ -91,7 +98,7 @@ export default function RetailersPage() {
             setTimeout(() => {
                 setSelectedRetailer(null)
                 setRejectionReason("")
-                fetchRetailers(currentPage)
+                fetchRetailers(filter, currentPage, limit, searchTerm, true) // Force refresh
             }, 1000)
         } catch (error: unknown) {
             console.error(error)
@@ -114,7 +121,7 @@ export default function RetailersPage() {
             setTimeout(() => {
                 setIsDeleteModalOpen(false)
                 setSelectedRetailer(null)
-                fetchRetailers(currentPage)
+                fetchRetailers(filter, currentPage, limit, searchTerm, true) // Force refresh
             }, 1000)
         } catch (error: unknown) {
             console.error(error)
@@ -129,6 +136,16 @@ export default function RetailersPage() {
 
     // Filtered locally only if needed, but we now use server-side search
     const filteredRetailers = retailers
+
+    if (!canView) return (
+        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-border-custom shadow-sm text-center">
+            <div className="w-16 h-16 bg-red-50 text-red-400 rounded-full flex items-center justify-center mb-4">
+                <AlertCircle size={32} />
+            </div>
+            <h2 className="text-xl font-bold text-foreground">Access Restricted</h2>
+            <p className="text-text-muted mt-2 max-w-xs">You do not have permission to view the Retailer Management module.</p>
+        </div>
+    )
 
     return (
         <div className="space-y-6">
@@ -186,7 +203,7 @@ export default function RetailersPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border-custom text-sm">
-                                {filteredRetailers.map((ret) => (
+                                {filteredRetailers.map((ret: Retailer) => (
                                     <tr key={ret._id} className="hover:bg-background-soft/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col">
@@ -216,15 +233,19 @@ export default function RetailersPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <button
-                                                onClick={() => setSelectedRetailer(ret)}
-                                                className={cn(
-                                                    "px-4 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest transition-all",
-                                                    "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-600 hover:text-white"
-                                                )}
-                                            >
-                                                View
-                                            </button>
+                                            {canEdit ? (
+                                                <button
+                                                    onClick={() => setSelectedRetailer(ret)}
+                                                    className={cn(
+                                                        "px-4 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest transition-all",
+                                                        "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-600 hover:text-white"
+                                                    )}
+                                                >
+                                                    View & Handle
+                                                </button>
+                                            ) : (
+                                                <span className="text-[10px] font-bold text-text-muted uppercase italic tracking-widest">Read Only</span>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -402,49 +423,59 @@ export default function RetailersPage() {
 
                             {/* Right Col: Actions */}
                             <div className="space-y-8">
-                                <section>
-                                    <h3 className="font-bold text-[#FF6B00] text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
-                                        <AlertCircle size={14} /> Reason
-                                    </h3>
-                                    <div className="space-y-4">
-                                        <textarea
-                                            placeholder="Write rejection reason here (mandatory for rejection)"
-                                            value={rejectionReason}
-                                            onChange={e => setRejectionReason(e.target.value)}
-                                            className="w-full h-32 px-4 py-3 rounded-2xl border border-gray-200 outline-none focus:ring-2 focus:ring-red-500/10 text-sm"
-                                        />
+                                {canApprove ? (
+                                    <section>
+                                        <h3 className="font-bold text-[#FF6B00] text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+                                            <AlertCircle size={14} /> Decision Actions
+                                        </h3>
+                                        <div className="space-y-4">
+                                            <textarea
+                                                placeholder="Write rejection reason here (mandatory for rejection)"
+                                                value={rejectionReason}
+                                                onChange={e => setRejectionReason(e.target.value)}
+                                                className="w-full h-32 px-4 py-3 rounded-2xl border border-gray-200 outline-none focus:ring-2 focus:ring-red-500/10 text-sm"
+                                            />
 
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <button
-                                                disabled={actionLoading}
-                                                onClick={() => handleUpdateStatus(selectedRetailer._id, "rejected")}
-                                                className="py-4 rounded-2xl bg-red-50 text-red-600 font-bold hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
-                                            >
-                                                <UserX size={18} /> Reject
-                                            </button>
-                                            <button
-                                                disabled={actionLoading}
-                                                onClick={() => handleUpdateStatus(selectedRetailer._id, "approved")}
-                                                className="py-4 rounded-2xl bg-[#1B2D1F] text-white font-bold hover:bg-[#2A3E2D] hover:shadow-xl transition-all shadow-lg flex items-center justify-center gap-2"
-                                            >
-                                                <UserCheck size={18} /> Approve
-                                            </button>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <button
+                                                    disabled={actionLoading}
+                                                    onClick={() => handleUpdateStatus(selectedRetailer._id, "rejected")}
+                                                    className="py-4 rounded-2xl bg-red-50 text-red-600 font-bold hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                                                >
+                                                    <UserX size={18} /> Reject
+                                                </button>
+                                                <button
+                                                    disabled={actionLoading}
+                                                    onClick={() => handleUpdateStatus(selectedRetailer._id, "approved")}
+                                                    className="py-4 rounded-2xl bg-[#1B2D1F] text-white font-bold hover:bg-[#2A3E2D] hover:shadow-xl transition-all shadow-lg flex items-center justify-center gap-2"
+                                                >
+                                                    <UserCheck size={18} /> Approve
+                                                </button>
+                                            </div>
                                         </div>
+                                    </section>
+                                ) : (
+                                    <div className="p-8 bg-background-soft rounded-[32px] border border-border-custom text-center">
+                                        <Shield size={32} className="mx-auto text-text-muted mb-4" />
+                                        <p className="text-sm font-bold text-foreground">Action Restricted</p>
+                                        <p className="text-xs text-text-muted mt-1">You can view details but do not have authority to Approve or Reject applications.</p>
                                     </div>
-                                </section>
+                                )}
 
                                 <div className="p-6 rounded-2xl bg-blue-50 border border-blue-100 italic text-xs text-blue-800 leading-relaxed">
                                     &quot;Approving will grant the retailer immediate access to their dashboard and all selling features. They will receive an automated email notification.&quot;
                                 </div>
 
-                                <div className="pt-4 flex justify-end">
-                                    <button
-                                        onClick={() => setIsDeleteModalOpen(true)}
-                                        className="px-6 py-3 rounded-xl bg-red-50 text-red-600 text-xs font-bold hover:bg-red-600 hover:text-white transition-all border border-red-100 flex items-center gap-2"
-                                    >
-                                        <UserX size={14} /> Permanently Remove Retailer
-                                    </button>
-                                </div>
+                                {canApprove && (
+                                    <div className="pt-4 flex justify-end">
+                                        <button
+                                            onClick={() => setIsDeleteModalOpen(true)}
+                                            className="px-6 py-3 rounded-xl bg-red-50 text-red-600 text-xs font-bold hover:bg-red-600 hover:text-white transition-all border border-red-100 flex items-center gap-2"
+                                        >
+                                            <UserX size={14} /> Permanently Remove Retailer
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -453,11 +484,11 @@ export default function RetailersPage() {
 
             {/* Delete Confirmation Modal */}
             {isDeleteModalOpen && (
-                <div 
+                <div
                     className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300"
                     onClick={() => setIsDeleteModalOpen(false)}
                 >
-                    <div 
+                    <div
                         className="bg-white rounded-[24px] w-full max-w-md p-8 shadow-2xl animate-in zoom-in-95 duration-300"
                         onClick={e => e.stopPropagation()}
                     >
@@ -469,7 +500,7 @@ export default function RetailersPage() {
                             <p className="text-gray-500 text-sm leading-relaxed">
                                 This will <span className="font-bold text-red-600">permanently remove</span> this retailer and all their data from their panel. Access to the app will be lost immediately.
                             </p>
-                            
+
                             <div className="flex flex-col w-full gap-3 pt-4">
                                 <button
                                     disabled={actionLoading}

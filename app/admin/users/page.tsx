@@ -1,9 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Clock, Eye, X, User, Mail, Phone, MapPin, Calendar } from "lucide-react"
+import { Search, Clock, Eye, X, User, Mail, Phone, MapPin, Calendar, AlertCircle, Shield } from "lucide-react"
 import { cn } from "@/lib/utils"
 import adminService from "@/data/services/adminService"
+import useAuthStore from "@/data/store/useAuthStore"
+import useAdminStore from "@/data/store/useAdminStore"
 
 interface Address {
     label: string;
@@ -24,39 +26,53 @@ interface AppUser {
 }
 
 export default function UsersPage() {
-    const [users, setUsers] = useState<AppUser[]>([])
-    const [loading, setLoading] = useState(true)
-    const [searchTerm, setSearchTerm] = useState("")
+    const [mounted, setMounted] = useState(false)
+    const { user } = useAuthStore()
+    const { 
+        usersData, 
+        loadingUsers: loading, 
+        fetchUsers,
+        usersSearchQuery: searchTerm,
+        setUsersSearchQuery: setSearchTerm
+    } = useAdminStore()
+    
+    const currentUserPermissions = user?.permissions && user.permissions.length > 0
+        ? user.permissions
+        : (user?.roleId?.permissions || []);
+
+    const canView = currentUserPermissions.includes("APP_USERS_VIEW")
+    const canEditUser = currentUserPermissions.includes("APP_USERS_EDIT")
+
     const [selectedUser, setSelectedUser] = useState<AppUser | null>(null)
 
-    // Pagination state
+    // Pagination state (local for UI, but data is in store)
     const [currentPage, setCurrentPage] = useState(1)
-    const [totalPages, setTotalPages] = useState(1)
-    const [totalItems, setTotalItems] = useState(0)
     const limit = 10
 
     useEffect(() => {
-        setCurrentPage(1)
-        fetchUsers(1)
-    }, [searchTerm])
+        setMounted(true)
+        fetchUsers(currentPage, limit, searchTerm)
+    }, [fetchUsers, currentPage, searchTerm])
 
     useEffect(() => {
-        fetchUsers(currentPage)
-    }, [currentPage])
+        setCurrentPage(1)
+    }, [searchTerm])
 
-    const fetchUsers = async (page: number) => {
-        setLoading(true)
-        try {
-            const response = await adminService.getUsers(page, limit, searchTerm)
-            setUsers(response.data)
-            setTotalPages(response.pagination.totalPages)
-            setTotalItems(response.pagination.totalUsers)
-        } catch (error) {
-            console.error("Error fetching users:", error)
-        } finally {
-            setLoading(false)
-        }
-    }
+    const users = usersData?.data || []
+    const totalPages = usersData?.pagination?.totalPages || 1
+    const totalItems = usersData?.pagination?.totalUsers || 0
+
+    if (!mounted) return null
+
+    if (!canView) return (
+        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-border-custom shadow-sm text-center my-12">
+            <div className="w-16 h-16 bg-red-50 text-red-400 rounded-full flex items-center justify-center mb-4">
+                <User size={32} />
+            </div>
+            <h2 className="text-xl font-bold text-foreground">Access Restricted</h2>
+            <p className="text-text-muted mt-2 max-w-xs">You do not have permission to view the User Management module.</p>
+        </div>
+    )
 
     return (
         <div className="space-y-6">
@@ -97,7 +113,7 @@ export default function UsersPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border-custom text-sm">
-                                {users.map((user) => (
+                                {users.map((user: AppUser) => (
                                     <tr key={user._id} className="hover:bg-background-soft/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -129,15 +145,21 @@ export default function UsersPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <button
-                                                onClick={() => setSelectedUser(user)}
-                                                className={cn(
-                                                    "px-4 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest transition-all",
-                                                    "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-600 hover:text-white"
-                                                )}
-                                            >
-                                                View
-                                            </button>
+                                            {canEditUser ? (
+                                                <button
+                                                    onClick={() => setSelectedUser(user)}
+                                                    className={cn(
+                                                        "px-4 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest transition-all",
+                                                        "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-600 hover:text-white"
+                                                    )}
+                                                >
+                                                    View Profile
+                                                </button>
+                                            ) : (
+                                                <div className="w-6 h-6 mx-auto flex items-center justify-center opacity-20">
+                                                    <Shield size={14} />
+                                                </div>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

@@ -5,9 +5,19 @@ import { Users, Plus, Bike, Power, MapPin, MoreVertical, Trash2, Eye, X, Phone, 
 import retailerService from "@/data/services/retailerService"
 import { toast } from "sonner"
 
+import useRetailerStore from "@/data/store/useRetailerStore"
+
 export default function RidersPage() {
-    const [riders, setRiders] = useState<any[]>([])
-    const [loading, setLoading] = useState(true)
+    const { 
+        riders, 
+        loadingRiders: loading, 
+        fetchRiders,
+        addRider,
+        updateRider,
+        deleteRider,
+        toggleRiderStatus
+    } = useRetailerStore()
+
     const [showAddModal, setShowAddModal] = useState(false)
     const [showDetailsModal, setShowDetailsModal] = useState(false)
     const [selectedRider, setSelectedRider] = useState<any>(null)
@@ -29,21 +39,7 @@ export default function RidersPage() {
 
     useEffect(() => {
         fetchRiders()
-    }, [])
-
-    const fetchRiders = async () => {
-        try {
-            setLoading(true)
-            const response = await retailerService.getRiders()
-            if (response.success) {
-                setRiders(response.data)
-            }
-        } catch (error) {
-            toast.error("Failed to fetch riders")
-        } finally {
-            setLoading(false)
-        }
-    }
+    }, [fetchRiders])
 
     const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -56,11 +52,10 @@ export default function RidersPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         try {
-            const response = await retailerService.addRider(formData)
+            const response = await addRider(formData)
             if (response.success) {
                 toast.success("Rider added successfully")
                 setShowAddModal(false)
-                fetchRiders()
                 setFormData({ name: "", email: "", password: "", phone: "", vehicleType: "Bike", plateNumber: "" })
             }
         } catch (error: any) {
@@ -71,12 +66,11 @@ export default function RidersPage() {
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault()
         try {
-            const response = await retailerService.updateRider(selectedRider._id, editFormData)
+            const response = await updateRider(selectedRider._id, editFormData)
             if (response.success) {
                 toast.success("Rider updated successfully")
                 setIsEditMode(false)
                 setSelectedRider(response.data)
-                setRiders(riders.map((r: any) => r._id === selectedRider._id ? response.data : r))
             }
         } catch (error: any) {
             toast.error(error.response?.data?.message || "Failed to update rider")
@@ -98,10 +92,8 @@ export default function RidersPage() {
     const toggleStatus = async (riderId: string, currentStatus: string) => {
         const newStatus = currentStatus === "Offline" ? "Available" : "Offline"
         try {
-            const response = await retailerService.updateRiderStatus(riderId, newStatus)
+            const response = await toggleRiderStatus(riderId, newStatus)
             if (response.success) {
-                const updatedRiders = riders.map((r: any) => r._id === riderId ? { ...r, status: newStatus } : r)
-                setRiders(updatedRiders)
                 if (selectedRider && selectedRider._id === riderId) {
                     setSelectedRider({ ...selectedRider, status: newStatus })
                 }
@@ -116,9 +108,8 @@ export default function RidersPage() {
         if (!confirm(`Are you sure you want to delete rider ${name}?`)) return
 
         try {
-            const response = await retailerService.deleteRider(riderId)
+            const response = await deleteRider(riderId)
             if (response.success) {
-                setRiders(riders.filter((r: any) => r._id !== riderId))
                 if (showDetailsModal && selectedRider?._id === riderId) {
                     setShowDetailsModal(false)
                 }

@@ -20,31 +20,32 @@ interface Transaction {
     createdAt: string;
 }
 
+import useAdminStore from "@/data/store/useAdminStore"
+
 export default function AdminTransactionsPage() {
-    const [transactions, setTransactions] = useState<Transaction[]>([])
-    const [loading, setLoading] = useState(true)
+    const [mounted, setMounted] = useState(false)
+    const { 
+        payouts: transactions, 
+        loadingPayouts: loading, 
+        fetchPayouts 
+    } = useAdminStore()
     const [searchTerm, setSearchTerm] = useState("")
 
     useEffect(() => {
-        fetchTransactions()
-    }, [searchTerm])
+        setMounted(true)
+        fetchPayouts(searchTerm)
+    }, [fetchPayouts, searchTerm])
+
+    if (!mounted) return null
 
     const fetchTransactions = async () => {
-        setLoading(true)
-        try {
-            const data = await adminService.getPayouts(searchTerm)
-            setTransactions(data)
-        } catch (error) {
-            console.error("Error fetching transactions:", error)
-        } finally {
-            setLoading(false)
-        }
+        await fetchPayouts(searchTerm, true)
     }
 
     // Calculated Stats
-    const totalVolume = transactions.reduce((acc, curr) => acc + curr.amount, 0)
-    const settledAmount = transactions.filter(t => t.status === "Approved" || t.status === "Paid").reduce((acc, curr) => acc + curr.amount, 0)
-    const pendingAmount = transactions.filter(t => t.status === "Pending").reduce((acc, curr) => acc + curr.amount, 0)
+    const totalVolume = transactions.reduce((acc: number, curr: Transaction) => acc + curr.amount, 0)
+    const settledAmount = transactions.filter((t: Transaction) => t.status === "Approved" || t.status === "Paid").reduce((acc: number, curr: Transaction) => acc + curr.amount, 0)
+    const pendingAmount = transactions.filter((t: Transaction) => t.status === "Pending").reduce((acc: number, curr: Transaction) => acc + curr.amount, 0)
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString("en-IN", {
@@ -123,7 +124,7 @@ export default function AdminTransactionsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border-custom text-sm">
-                                {transactions.map((txn) => (
+                                {transactions.map((txn: Transaction) => (
                                     <tr key={txn._id} className="hover:bg-background-soft/50 transition-colors">
                                         <td className="px-6 py-4 font-mono text-xs text-primary font-bold">{txn.transactionId || txn._id.slice(-8).toUpperCase()}</td>
                                         <td className="px-6 py-4 font-bold">{txn.retailer?.businessDetails?.businessName || "No Shop Name"}</td>

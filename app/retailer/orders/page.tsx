@@ -11,14 +11,16 @@ import {
     Package,
     RefreshCw,
     ChevronRight,
-    Lock
+    Lock,
+    Clock
 } from "lucide-react"
 import { useRef } from "react"
 import { cn } from "@/lib/utils"
-import retailerService from "@/data/services/retailerService"
 import { toast } from "sonner"
 import * as XLSX from "xlsx"
-import socket from "@/data/api/socket"
+import useAuthStore from "@/data/store/useAuthStore"
+import useOrderStore from "@/data/store/useOrderStore"
+import useRetailerStore from "@/data/store/useRetailerStore"
 
 const statusStyles: any = {
     "New": "bg-primary-light text-primary border-primary-100",
@@ -36,11 +38,21 @@ const statusStyles: any = {
 }
 
 function OrdersContent() {
+    const { user } = useAuthStore()
     const searchParams = useSearchParams()
     const [mounted, setMounted] = useState(false)
-    const [ordersData, setOrdersData] = useState<any>(null)
-    const [riders, setRiders] = useState<any[]>([])
-    const [loading, setLoading] = useState(true)
+    
+    // Stores
+    const { 
+        orders, 
+        loading, 
+        fetchOrders, 
+        updateOrderStatus, 
+        assignRider,
+        initSocketListeners 
+    } = useOrderStore()
+    const { riders, fetchRiders } = useRetailerStore()
+
     const [searchQuery, setSearchQuery] = useState("")
     const [orderTypeFilter, setOrderTypeFilter] = useState<"All" | "Subscription" | "One-time">("All")
     const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Completed">("All")
@@ -74,98 +86,10 @@ function OrdersContent() {
         setMounted(true)
         fetchOrders()
         fetchRiders()
-
-        // Socket connection logic
-        const userId = localStorage.getItem("userId")
-        if (userId) {
-            socket.connect()
-
-            socket.on("connect", () => {
-                console.log("🟢 Connected to Socket Relay")
-                socket.emit("join", `retailer_${userId}`)
-            })
-
-            socket.on("orderUpdate", (data) => {
-                console.log("⚡ Real-time Order Update:", data)
-
-                // Helper to normalize status casing (e.g., DELIVERED -> Delivered)
-                const normalizeStatus = (s: string) => {
-                    if (!s) return s;
-                    return s.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
-                };
-
-                const newStatus = normalizeStatus(data.status);
-                toast.info(`Order Update: ${newStatus}`)
-
-                // Instant Local Update for Row and Stats
-                if (data.orderId && data.status) {
-                    setOrdersData((prev: any) => {
-                        if (!prev) return prev;
-
-                        const isExisting = prev.orders.find((o: any) => o.id === data.orderId);
-                        let updatedOrders;
-
-                        if (isExisting) {
-                            // 1. Update existing order
-                            updatedOrders = prev.orders.map((o: any) =>
-                                o.id === data.orderId ? { ...o, status: newStatus } : o
-                            );
-                        } else {
-                            // 2. Add as NEW order (likely from subscription cron or new app order)
-                            // Construct a basic UI-friendly order object from the data
-                            const newOrder = {
-                                id: data.orderId,
-                                product: data.data?.items?.map((i: any) => i.product?.name || "Product").join(", ") || (data.data?.product || "New Order"),
-                                date: new Date(data.data?.createdAt || new Date()).toLocaleString("en-IN", {
-                                    timeZone: "Asia/Kolkata",
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                    hour12: true
-                                }).replace(/\//g, "-"),
-                                price: data.data?.totalAmount || data.data?.price || "0.00",
-                                payment: data.data?.paymentStatus || "Paid",
-                                status: newStatus,
-                                orderType: data.data?.orderType || (data.orderId.startsWith("SUB-") ? "Subscription" : "One-time"),
-                                rider: data.data?.rider,
-                                subscriptionDetails: data.data?.subscriptionDetails
-                            };
-                            updatedOrders = [newOrder, ...prev.orders];
-                        }
-
-                        // 3. Recalculate basic stats for instant feedback
-                        const total = updatedOrders.length;
-                        const pending = updatedOrders.filter((o: any) => ['Pending', 'Accepted', 'Processing', 'Preparing', 'Shipped', 'Out for Delivery', 'Rider Assigned'].includes(o.status)).length;
-                        const completed = updatedOrders.filter((o: any) => ['Delivered', 'Completed'].includes(o.status)).length;
-
-                        return {
-                            ...prev,
-                            stats: {
-                                ...prev.stats,
-                                pendingOrders: pending,
-                                completedOrders: completed,
-                                completedPercentage: `${Math.round((completed / total) * 100)}%`
-                            },
-                            orders: updatedOrders
-                        };
-                    });
-                }
-
-                // Still fetch to get correct official data from server
-                fetchOrders()
-            })
-
-            socket.on("disconnect", () => {
-                console.log("🔴 Socket Disconnected")
-            })
+        if (user?._id) {
+            initSocketListeners(user._id)
         }
-
-        return () => {
-            socket.off("orderUpdate")
-            socket.disconnect()
-        }
-    }, [])
+    }, [user?._id, fetchOrders, fetchRiders, initSocketListeners])
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -177,31 +101,7 @@ function OrdersContent() {
         return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [])
 
-    const fetchRiders = async () => {
-        try {
-            const res = await retailerService.getRiders()
-            if (res.success) {
-                setRiders(res.data)
-            }
-        } catch (error) {
-            console.error("Failed to fetch riders", error)
-        }
-    }
-
-    const fetchOrders = async () => {
-        try {
-            const res = await retailerService.getOrders()
-            if (res.success) {
-                setOrdersData(res.data)
-            }
-        } catch (error) {
-            console.error("Failed to fetch shop orders", error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    if (!mounted || loading || !ordersData) {
+    if (loading || (orders.length === 0 && mounted)) {
         return <div className="space-y-6 animate-pulse p-4">
             <div className="h-12 bg-background-soft rounded-xl w-1/4" />
             <div className="grid grid-cols-4 gap-6">
@@ -211,14 +111,23 @@ function OrdersContent() {
         </div>
     }
 
+    // Since our orders logic might depend on stats from retailerService, 
+    // we'll calculate local stats based on the orders in store for consistency.
+    const orderStats = {
+        totalOrders: orders.length,
+        pendingOrders: orders.filter((o: any) => ['Pending', 'Accepted', 'Processing', 'Preparing', 'Shipped', 'Out for Delivery', 'Rider Assigned', 'Rider Accepted'].includes(o.status)).length,
+        completedOrders: orders.filter((o: any) => ['Delivered', 'Completed'].includes(o.status)).length,
+        avgOrderValue: orders.length > 0 ? `₹${Math.round(orders.reduce((acc: number, o: any) => acc + parseFloat(o.price || 0), 0) / orders.length)}` : "₹0"
+    }
+
     const stats = [
-        { title: "Total Shop Orders", value: ordersData.stats.totalOrders.toLocaleString(), change: "", trend: "up", color: "bg-primary-light text-primary", filterValue: "All" },
-        { title: "Pending Orders", value: ordersData.stats.pendingOrders.toLocaleString(), change: "", trend: "down", color: "bg-warning-50 text-warning", filterValue: "Pending" },
-        { title: "Completed", value: ordersData.stats.completedOrders.toLocaleString(), change: ordersData.stats.completedPercentage, trend: "up", color: "bg-blue-50 text-blue-600", filterValue: "Completed" },
-        { title: "Avg. Order Value", value: ordersData.stats.avgOrderValue, change: "", trend: "up", color: "bg-blue-50 text-blue-600", filterValue: null },
+        { title: "Total Shop Orders", value: orderStats.totalOrders.toLocaleString(), change: "", trend: "up", color: "bg-primary-light text-primary", filterValue: "All" },
+        { title: "Pending Orders", value: orderStats.pendingOrders.toLocaleString(), change: "", trend: "down", color: "bg-warning-50 text-warning", filterValue: "Pending" },
+        { title: "Completed", value: orderStats.completedOrders.toLocaleString(), change: "", trend: "up", color: "bg-blue-50 text-blue-600", filterValue: "Completed" },
+        { title: "Avg. Order Value", value: orderStats.avgOrderValue, change: "", trend: "up", color: "bg-blue-50 text-blue-600", filterValue: null },
     ]
 
-    const filteredOrders = ordersData.orders.filter((order: any) => {
+    const filteredOrders = orders.filter((order: any) => {
         const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
             order.product.toLowerCase().includes(searchQuery.toLowerCase())
         const matchesType = orderTypeFilter === "All" || order.orderType === orderTypeFilter
@@ -239,8 +148,8 @@ function OrdersContent() {
         currentPage * ORDERS_PER_PAGE
     )
 
-    const subscriptionCount = ordersData.orders.filter((o: any) => o.orderType === "Subscription").length
-    const oneTimeCount = ordersData.orders.filter((o: any) => o.orderType !== "Subscription").length
+    const subscriptionCount = orders.filter((o: any) => o.orderType === "Subscription").length
+    const oneTimeCount = orders.filter((o: any) => o.orderType !== "Subscription").length
 
     const handleStatusUpdate = async (orderId: string, nextStatus: string) => {
         // Confirmation dialog
@@ -248,24 +157,20 @@ function OrdersContent() {
         if (!confirmed) return
 
         try {
-            const res = await retailerService.updateOrderStatus(orderId, nextStatus)
+            const res = await updateOrderStatus(orderId, nextStatus)
             if (res.success) {
                 toast.success(`Order marked as ${nextStatus}`)
-                fetchOrders()
-            } else {
-                toast.error(res.message || "Failed to update status")
             }
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Failed to update status")
         }
     }
 
-    const handleAssignRider = async (orderId: string, riderId: string) => {
+    const handleAssignRiderSelection = async (orderId: string, riderId: string) => {
         try {
-            const res = await retailerService.assignRider(orderId, riderId)
+            const res = await assignRider(orderId, riderId)
             if (res.success) {
                 toast.success("Rider assigned successfully")
-                fetchOrders()
             }
         } catch (error) {
             console.error("Failed to assign rider", error)
@@ -273,7 +178,7 @@ function OrdersContent() {
     }
 
     const handleBulkAccept = async () => {
-        const pendingOrders = ordersData.orders.filter((o: any) => o.status === "Pending")
+        const pendingOrders = orders.filter((o: any) => o.status === "Pending")
         if (pendingOrders.length === 0) {
             toast.info("No pending orders to accept")
             return
@@ -282,28 +187,24 @@ function OrdersContent() {
         if (!window.confirm(`Are you sure you want to accept all ${pendingOrders.length} pending orders?`)) return
 
         try {
-            setLoading(true)
-            const promises = pendingOrders.map((o: any) => retailerService.updateOrderStatus(o.id, "Accepted"))
+            const promises = pendingOrders.map((o: any) => updateOrderStatus(o.id, "Accepted"))
             await Promise.all(promises)
             toast.success(`Successfully accepted ${pendingOrders.length} orders`)
-            fetchOrders()
             setShowMoreMenu(false)
         } catch (error) {
             toast.error("Failed to accept some orders")
-        } finally {
-            setLoading(false)
         }
     }
 
     const handleExport = () => {
         try {
-            if (!ordersData?.orders || ordersData.orders.length === 0) {
+            if (!orders || orders.length === 0) {
                 toast.error("No orders to export")
                 return
             }
 
             // Format data for Excel
-            const exportData = ordersData.orders.map((o: any) => ({
+            const exportData = orders.map((o: any) => ({
                 "Order ID": o.id,
                 "Type": o.orderType,
                 "Product Details": o.product,
@@ -370,7 +271,7 @@ function OrdersContent() {
                                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-border-custom shadow-xl z-[100] animate-in fade-in slide-in-from-top-2 duration-200 py-2">
                                     <button 
                                         onClick={() => {
-                                            fetchOrders();
+                                            fetchOrders(null, true);
                                             fetchRiders();
                                             setShowMoreMenu(false);
                                             toast.success("Data refreshed");
@@ -439,11 +340,6 @@ function OrdersContent() {
                                 )}>
                                     {stat.value}
                                 </h3>
-                                {stat.change && (
-                                    <span className={cn("text-xs font-bold", stat.trend === "up" ? "text-primary" : "text-red-500")}>
-                                        {stat.change}
-                                    </span>
-                                )}
                             </div>
                         </div>
                     ))}
@@ -597,7 +493,7 @@ function OrdersContent() {
                                                         >
                                                             <select
                                                                 value={order.rider?._id || ""}
-                                                                onChange={(e) => handleAssignRider(order.id, e.target.value)}
+                                                                onChange={(e) => handleAssignRiderSelection(order.id, e.target.value)}
                                                                 disabled={isLocked}
                                                                 className={cn(
                                                                     "text-xs bg-background-soft border-transparent rounded p-1 outline-none focus:ring-1 focus:ring-primary/30 transition-all w-full",
@@ -606,7 +502,7 @@ function OrdersContent() {
                                                             >
                                                                 <option value="">{isLocked ? "🔒 Locked" : "Assign Rider"}</option>
                                                                 {riders.map((rider: any) => (
-                                                                    <option key={rider._id} value={rider.user?._id}>
+                                                                    <option key={rider._id || rider.user?._id} value={rider.user?._id}>
                                                                         {rider.user?.name}
                                                                     </option>
                                                                 ))}
@@ -797,65 +693,46 @@ function OrdersContent() {
                                 )}
                             </div>
 
-                            {/* Timeline */}
-                            <div className="flex-1 overflow-y-auto p-6">
-                                <p className="text-xs text-text-muted uppercase font-bold mb-4">Status History</p>
-                                {selectedOrder.statusHistory && selectedOrder.statusHistory.length > 0 ? (
-                                    <div className="space-y-0">
-                                        {selectedOrder.statusHistory.map((entry: any, idx: number) => {
-                                            const roleColors: any = {
-                                                retailer: 'bg-blue-100 text-blue-700',
-                                                rider: 'bg-orange-100 text-orange-700',
-                                                system: 'bg-gray-100 text-gray-600',
-                                                user: 'bg-blue-100 text-blue-700'
-                                            }
-                                            const isLast = idx === selectedOrder.statusHistory.length - 1
-                                            return (
-                                                <div key={idx} className="flex gap-4">
-                                                    <div className="flex flex-col items-center">
-                                                        <div className={cn(
-                                                            "w-3 h-3 rounded-full mt-1.5 flex-shrink-0",
-                                                            isLast ? "bg-primary" : "bg-gray-200"
-                                                        )} />
-                                                        {!isLast && <div className="w-0.5 h-full bg-gray-100 mt-1" />}
-                                                    </div>
-                                                    <div className="pb-6">
-                                                        <p className="font-bold text-sm">{entry.status}</p>
-                                                        <div className="flex items-center gap-2 mt-1">
-                                                            <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full uppercase", roleColors[entry.role] || roleColors.system)}>
-                                                                {entry.role}
-                                                            </span>
-                                                            <span className="text-xs text-text-muted">
-                                                                {entry.timestamp ? new Date(entry.timestamp).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
+                            {/* Timeline Placeholder - In real app, this would be fetched history */}
+                            <div className="p-6 flex-1 overflow-y-auto">
+                                <p className="text-xs text-text-muted uppercase font-bold mb-6">Status History</p>
+                                <div className="space-y-8 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-gray-100">
+                                    <div className="flex gap-4 relative">
+                                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0 z-10 border-4 border-white shadow-sm">
+                                            <CheckCircle size={10} className="text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold">{selectedOrder.status}</p>
+                                            <p className="text-xs text-text-muted mt-1 italic">Order state updated to {selectedOrder.status}</p>
+                                            <p className="text-[10px] text-text-muted mt-1 flex items-center gap-1 font-bold">
+                                                <Clock size={10} /> Just now
+                                            </p>
+                                        </div>
                                     </div>
-                                ) : (
-                                    <p className="text-text-muted text-sm">No status history recorded yet.</p>
-                                )}
+                                    <div className="flex gap-4 relative">
+                                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center shrink-0 z-10 border-4 border-white">
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-text-muted uppercase">Pending</p>
+                                            <p className="text-xs text-text-muted mt-1 italic">Order received by the shop</p>
+                                            <p className="text-[10px] text-text-muted mt-1 flex items-center gap-1 font-bold">
+                                                <Clock size={10} /> {selectedOrder.date}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                )}
+                )
+            }
         </>
     )
 }
 
-export default function RetailerOrdersPage() {
+export default function OrdersPage() {
     return (
-        <Suspense fallback={
-            <div className="space-y-6 animate-pulse p-4">
-                <div className="h-12 bg-background-soft rounded-xl w-1/4" />
-                <div className="grid grid-cols-4 gap-6">
-                    {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-background-soft rounded-2xl" />)}
-                </div>
-                <div className="h-96 bg-background-soft rounded-2xl" />
-            </div>
-        }>
+        <Suspense fallback={<div>Loading...</div>}>
             <OrdersContent />
         </Suspense>
     )

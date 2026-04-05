@@ -38,14 +38,22 @@ import ManualCustomerModal from "@/components/retailer/ManualCustomerModal"
 import ManualOrderModal from "@/components/retailer/ManualOrderModal"
 import ManualSubscriptionModal from "@/components/retailer/ManualSubscriptionModal"
 import { useSearchParams } from "next/navigation"
+import useCustomerStore from "@/data/store/useCustomerStore"
 
 function CustomersContent() {
     const searchParams = useSearchParams()
     const [mounted, setMounted] = useState(false)
-    const [customersData, setCustomersData] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
-    const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
-    const [searchQuery, setSearchQuery] = useState("")
+    const { 
+        customersData, 
+        loading, 
+        fetchCustomers, 
+        selectedCustomer, 
+        setSelectedCustomer,
+        searchQuery,
+        setSearchQuery
+    } = useCustomerStore()
+    
+    // UI-only states remain local
     const [showHistoryModal, setShowHistoryModal] = useState(false)
     const [customerOrders, setCustomerOrders] = useState<any[]>([])
     const [historyLoading, setHistoryLoading] = useState(false)
@@ -70,13 +78,14 @@ function CustomersContent() {
 
     useEffect(() => {
         setMounted(true)
-        fetchData()
+        // No redundant loading if data exists
+        fetchCustomers()
         
         const q = searchParams.get("q") || searchParams.get("query")
         if (q) {
             setSearchQuery(q)
         }
-    }, [searchParams])
+    }, [searchParams, fetchCustomers, setSearchQuery])
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -87,22 +96,6 @@ function CustomersContent() {
         document.addEventListener("mousedown", handleClickOutside)
         return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [])
-
-    const fetchData = async () => {
-        try {
-            const res = await retailerService.getCustomers()
-            if (res.success) {
-                setCustomersData(res.data)
-                if (res.data.customers && res.data.customers.length > 0) {
-                    setSelectedCustomer(res.data.customers[0])
-                }
-            }
-        } catch (error) {
-            console.error("Failed to fetch customers", error)
-        } finally {
-            setLoading(false)
-        }
-    }
 
     const fetchPurchaseHistory = async () => {
         if (!selectedCustomer) return
@@ -120,7 +113,7 @@ function CustomersContent() {
         }
     }
 
-    if (!mounted || loading || !customersData) {
+    if (!customersData || loading) {
         return <div className="space-y-6 animate-pulse p-4">
             <div className="h-12 bg-background-soft rounded-xl w-1/4" />
             <div className="grid grid-cols-3 gap-6">
@@ -173,7 +166,7 @@ function CustomersContent() {
                             <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl border border-border-custom shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-200 py-2">
                                 <button 
                                     onClick={() => {
-                                        fetchData();
+                                        fetchCustomers();
                                         setShowMoreMenu(false);
                                         toast.success("Data refreshed");
                                     }}
@@ -242,8 +235,11 @@ function CustomersContent() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <div className="lg:col-span-3 bg-white rounded-2xl border border-border-custom shadow-sm overflow-hidden flex flex-col">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+                <div className={cn(
+                    "bg-white rounded-2xl border border-border-custom shadow-sm overflow-hidden flex flex-col transition-all duration-300",
+                    selectedCustomer ? "lg:col-span-3" : "lg:col-span-4"
+                )}>
 
                     <div className="p-6 border-b border-border-custom flex items-center justify-between">
                         <h3 className="text-lg font-bold">Customer Directory</h3>
@@ -363,8 +359,15 @@ function CustomersContent() {
 
                 </div>
 
-                {selectedCustomer ? (
-                    <div className="bg-white rounded-2xl  shadow-sm p-6 space-y-6 h-fit sticky top-6">
+                {selectedCustomer && (
+                    <div className="bg-white rounded-2xl shadow-sm p-6 space-y-6 h-fit sticky top-6 relative animate-in slide-in-from-right-4 duration-300">
+                        <button
+                            onClick={() => setSelectedCustomer(null)}
+                            className="absolute top-4 right-4 p-2 rounded-full hover:bg-background-soft transition-colors text-text-muted hover:text-text"
+                            title="Close Details"
+                        >
+                            <X size={18} />
+                        </button>
                         <div className="text-center">
                             <div className="w-20 h-20 rounded-full bg-primary-light overflow-hidden mx-auto mb-3 border-2 border-primary/20">
                                 <img src={selectedCustomer.image} alt={selectedCustomer.name} className="w-full h-full object-cover" />
@@ -444,11 +447,6 @@ function CustomersContent() {
                             View Purchase History
                             <TrendingUp size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                         </button>
-                    </div>
-                ) : (
-                    <div className="bg-white rounded-2xl border shadow-sm p-6 flex flex-col items-center justify-center text-center h-[300px] text-text-muted sticky top-6">
-                        <Users size={48} className="mb-4 opacity-20" />
-                        <p>Select a customer to view details</p>
                     </div>
                 )}
             </div>
@@ -544,7 +542,7 @@ function CustomersContent() {
             <ManualCustomerModal
                 isOpen={showAddCustomerModal}
                 onClose={() => setShowAddCustomerModal(false)}
-                onSuccess={fetchData}
+                onSuccess={fetchCustomers}
             />
 
             <ManualOrderModal
@@ -554,7 +552,7 @@ function CustomersContent() {
                     setCustomerForOrder(null)
                 }}
                 customer={customerForOrder}
-                onSuccess={fetchData}
+                onSuccess={fetchCustomers}
             />
 
             <ManualSubscriptionModal
@@ -564,7 +562,7 @@ function CustomersContent() {
                     setCustomerForOrder(null)
                 }}
                 customer={customerForOrder}
-                onSuccess={fetchData}
+                onSuccess={fetchCustomers}
             />
 
             {/* Settlement Modal */}
@@ -598,7 +596,7 @@ function CustomersContent() {
                                     try {
                                         const res = await retailerService.settleCustomerDue(selectedCustomer.id, parseFloat(settleAmount))
                                         if (res.success) {
-                                            await fetchData()
+                                            await fetchCustomers()
                                             setShowSettleModal(false)
                                         }
                                     } catch (err) {

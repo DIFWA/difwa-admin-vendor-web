@@ -18,39 +18,38 @@ interface PrepItem {
     status: 'Pending' | 'Ready' | 'Shortage';
 }
 
+import useRetailerStore from "@/data/store/useRetailerStore"
+
 export default function DailyPrepListPage() {
-    const [prepItems, setPrepItems] = useState<PrepItem[]>([])
-    const [isLoading, setIsLoading] = useState(true)
+    const {
+        prepList: prepItems,
+        loadingPrepList: isLoading,
+        fetchPrepList,
+        togglePrepItemStatus
+    } = useRetailerStore()
 
     useEffect(() => {
         fetchPrepList()
-    }, [])
+    }, [fetchPrepList])
 
-    const fetchPrepList = async () => {
-        setIsLoading(true)
-        try {
-            const response = await retailerService.getPrepList()
-            setPrepItems(response.data)
-        } catch (error) {
-            console.error("Error fetching prep list:", error)
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
-    const totalVolume = prepItems.reduce((acc, item) => acc + item.quantity, 0)
-    const totalOrders = prepItems.reduce((acc, item) => acc + item.orderCount, 0)
-    const totalRevenue = prepItems.reduce((acc, item) => acc + (item.totalRevenue || 0), 0)
+    const totalVolume = prepItems.reduce((acc: number, item: PrepItem) => acc + item.quantity, 0)
+    const totalOrders = prepItems.reduce((acc: number, item: PrepItem) => acc + item.orderCount, 0)
+    const totalRevenue = prepItems.reduce((acc: number, item: PrepItem) => acc + (item.totalRevenue || 0), 0)
 
     const toggleStatus = (id: string) => {
-        setPrepItems(items => items.map(item => {
-            if (item.id === id) {
-                const statuses: PrepItem['status'][] = ['Pending', 'Ready', 'Shortage']
-                const nextStatus = statuses[(statuses.indexOf(item.status) + 1) % 3]
-                return { ...item, status: nextStatus }
-            }
-            return item
-        }))
+        togglePrepItemStatus(id)
+    }
+
+    if (isLoading && prepItems.length === 0) {
+        return (
+            <div className="space-y-8 animate-pulse p-4">
+                <div className="h-12 bg-background-soft rounded-2xl w-1/4" />
+                <div className="h-24 bg-background-soft rounded-[32px]" />
+                <div className="grid grid-cols-4 gap-6">
+                    {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-background-soft rounded-[32px]" />)}
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -99,7 +98,7 @@ export default function DailyPrepListPage() {
 
             {/* Prep Items List */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {prepItems.map((item) => (
+                {prepItems.map((item: PrepItem) => (
                     <div
                         key={item.id}
                         onClick={() => toggleStatus(item.id)}

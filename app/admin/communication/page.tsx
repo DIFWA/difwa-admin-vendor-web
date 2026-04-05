@@ -2,9 +2,10 @@
 
 import { useState, useMemo, useEffect } from "react"
 import dynamic from "next/dynamic"
-import { BellRing, Mail, Send, Users, ShieldAlert, CheckCircle2, Layout, Smartphone } from "lucide-react"
+import { BellRing, Mail, Send, Users, ShieldAlert, CheckCircle2, Layout, Smartphone, Shield } from "lucide-react"
 import { cn } from "@/lib/utils"
 import adminService from "@/data/services/adminService"
+import useAuthStore from "@/data/store/useAuthStore"
 import "react-quill-new/dist/quill.snow.css"
 
 // Lazy Load Quill for Next.js SSR Compatibility
@@ -31,12 +32,22 @@ const editorFormats = [
     "link",
 ]
 
+import useAdminStore from "@/data/store/useAdminStore"
+
 export default function CommunicationHubPage() {
+    const [mounted, setMounted] = useState(false)
+    const { audienceCount, loadingAudience, fetchAudienceCount } = useAdminStore()
     const [activeTab, setActiveTab] = useState<'fcm' | 'email'>('fcm')
     const [sending, setSending] = useState(false)
     const [success, setSuccess] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
-    const [audienceCount, setAudienceCount] = useState<number>(0)
+
+    const { user } = useAuthStore()
+    const currentUserPermissions = user?.permissions && user.permissions.length > 0
+        ? user.permissions
+        : (user?.roleId?.permissions || []);
+
+    const canSend = currentUserPermissions.includes("COMMUNICATION_SEND")
 
     // FCM State
     const [fcmData, setFcmData] = useState({
@@ -51,18 +62,12 @@ export default function CommunicationHubPage() {
         content: ""
     })
 
-    const fetchAudienceStats = async () => {
-        try {
-            const res = await adminService.getRetailers("approved", 1, 1)
-            setAudienceCount(res.pagination.totalRetailers)
-        } catch (err) {
-            console.error("Failed to fetch audience stats", err)
-        }
-    }
-
     useEffect(() => {
-        fetchAudienceStats()
-    }, [])
+        setMounted(true)
+        fetchAudienceCount()
+    }, [fetchAudienceCount])
+
+    if (!mounted) return null
 
     const handleSendFcm = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -99,6 +104,16 @@ export default function CommunicationHubPage() {
             setSending(false)
         }
     }
+
+    if (!canSend) return (
+        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-border-custom shadow-sm text-center my-12">
+            <div className="w-16 h-16 bg-red-50 text-red-400 rounded-full flex items-center justify-center mb-4">
+                <Shield size={32} />
+            </div>
+            <h2 className="text-xl font-bold text-foreground">Access Restricted</h2>
+            <p className="text-text-muted mt-2 max-w-xs">You do not have permission to access the Communication Hub or send broadcasts.</p>
+        </div>
+    )
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">

@@ -5,34 +5,33 @@ import { Percent, Save, History, Info, AlertCircle, CheckCircle2 } from "lucide-
 import adminService from "@/data/services/adminService"
 import { toast } from "sonner"
 
+import useAdminStore from "@/data/store/useAdminStore"
+
 export default function CommissionPage() {
-    const [setting, setSetting] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
+    const [mounted, setMounted] = useState(false)
+    const { 
+        commissionData: setting, 
+        loadingCommission: loading, 
+        fetchCommissionData 
+    } = useAdminStore()
     const [updating, setUpdating] = useState(false)
     const [newRate, setNewRate] = useState("")
     const [description, setDescription] = useState("")
     const [note, setNote] = useState("")
 
     useEffect(() => {
-        fetchCommissionSetting()
-    }, [])
+        setMounted(true)
+        fetchCommissionData()
+    }, [fetchCommissionData])
 
-    const fetchCommissionSetting = async () => {
-        setLoading(true)
-        try {
-            const res = await adminService.getCommissionSetting()
-            if (res.success) {
-                setSetting(res.data)
-                setNewRate(res.data.rate.toString())
-                setDescription(res.data.description || "")
-            }
-        } catch (error) {
-            console.error("Error fetching commission:", error)
-            toast.error("Failed to load commission settings")
-        } finally {
-            setLoading(false)
+    useEffect(() => {
+        if (setting) {
+            setNewRate(setting.rate.toString())
+            setDescription(setting.description || "")
         }
-    }
+    }, [setting])
+
+    if (!mounted) return null
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -45,7 +44,7 @@ export default function CommissionPage() {
             )
             if (res.success) {
                 toast.success("Commission rate updated successfully")
-                setSetting(res.data)
+                await fetchCommissionData(true) // Force refresh
                 setNote("")
             }
         } catch (error: any) {

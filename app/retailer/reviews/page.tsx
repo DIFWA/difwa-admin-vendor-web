@@ -5,30 +5,23 @@ import { Star, Search, MoreVertical, MessageSquare, ThumbsUp, MessageCircle } fr
 import { cn } from "@/lib/utils"
 import retailerService from "@/data/services/retailerService"
 
+import useRetailerStore from "@/data/store/useRetailerStore"
+
 export default function RetailerReviewsPage() {
     const [mounted, setMounted] = useState(false)
-    const [loading, setLoading] = useState(true)
-    const [reviewData, setReviewData] = useState<any>(null)
+    const { 
+        reviewData, 
+        loadingReviews: loading, 
+        fetchReviews 
+    } = useRetailerStore()
+    
     const [filter, setFilter] = useState("All")
     const [searchQuery, setSearchQuery] = useState("")
 
     useEffect(() => {
         setMounted(true)
         fetchReviews()
-    }, [])
-
-    const fetchReviews = async () => {
-        try {
-            const res = await retailerService.getReviews()
-            if (res.success) {
-                setReviewData(res.data)
-            }
-        } catch (error) {
-            console.error("Failed to fetch reviews", error)
-        } finally {
-            setLoading(false)
-        }
-    }
+    }, [fetchReviews])
 
     if (!mounted || loading || !reviewData) {
         return (

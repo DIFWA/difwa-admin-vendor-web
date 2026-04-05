@@ -12,13 +12,15 @@ import {
     Download,
     Package,
     RefreshCw,
-    Eye
+    Eye,
+    Shield
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import adminService from "@/data/services/adminService"
 import { toast } from "sonner"
 import * as XLSX from "xlsx"
 import socket from "@/data/api/socket"
+import useAuthStore from "@/data/store/useAuthStore"
 
 const statusStyles: any = {
     "New": "bg-primary-light text-primary border-primary-100",
@@ -35,25 +37,39 @@ const statusStyles: any = {
     "Cancelled": "bg-red-50 text-red-600 border-red-100",
 }
 
+import useAdminStore from "@/data/store/useAdminStore"
+
 function AdminOrdersContent() {
+    const { user } = useAuthStore()
+    const { 
+        ordersData, 
+        loadingOrders: loadingState, 
+        fetchOrders 
+    } = useAdminStore()
+
+    const currentUserPermissions = user?.permissions && user.permissions.length > 0
+        ? user.permissions
+        : (user?.roleId?.permissions || []);
+
+    const canView = currentUserPermissions.includes("ORDERS_VIEW")
+    const canEditOrder = currentUserPermissions.includes("ORDERS_EDIT")
+
     const searchParams = useSearchParams()
     const [mounted, setMounted] = useState(false)
-    const [ordersData, setOrdersData] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
     const [statusFilter, setStatusFilter] = useState("All")
     const [typeFilter, setTypeFilter] = useState("All")
     const [currentPage, setCurrentPage] = useState(1)
-    const [totalPages, setTotalPages] = useState(1)
-    const [totalItems, setTotalItems] = useState(0)
     const [selectedOrder, setSelectedOrder] = useState<any>(null)
     const ORDERS_PER_PAGE = 10
+
+    const loading = !ordersData || loadingState
 
     useEffect(() => {
         setMounted(true)
         
-        // Initial fetch
-        fetchOrders(1, searchQuery, statusFilter, typeFilter)
+        // Initial fetch with current params
+        performFetch(currentPage, searchQuery, statusFilter, typeFilter)
 
         // Socket connection logic for Admin
         socket.connect()
@@ -66,7 +82,7 @@ function AdminOrdersContent() {
         socket.on("orderUpdate", (data) => {
             console.log("⚡ Real-time Order Update (Admin):", data)
             toast.info(`Order Update: ${data.orderId} is now ${data.status}`)
-            fetchOrders(currentPage, searchQuery, statusFilter, typeFilter) // Refresh with current filters
+            performFetch(currentPage, searchQuery, statusFilter, typeFilter, true) // Force refresh
         })
 
         return () => {
@@ -80,37 +96,27 @@ function AdminOrdersContent() {
         if (!mounted) return;
         
         const timeoutId = setTimeout(() => {
-            fetchOrders(currentPage, searchQuery, statusFilter, typeFilter)
+            performFetch(currentPage, searchQuery, statusFilter, typeFilter)
         }, 300);
 
         return () => clearTimeout(timeoutId);
-    }, [currentPage, searchQuery, statusFilter, typeFilter])
+    }, [currentPage, searchQuery, statusFilter, typeFilter, mounted])
 
-    const fetchOrders = async (page: number, search: string, status: string, type: string) => {
-        setLoading(true)
-        try {
-            const params: any = {
-                page,
-                limit: ORDERS_PER_PAGE,
-                search
-            };
+    const performFetch = async (page: number, search: string, status: string, type: string, force = false) => {
+        const params: any = {
+            page,
+            limit: ORDERS_PER_PAGE,
+            search
+        };
 
-            if (status !== "All") params.status = status;
-            if (type !== "All") params.type = type;
+        if (status !== "All") params.status = status;
+        if (type !== "All") params.type = type;
 
-            const res = await adminService.getOrders(params)
-            if (res.success) {
-                setOrdersData(res.data)
-                setTotalPages(res.pagination.totalPages)
-                setTotalItems(res.pagination.totalOrders)
-            }
-        } catch (error) {
-            console.error("Failed to fetch admin orders", error)
-            toast.error("Failed to load orders")
-        } finally {
-            setLoading(false)
-        }
+        await fetchOrders(params, force)
     }
+
+    const totalPages = ordersData?.pagination?.totalPages || 1
+    const totalItems = ordersData?.pagination?.totalOrders || 0
 
     if (!mounted || !ordersData) {
         return <div className="space-y-6 animate-pulse p-4">
@@ -154,6 +160,16 @@ function AdminOrdersContent() {
         }
     }
 
+    if (!canView) return (
+        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-border-custom shadow-sm text-center my-12">
+            <div className="w-16 h-16 bg-red-50 text-red-400 rounded-full flex items-center justify-center mb-4">
+                <Package size={32} />
+            </div>
+            <h2 className="text-xl font-bold text-foreground">Access Restricted</h2>
+            <p className="text-text-muted mt-2 max-w-xs">You do not have permission to view the Order Management module.</p>
+        </div>
+    )
+
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between">
@@ -162,13 +178,15 @@ function AdminOrdersContent() {
                     <p className="text-text-muted">Monitor and track every order across all shops.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={handleExport}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary transition-all text-sm font-medium shadow-md shadow-primary/20"
-                    >
-                        <Download size={16} />
-                        Export All
-                    </button>
+                    {canEditOrder && (
+                        <button
+                            onClick={handleExport}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary transition-all text-sm font-medium shadow-md shadow-primary/20"
+                        >
+                            <Download size={16} />
+                            Export All
+                        </button>
+                    )}
                     <button className="p-2 rounded-lg border bg-white hover:bg-background-soft">
                         <Filter size={18} />
                     </button>
@@ -321,12 +339,18 @@ function AdminOrdersContent() {
                                             </span>
                                         </td>
                                         <td className="px-1 py-4">
-                                            <button 
-                                                onClick={() => setSelectedOrder(order)}
-                                                className="p-1 hover:bg-primary-light text-text-muted hover:text-primary rounded-md transition-all"
-                                            >
-                                                <Eye size={16} />
-                                            </button>
+                                            {canEditOrder ? (
+                                                <button 
+                                                    onClick={() => setSelectedOrder(order)}
+                                                    className="p-1 hover:bg-primary-light text-text-muted hover:text-primary rounded-md transition-all"
+                                                >
+                                                    <Eye size={16} />
+                                                </button>
+                                            ) : (
+                                                <div className="w-6 h-6 flex items-center justify-center opacity-20">
+                                                    <Shield size={14} />
+                                                </div>
+                                            )}
                                         </td>
                                     </tr>
                                 ))

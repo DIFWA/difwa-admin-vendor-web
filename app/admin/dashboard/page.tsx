@@ -66,31 +66,22 @@ function TrashIcon(props: React.SVGProps<SVGSVGElement>) {
     )
 }
 
+import useAdminStore from "@/data/store/useAdminStore"
+
 export default function Dashboard() {
     const [mounted, setMounted] = useState(false)
-    const [statsData, setStatsData] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
+    const { 
+        stats: statsData, 
+        loadingStats: loading, 
+        fetchDashboardStats 
+    } = useAdminStore()
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         setMounted(true)
-        fetchData()
-    }, [])
+        fetchDashboardStats()
+    }, [fetchDashboardStats])
 
-    const fetchData = async () => {
-        try {
-            const res = await adminService.getDashboardStats()
-            if (res.success) {
-                setStatsData(res.data)
-            }
-        } catch (error) {
-            console.error("Failed to fetch dashboard stats", error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    if (!mounted || loading || !statsData) {
+    if (!mounted || (loading && !statsData) || !statsData) {
         return <div className="space-y-6 animate-pulse text-foreground">
             <div className="h-20 bg-background-soft rounded-2xl w-1/3" />
             <div className="grid grid-cols-4 gap-6">

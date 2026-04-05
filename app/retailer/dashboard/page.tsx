@@ -27,46 +27,35 @@ import {
 } from "recharts"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import retailerService from "@/data/services/retailerService"
+import useRetailerStore from "@/data/store/useRetailerStore"
 import { toast } from "sonner"
 
 export default function RetailerDashboard() {
     const [mounted, setMounted] = useState(false)
-    const [shopActive, setShopActive] = useState<boolean>(true)
+    const { 
+        stats: statsData, 
+        loading, 
+        isShopActive,
+        fetchDashboardStats, 
+        toggleShopStatus 
+    } = useRetailerStore()
+    
     const [actionLoading, setActionLoading] = useState(false)
-    const [statsData, setStatsData] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
     const [showStatusModal, setShowStatusModal] = useState(false)
 
     useEffect(() => {
         setMounted(true)
-        fetchData()
-    }, [])
-
-    const fetchData = async () => {
-        try {
-            const res = await retailerService.getDashboardStats()
-            if (res.success) {
-                setStatsData(res.data)
-                if (res.data.stats.isShopActive !== undefined) {
-                    setShopActive(res.data.stats.isShopActive)
-                }
-            }
-        } catch (error) {
-            console.error("Failed to fetch dashboard stats", error)
-        } finally {
-            setLoading(false)
-        }
-    }
+        fetchDashboardStats()
+    }, [fetchDashboardStats])
 
     const handleToggle = async () => {
         // Only show confirmation when OPENING the shop
-        if (!shopActive) {
+        if (!isShopActive) {
             setShowStatusModal(true)
             return
         }
         
-        // Closing the shop (direct toggle for now, or could also ask)
+        // Closing the shop
         executeToggle()
     }
 
@@ -74,9 +63,8 @@ export default function RetailerDashboard() {
         setActionLoading(true)
         setShowStatusModal(false)
         try {
-            const res = await retailerService.toggleShopStatus()
+            const res = await toggleShopStatus()
             if (res.success) {
-                setShopActive(res.isShopActive)
                 toast.success(res.isShopActive ? "Shop is now ONLINE" : "Shop is now OFFLINE")
             }
         } catch (error) {
@@ -87,7 +75,7 @@ export default function RetailerDashboard() {
         }
     }
 
-    if (!mounted || loading || !statsData) {
+    if (loading || (!statsData && mounted)) {
         return <div className="space-y-6 animate-pulse p-4">
             <div className="h-24 bg-background-soft rounded-[40px] w-full" />
             <div className="h-48 bg-background-soft rounded-[40px] w-full" />
@@ -99,10 +87,10 @@ export default function RetailerDashboard() {
     }
 
     const staticCards = [
-        { title: "My Total Sales", value: `₹${statsData.stats.totalRevenue.toLocaleString()}`, change: "", trend: "up", icon: DollarSign, color: "bg-primary-light text-primary", href: "/retailer/revenue" },
-        { title: "My Orders", value: statsData.stats.totalOrders.toLocaleString(), change: "", trend: "up", icon: ShoppingCart, color: "bg-blue-50 text-blue-600", href: "/retailer/orders" },
-        { title: "Active Products", value: statsData.stats.activeProducts.toLocaleString(), change: "", trend: "neutral", icon: Package, color: "bg-blue-50 text-blue-600", href: "/retailer/products" },
-        { title: "My Customers", value: statsData.stats.totalCustomers.toLocaleString(), change: "", trend: "up", icon: Users, color: "bg-purple-50 text-purple-600", href: "/retailer/customers" },
+        { title: "My Total Sales", value: `₹${statsData?.stats?.totalRevenue?.toLocaleString() || 0}`, change: "", trend: "up", icon: DollarSign, color: "bg-primary-light text-primary", href: "/retailer/revenue" },
+        { title: "My Orders", value: statsData?.stats?.totalOrders?.toLocaleString() || 0, change: "", trend: "up", icon: ShoppingCart, color: "bg-blue-50 text-blue-600", href: "/retailer/orders" },
+        { title: "Active Products", value: statsData?.stats?.activeProducts?.toLocaleString() || 0, change: "", trend: "neutral", icon: Package, color: "bg-blue-50 text-blue-600", href: "/retailer/products" },
+        { title: "My Customers", value: statsData?.stats?.totalCustomers?.toLocaleString() || 0, change: "", trend: "up", icon: Users, color: "bg-purple-50 text-purple-600", href: "/retailer/customers" },
     ]
 
     // Time Formatter for Activity Feed
@@ -152,13 +140,13 @@ export default function RetailerDashboard() {
                             disabled={actionLoading}
                             className={cn(
                                 "flex items-center gap-3 px-6 py-2.5 rounded-full font-black text-xs uppercase tracking-[0.1em] transition-all border-2",
-                                shopActive
+                                isShopActive
                                     ? "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100"
                                     : "bg-red-50 text-red-600 border-red-100 hover:bg-red-100"
                             )}
                         >
-                            <div className={cn("w-2 h-2 rounded-full", shopActive ? "bg-blue-500 animate-pulse" : "bg-red-500")} />
-                            {shopActive ? "Shop is Open" : "Shop is Closed"}
+                            <div className={cn("w-2 h-2 rounded-full", isShopActive ? "bg-blue-500 animate-pulse" : "bg-red-500")} />
+                            {isShopActive ? "Shop is Open" : "Shop is Closed"}
                         </button>
                     </div>
                 </div>
@@ -251,7 +239,7 @@ export default function RetailerDashboard() {
                     <h3 className="text-lg font-bold mb-6">Sales Performance (Last 7 Days)</h3>
                     <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={statsData.chartData}>
+                            <AreaChart data={statsData?.chartData || []}>
                                 <defs>
                                     <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor="#0096FF" stopOpacity={0.1} />
@@ -278,7 +266,7 @@ export default function RetailerDashboard() {
                     </div>
 
                     <div className="flex-1 space-y-6 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
-                        {statsData.recentActivities && statsData.recentActivities.length > 0 ? (
+                        {statsData?.recentActivities && statsData.recentActivities.length > 0 ? (
                             statsData.recentActivities.map((activity: any) => {
                                 const { icon: Icon, color, bg } = getActivityIcon(activity.type, activity.status);
                                 return (

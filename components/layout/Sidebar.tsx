@@ -19,7 +19,8 @@ import {
     Wallet,
     BellRing,
     CalendarCheck,
-    Percent
+    Percent,
+    Droplets
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
@@ -29,22 +30,22 @@ const adminMenu = [
     {
         title: "Main menu",
         items: [
-            { name: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard", id: "DASHBOARD" },
-            { name: "Retailers", icon: Users, href: "/admin/retailers", id: "RETAILERS" },
-            { name: "App Users", icon: Users, href: "/admin/users", id: "APP_USERS" },
-            { name: "Order Management", icon: ShoppingCart, href: "/admin/orders", id: "ORDERS" },
-            { name: "Categories", icon: Layers, href: "/admin/categories", id: "CATEGORIES" },
-            { name: "Payout Settlements", icon: Wallet, href: "/admin/payouts", id: "PAYOUTS" },
-            { name: "Commission System", icon: Percent, href: "/admin/commission", id: "COMMISSION" },
-            { name: "Communication Hub", icon: BellRing, href: "/admin/communication", id: "COMMUNICATION" },
-            { name: "Transaction", icon: ArrowLeftRight, href: "/admin/transactions", id: "TRANSACTIONS" },
+            { name: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard", id: "DASHBOARD_VIEW" },
+            { name: "Retailers", icon: Users, href: "/admin/retailers", id: "RETAILERS_VIEW" },
+            { name: "App Users", icon: Users, href: "/admin/users", id: "APP_USERS_VIEW" },
+            { name: "Order Management", icon: ShoppingCart, href: "/admin/orders", id: "ORDERS_VIEW" },
+            { name: "Categories", icon: Layers, href: "/admin/categories", id: "CATEGORIES_VIEW" },
+            { name: "Payout Settlements", icon: Wallet, href: "/admin/payouts", id: "PAYOUTS_VIEW" },
+            { name: "Commission System", icon: Percent, href: "/admin/commission", id: "COMMISSION_EDIT" },
+            { name: "Communication Hub", icon: BellRing, href: "/admin/communication", id: "COMMUNICATION_SEND" }, // Use specific permission
+            { name: "Transaction", icon: ArrowLeftRight, href: "/admin/transactions", id: "PAYOUTS_VIEW" }, // Use Payouts view as base
         ]
     },
     {
         title: "Admin Control",
         items: [
-            { name: "Admin role", icon: UserCog, href: "/admin/roles", id: "ROLES" },
-            { name: "Control Authority", icon: ShieldCheck, href: "/admin/authority", id: "AUTHORITY" },
+            { name: "Admin role", icon: UserCog, href: "/admin/roles", id: "ROLES_EDIT" },
+            { name: "Control Authority", icon: ShieldCheck, href: "/admin/authority", id: "AUTHORITY_EDIT" },
         ]
     }
 ]
@@ -58,6 +59,7 @@ const retailerMenu = [
             { name: "Orders", icon: ShoppingCart, href: "/retailer/orders" },
             { name: "Riders", icon: Users, href: "/retailer/riders" },
             { name: "Daily Prep List", icon: CalendarCheck, href: "/retailer/prep-list" },
+            { name: "Smart Tank", icon: Droplets, href: "/retailer/smart-tank" },
             { name: "Reviews", icon: Star, href: "/retailer/reviews" },
             { name: "Store Settings", icon: UserCog, href: "/retailer/settings" },
         ]
@@ -99,18 +101,26 @@ export default function Sidebar() {
     const filterMenuItems = (menu: any[]) => {
         if (role !== "admin") return menu;
 
-        const permissions = user?.roleId?.permissions || [];
+        // PRIORITIZE: User's custom overrides if they exist, otherwise fallback to role permissions
+        const permissions = user?.permissions && user.permissions.length > 0
+            ? user.permissions
+            : (user?.roleId?.permissions || []);
 
         // Items that are ALWAYS visible to ANY admin (so they don't get locked out)
-        const alwaysVisible = ["DASHBOARD", "COMMISSION"];
+        const alwaysVisible = ["DASHBOARD_VIEW", "COMMISSION_EDIT"];
 
         return menu.map(group => ({
             ...group,
-            items: group.items.filter((item: any) =>
-                !item.id ||
-                permissions.includes(item.id) ||
-                alwaysVisible.includes(item.id)
-            )
+            items: group.items.filter((item: any) => {
+                if (!item.id) return true;
+                if (alwaysVisible.includes(item.id)) return true;
+                if (permissions.includes(item.id)) return true;
+
+                // Overlapping logic
+                if (item.id === "ROLES_EDIT" && permissions.includes("AUTHORITY_EDIT")) return true;
+
+                return false;
+            })
         })).filter(group => group.items.length > 0);
     };
 

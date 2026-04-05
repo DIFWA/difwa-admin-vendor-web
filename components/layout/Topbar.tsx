@@ -18,15 +18,22 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import useAuthStore from "@/data/store/useAuthStore"
-import socket from "@/data/api/socket"
-import notificationService from "@/data/services/notificationService"
+import socketService from "@/data/socket"
+import useNotificationStore from "@/data/store/useNotificationStore"
 import retailerService from "@/data/services/retailerService"
 import { toast } from "sonner"
 
 export default function Topbar() {
     const { user } = useAuthStore()
-    const [notifications, setNotifications] = useState<any[]>([])
-    const [unreadCount, setUnreadCount] = useState(0)
+    const { 
+        notifications, 
+        unreadCount, 
+        fetchNotifications, 
+        markAsRead, 
+        markAllAsRead,
+        initSocketListeners 
+    } = useNotificationStore()
+
     const [showDropdown, setShowDropdown] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
     const searchRef = useRef<HTMLDivElement>(null)
@@ -41,20 +48,7 @@ export default function Topbar() {
         if (!user?._id) return
 
         fetchNotifications()
-
-        // Socket logic for notifications
-        socket.connect()
-        const room = `retailer_notifications_${user._id}`
-        socket.emit("join", room)
-
-        socket.on("notification", (newNotif: any) => {
-            setNotifications(prev => [newNotif, ...prev])
-            setUnreadCount(prev => prev + 1)
-            toast.info(newNotif.title, {
-                description: newNotif.message
-                // radius: "lg"
-            })
-        })
+        initSocketListeners(user._id)
 
         // Click outside to close dropdowns
         const handleClickOutside = (event: MouseEvent) => {
@@ -68,10 +62,9 @@ export default function Topbar() {
         document.addEventListener("mousedown", handleClickOutside)
 
         return () => {
-            socket.off("notification")
             document.removeEventListener("mousedown", handleClickOutside)
         }
-    }, [user?._id])
+    }, [user?._id, fetchNotifications, initSocketListeners])
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -101,37 +94,13 @@ export default function Topbar() {
         }
     }
 
-    const fetchNotifications = async () => {
-        try {
-            const res = await notificationService.getNotifications()
-            if (res.success) {
-                setNotifications(res.notifications)
-                setUnreadCount(res.notifications.filter((n: any) => !n.isRead).length)
-            }
-        } catch (error) {
-            console.error("Failed to fetch notifications", error)
-        }
-    }
-
     const handleMarkAsRead = async (id: string) => {
-        try {
-            await notificationService.markAsRead(id)
-            setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n))
-            setUnreadCount(prev => Math.max(0, prev - 1))
-        } catch (error) {
-            console.error("Failed to mark as read", error)
-        }
+        await markAsRead(id)
     }
 
     const handleMarkAllAsRead = async () => {
-        try {
-            await notificationService.markAllAsRead()
-            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
-            setUnreadCount(0)
-            toast.success("All notifications marked as read")
-        } catch (error) {
-            console.error("Failed to mark all as read", error)
-        }
+        await markAllAsRead()
+        toast.success("All notifications marked as read")
     }
 
     const handleNotificationClick = async (n: any) => {
@@ -361,7 +330,7 @@ export default function Topbar() {
                                     </div>
                                 ) : (
                                     <div className="divide-y divide-border-custom">
-                                        {notifications.map((n) => (
+                                        {notifications.map((n: any) => (
                                             <div
                                                 key={n._id}
                                                 className={cn(

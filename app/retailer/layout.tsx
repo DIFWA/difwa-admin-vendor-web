@@ -8,16 +8,16 @@ import { cn } from "@/lib/utils"
 import useAuthStore from "@/data/store/useAuthStore"
 
 export default function RetailerLayout({ children }: { children: React.ReactNode }) {
+    const [mounted, setMounted] = useState(false)
     const router = useRouter()
 
     const { user, checkAuth, loading } = useAuthStore()
 
     useEffect(() => {
+        setMounted(true)
         const verifyStatus = async () => {
-            // If store is still loading (either login or checkAuth is in progress), wait.
-            if (loading) return
 
-            // If user isn't in store, try checkAuth
+            if (loading) return
             if (!user) {
                 const userId = localStorage.getItem("userId")
                 const token = localStorage.getItem("token")
@@ -30,7 +30,6 @@ export default function RetailerLayout({ children }: { children: React.ReactNode
                 return
             }
 
-            // At this point user exists
             if (user.role !== "retailer") {
                 router.replace("/login")
                 return
@@ -48,7 +47,7 @@ export default function RetailerLayout({ children }: { children: React.ReactNode
     const status = user?.status || null;
     const hasToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-    if (loading || (!user && hasToken)) {
+    if (mounted && (loading || (!user && hasToken))) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA]">
                 <div className="w-10 h-10 border-4 border-[#FF6B00]/20 border-t-[#FF6B00] rounded-full animate-spin" />
@@ -59,10 +58,10 @@ export default function RetailerLayout({ children }: { children: React.ReactNode
 
     return (
         <div className="flex h-screen bg-background">
-            {status === "approved" && <Sidebar />}
+            {(mounted && status === "approved") && <Sidebar />}
             <div className="flex-1 flex flex-col min-w-0">
-                {status === "approved" && <Topbar />}
-                <main className={cn("flex-1 overflow-y-auto overflow-x-hidden", status === "approved" ? "p-6" : "p-0")}>
+                {(mounted && status === "approved") && <Topbar />}
+                <main className={cn("flex-1 overflow-y-auto overflow-x-hidden", (mounted && status === "approved") ? "p-6" : "p-0")}>
                     {children}
                 </main>
             </div>

@@ -27,10 +27,18 @@ interface Payout {
     processedAt?: string;
 }
 
+import useAdminStore from "@/data/store/useAdminStore"
+
 export default function AdminPayoutsPage() {
-    const [payouts, setPayouts] = useState<Payout[]>([])
-    const [loading, setLoading] = useState(true)
-    const [searchTerm, setSearchTerm] = useState("")
+    const [mounted, setMounted] = useState(false)
+    const {
+        payouts,
+        loadingPayouts: loading,
+        fetchPayouts,
+        payoutSearchQuery: searchTerm,
+        setPayoutSearchQuery: setSearchTerm
+    } = useAdminStore()
+
     const [filterStatus, setFilterStatus] = useState("All")
     const [selectedPayout, setSelectedPayout] = useState<Payout | null>(null)
     const [showModal, setShowModal] = useState(false)
@@ -38,27 +46,16 @@ export default function AdminPayoutsPage() {
     const [actionLoading, setActionLoading] = useState(false)
 
     useEffect(() => {
-        fetchPayouts()
-    }, [])
-
-    const fetchPayouts = async () => {
-        setLoading(true)
-        try {
-            const data = await adminService.getPayouts()
-            setPayouts(data)
-        } catch (error) {
-            console.error("Error fetching payouts:", error)
-        } finally {
-            setLoading(false)
-        }
-    }
+        setMounted(true)
+        fetchPayouts(searchTerm)
+    }, [fetchPayouts, searchTerm])
 
     const handleApprove = async () => {
         if (!selectedPayout || !transactionId) return
         setActionLoading(true)
         try {
             await adminService.approvePayout(selectedPayout._id, transactionId)
-            fetchPayouts()
+            await fetchPayouts(searchTerm, true)
             setShowModal(false)
             setSelectedPayout(null)
             setTransactionId("")
@@ -69,7 +66,7 @@ export default function AdminPayoutsPage() {
         }
     }
 
-    const filteredPayouts = payouts.filter(p => {
+    const filteredPayouts = payouts.filter((p: Payout) => {
         const matchesSearch = p.retailer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.retailer.businessDetails?.businessName?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesFilter = filterStatus === "All" || p.status === filterStatus;
@@ -77,10 +74,12 @@ export default function AdminPayoutsPage() {
     })
 
     const stats = {
-        total: payouts.reduce((acc, p) => acc + p.amount, 0),
-        pending: payouts.filter(p => p.status === 'Pending').reduce((acc, p) => acc + p.amount, 0),
-        approved: payouts.filter(p => p.status === 'Approved').reduce((acc, p) => acc + p.amount, 0)
+        total: payouts.reduce((acc: number, p: Payout) => acc + p.amount, 0),
+        pending: payouts.filter((p: Payout) => p.status === 'Pending').reduce((acc: number, p: Payout) => acc + p.amount, 0),
+        approved: payouts.filter((p: Payout) => p.status === 'Approved').reduce((acc: number, p: Payout) => acc + p.amount, 0)
     }
+
+    if (!mounted) return null
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -187,7 +186,7 @@ export default function AdminPayoutsPage() {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredPayouts.map((payout) => (
+                                filteredPayouts.map((payout: Payout) => (
                                     <tr key={payout._id} className="hover:bg-background-soft/30 transition-colors group">
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-4">

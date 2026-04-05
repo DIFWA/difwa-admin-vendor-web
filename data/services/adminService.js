@@ -164,7 +164,24 @@ const adminService = {
     updateCommissionRate: async (rate, description = "", note = "") => {
         const response = await apiClient.put("/commission", { rate, description, note });
         return response.data;
+    },
+
+    // Admin User Management
+    getAdmins: async () => {
+        const response = await apiClient.get("/admin/admins");
+        return response.data;
+    },
+
+    updateAdminUser: async (id, data) => {
+        const response = await apiClient.put(`/admin/admins/${id}`, data);
+        return response.data;
+    },
+
+    deleteAdmin: async (id) => {
+        const response = await apiClient.delete(`/admin/admins/${id}`);
+        return response.data;
     }
 };
+
 
 export default adminService;
