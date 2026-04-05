@@ -175,7 +175,16 @@ const retailerService = {
     getDueOrdersForCustomer: async (customerId) => {
         const response = await apiClient.get(`/retailer/customers/${customerId}/due-orders`);
         return response.data;
+    },
+    // Bulk process orders - assign riders and set to Processing
+bulkProcessOrders: async () => {
+    try {
+        const response = await api.post('/retailer/orders/bulk-process');
+        return response.data;
+    } catch (error) {
+        throw error;
     }
+}
 };
 
 export default retailerService;

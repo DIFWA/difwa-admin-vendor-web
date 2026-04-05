@@ -19,6 +19,8 @@ import retailerService from "@/data/services/retailerService"
 import { toast } from "sonner"
 import * as XLSX from "xlsx"
 import socket from "@/data/api/socket"
+import { Check } from "lucide-react";
+
 
 const statusStyles: any = {
     "New": "bg-primary-light text-primary border-primary-100",
@@ -30,12 +32,15 @@ const statusStyles: any = {
     "Preparing": "bg-indigo-50 text-indigo-600 border-indigo-100",
     "Shipped": "bg-blue-50 text-blue-600 border-blue-100",
     "Out for Delivery": "bg-orange-50 text-orange-600 border-orange-100",
-    "Delivered": "bg-blue-50 text-blue-600 border-blue-100",
-    "Completed": "bg-blue-50 text-blue-600 border-blue-100",
+  "Delivered": "bg-green-50 text-green-600 border-green-100", 
+    "Completed": "bg-green-50 text-green-600 border-green-100",
     "Cancelled": "bg-red-50 text-red-100 border-red-100",
 }
 
 function OrdersContent() {
+    const [autoProcessEnabled, setAutoProcessEnabled] = useState(false)
+const autoProcessInterval = useRef<NodeJS.Timeout | null>(null)
+
     const searchParams = useSearchParams()
     const [mounted, setMounted] = useState(false)
     const [ordersData, setOrdersData] = useState<any>(null)
@@ -46,7 +51,7 @@ function OrdersContent() {
     const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Completed">("All")
     const [selectedOrder, setSelectedOrder] = useState<any>(null)
     const [currentPage, setCurrentPage] = useState(1)
-    
+
     // Tooltip State
     const [hoveredOrderId, setHoveredOrderId] = useState<string | null>(null)
     const [tooltipStep, setTooltipStep] = useState(1)
@@ -177,6 +182,55 @@ function OrdersContent() {
         return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [])
 
+// Auto-process orders when toggle is ON
+useEffect(() => {
+    if (autoProcessEnabled) {
+        // Run immediately when enabled
+        autoProcessOrders();
+        
+        // Then run every 30 seconds
+        autoProcessInterval.current = setInterval(() => {
+            autoProcessOrders();
+        }, 30000);
+    } else {
+        if (autoProcessInterval.current) {
+            clearInterval(autoProcessInterval.current);
+            autoProcessInterval.current = null;
+        }
+    }
+    
+    return () => {
+        if (autoProcessInterval.current) {
+            clearInterval(autoProcessInterval.current);
+        }
+    };
+}, [autoProcessEnabled]);
+
+// Auto-refresh orders every 10 seconds (add after other useEffects)
+useEffect(() => {
+    const refreshInterval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            fetchOrders();
+            fetchRiders();
+        }
+    }, 10000);
+    
+    return () => clearInterval(refreshInterval);
+}, []);
+
+const autoProcessOrders = async () => {
+    try {
+        const res = await retailerService.bulkProcessOrders();
+        if (res.success && res.processed > 0) {
+            console.log(`🤖 Auto-processed ${res.processed} orders`);
+            fetchOrders();
+            fetchRiders();
+        }
+    } catch (error) {
+        console.error("Auto-process error:", error);
+    }
+};
+
     const fetchRiders = async () => {
         try {
             const res = await retailerService.getRiders()
@@ -192,6 +246,10 @@ function OrdersContent() {
         try {
             const res = await retailerService.getOrders()
             if (res.success) {
+                console.log("📦 ORDERS RECEIVED:", res.data.orders?.length, "orders");
+                if (res.data.orders?.length > 0) {
+                    console.log("🚴 First order rider:", JSON.stringify(res.data.orders[0].rider, null, 2));
+                }
                 setOrdersData(res.data)
             }
         } catch (error) {
@@ -242,23 +300,62 @@ function OrdersContent() {
     const subscriptionCount = ordersData.orders.filter((o: any) => o.orderType === "Subscription").length
     const oneTimeCount = ordersData.orders.filter((o: any) => o.orderType !== "Subscription").length
 
-    const handleStatusUpdate = async (orderId: string, nextStatus: string) => {
-        // Confirmation dialog
-        const confirmed = window.confirm(`Are you sure you want to mark this order as "${nextStatus}"?`)
-        if (!confirmed) return
+    // const handleStatusUpdate = async (orderId: string, nextStatus: string) => {
+    //     // Confirmation dialog
+    //     const confirmed = window.confirm(`Are you sure you want to mark this order as "${nextStatus}"?`)
+    //     if (!confirmed) return
 
-        try {
-            const res = await retailerService.updateOrderStatus(orderId, nextStatus)
-            if (res.success) {
-                toast.success(`Order marked as ${nextStatus}`)
-                fetchOrders()
-            } else {
-                toast.error(res.message || "Failed to update status")
-            }
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Failed to update status")
-        }
+    //     try {
+    //         const res = await retailerService.updateOrderStatus(orderId, nextStatus)
+    //         if (res.success) {
+    //             toast.success(`Order marked as ${nextStatus}`)
+    //             fetchOrders()
+    //         } else {
+    //             toast.error(res.message || "Failed to update status")
+    //         }
+    //     } catch (error: any) {
+    //         toast.error(error?.response?.data?.message || "Failed to update status")
+    //     }
+    // }
+
+    const handleStatusUpdate = async (orderId: string, nextStatus: string) => {
+  // Find the order first
+  const order = ordersData?.orders.find((o: any) => o.id === orderId);
+  
+  // Validation rules
+  if (nextStatus === "Completed" && order?.status === "Rider Assigned") {
+    // This is valid - can go from Rider Assigned to Completed
+    const confirmed = window.confirm(`Mark order ${orderId} as Completed?`);
+    if (!confirmed) return;
+  } 
+  else if (nextStatus === "Completed" && order?.status === "Processing") {
+    // Check if rider is assigned for Processing status
+    const hasRider = order.rider && (order.rider.name || order.rider.user?.name);
+    if (!hasRider) {
+      toast.error("Please assign a rider before marking as Completed");
+      return;
     }
+    const confirmed = window.confirm(`Mark order ${orderId} as Completed?`);
+    if (!confirmed) return;
+  }
+  else {
+    // Default confirmation for other status changes
+    const confirmed = window.confirm(`Are you sure you want to mark this order as "${nextStatus}"?`);
+    if (!confirmed) return;
+  }
+
+  try {
+    const res = await retailerService.updateOrderStatus(orderId, nextStatus);
+    if (res.success) {
+      toast.success(`Order marked as ${nextStatus}`);
+      fetchOrders(); // Refresh the data
+    } else {
+      toast.error(res.message || "Failed to update status");
+    }
+  } catch (error: any) {
+    toast.error(error?.response?.data?.message || "Failed to update status");
+  }
+};
 
     const handleAssignRider = async (orderId: string, riderId: string) => {
         try {
@@ -266,6 +363,7 @@ function OrdersContent() {
             if (res.success) {
                 toast.success("Rider assigned successfully")
                 fetchOrders()
+                fetchRiders()
             }
         } catch (error) {
             console.error("Failed to assign rider", error)
@@ -347,7 +445,8 @@ function OrdersContent() {
                         <h1 className="text-2xl font-bold tracking-tight">Shop Orders</h1>
                         <p className="text-text-muted">Manage and fulfill your customer orders.</p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    {/* <div className="flex items-center gap-3">
+                        
                         <button
                             onClick={handleExport}
                             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary transition-all text-sm font-medium shadow-md shadow-primary/20"
@@ -356,7 +455,7 @@ function OrdersContent() {
                             Export List
                         </button>
                         <div className="relative" ref={moreMenuRef}>
-                            <button 
+                            <button
                                 onClick={() => setShowMoreMenu(!showMoreMenu)}
                                 className={cn(
                                     "p-2 rounded-lg border transition-all",
@@ -365,10 +464,10 @@ function OrdersContent() {
                             >
                                 <MoreVertical size={18} />
                             </button>
-                            
+
                             {showMoreMenu && (
                                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-border-custom shadow-xl z-[100] animate-in fade-in slide-in-from-top-2 duration-200 py-2">
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             fetchOrders();
                                             fetchRiders();
@@ -380,14 +479,14 @@ function OrdersContent() {
                                         <RefreshCw size={16} className="text-primary" />
                                         Refresh Data
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={handleBulkAccept}
                                         className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-background-soft transition-colors"
                                     >
                                         <CheckCircle size={16} className="text-emerald-500" />
                                         Accept All Pending
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             window.print();
                                             setShowMoreMenu(false);
@@ -400,8 +499,111 @@ function OrdersContent() {
                                 </div>
                             )}
                         </div>
-                    </div>
-                </div>
+                    </div> */}
+<div className="flex items-center gap-3">
+    {/* Attractive Auto-Process Toggle Button */}
+    <button
+        onClick={() => {
+            const newState = !autoProcessEnabled;
+            setAutoProcessEnabled(newState);
+            if (newState) {
+                toast.success("🤖 Auto-Process Mode ACTIVATED", {
+                    description: "Orders will be automatically processed every 30 seconds",
+                    duration: 3000,
+                });
+                // Run immediately when enabled
+                autoProcessOrders();
+            } else {
+                toast.info("⏹️ Auto-Process Mode DEACTIVATED", {
+                    description: "Manual mode only",
+                    duration: 3000,
+                });
+            }
+        }}
+        className={cn(
+            "relative flex items-center gap-3 px-5 py-2.5 rounded-xl transition-all duration-300 font-semibold text-sm shadow-lg",
+            autoProcessEnabled 
+                ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-green-500/30 hover:shadow-green-500/50 hover:scale-105" 
+                : "bg-gradient-to-r from-gray-500 to-gray-600 text-white/90 shadow-gray-500/20 hover:shadow-gray-500/40 hover:scale-105"
+        )}
+    >
+        <div className={cn(
+            "absolute inset-0 rounded-xl bg-white/20 transition-opacity duration-300",
+            autoProcessEnabled ? "opacity-100 animate-pulse" : "opacity-0"
+        )} />
+        <RefreshCw size={18} className={cn(
+            "transition-all duration-500",
+            autoProcessEnabled && "animate-spin"
+        )} />
+        <span className="relative z-10">
+            {autoProcessEnabled ? "⚡ AUTO-PROCESS ACTIVE" : "🔘 AUTO-PROCESS OFF"}
+        </span>
+        {autoProcessEnabled && (
+            <span className="relative z-10 flex items-center gap-1 text-xs bg-white/20 px-2 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 bg-green-300 rounded-full animate-pulse" />
+                LIVE
+            </span>
+        )}
+    </button>
+
+    {/* Export List Button */}
+    <button
+        onClick={handleExport}
+        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary transition-all text-sm font-medium shadow-md shadow-primary/20"
+    >
+        <Download size={16} />
+        Export List
+    </button>
+    
+    {/* More Options Menu */}
+    <div className="relative" ref={moreMenuRef}>
+        <button
+            onClick={() => setShowMoreMenu(!showMoreMenu)}
+            className={cn(
+                "p-2 rounded-lg border transition-all",
+                showMoreMenu ? "bg-primary/10 border-primary text-primary" : "bg-white hover:bg-background-soft border-border-custom text-text-muted"
+            )}
+        >
+            <MoreVertical size={18} />
+        </button>
+
+        {showMoreMenu && (
+            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-border-custom shadow-xl z-[100] animate-in fade-in slide-in-from-top-2 duration-200 py-2">
+                <button
+                    onClick={() => {
+                        fetchOrders();
+                        fetchRiders();
+                        setShowMoreMenu(false);
+                        toast.success("Data refreshed");
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-background-soft transition-colors"
+                >
+                    <RefreshCw size={16} className="text-primary" />
+                    Refresh Data
+                </button>
+                <button
+                    onClick={handleBulkAccept}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-background-soft transition-colors"
+                >
+                    <CheckCircle size={16} className="text-emerald-500" />
+                    Accept All Pending
+                </button>
+                <button
+                    onClick={() => {
+                        window.print();
+                        setShowMoreMenu(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-background-soft transition-colors"
+                >
+                    <Download size={16} className="text-blue-500" />
+                    Print/Save View
+                </button>
+            </div>
+        )}
+    </div>
+</div>
+
+        </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {stats.map((stat, index) => (
@@ -571,136 +773,308 @@ function OrdersContent() {
                                                     {order.status}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 relative group/rider">
-                                                {(() => {
-                                                    const isLocked = ["New", "Pending", "Accepted"].includes(order.status);
-                                                    
-                                                    const handleMouseEnter = () => {
-                                                        if (!isLocked) return;
-                                                        if (leaveTimer.current) clearTimeout(leaveTimer.current);
-                                                        setTooltipStep(1); // Always reset to step 1 on new hover
-                                                        setHoveredOrderId(order.id);
-                                                    };
+                                          
 
-                                                    const handleMouseLeave = () => {
-                                                        leaveTimer.current = setTimeout(() => {
-                                                            setHoveredOrderId(null);
-                                                            setTooltipStep(1);
-                                                        }, 500);
-                                                    };
+<td className="px-6 py-4 relative group/rider">
+  {(() => {
+    const isLocked = ["New", "Pending", "Accepted"].includes(order.status);
+    
+    // IMPROVED: Get rider name from multiple sources
+    // const getRiderName = () => {
+    //   // Direct populated data
+    //   if (order.rider?.user?.name) return order.rider.user.name;
+    //   if (order.rider?.name) return order.rider.name;
+      
+    //   // Find from riders array by ID
+    //   if (order.rider) {
+    //     const riderId = typeof order.rider === 'object' ? order.rider._id : order.rider;
+    //     const foundRider = riders.find(r => 
+    //       r._id === riderId || 
+    //       r.user?._id === riderId ||
+    //       String(r._id) === String(riderId)
+    //     );
+    //     if (foundRider) return foundRider.user?.name || foundRider.name;
+    //   }
+    //   return '';
+    // };
+    const normalizeId = (id: any) => {
+        if (!id && id !== 0) return "";
+        if (typeof id === "string") return id;
+        if (typeof id === "object" && typeof id.toString === "function") return id.toString();
+        return String(id);
+    };
 
-                                                    return (
-                                                        <div 
-                                                            className="relative"
-                                                            onMouseEnter={handleMouseEnter}
-                                                            onMouseLeave={handleMouseLeave}
-                                                        >
-                                                            <select
-                                                                value={order.rider?._id || ""}
-                                                                onChange={(e) => handleAssignRider(order.id, e.target.value)}
-                                                                disabled={isLocked}
-                                                                className={cn(
-                                                                    "text-xs bg-background-soft border-transparent rounded p-1 outline-none focus:ring-1 focus:ring-primary/30 transition-all w-full",
-                                                                    isLocked ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-primary/30"
-                                                                )}
-                                                            >
-                                                                <option value="">{isLocked ? "🔒 Locked" : "Assign Rider"}</option>
-                                                                {riders.map((rider: any) => (
-                                                                    <option key={rider._id} value={rider.user?._id}>
-                                                                        {rider.user?.name}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
+    const getRiderName = () => {
+        if (!order.rider) return "";
 
-                                                            {/* Custom Interactive Tooltip */}
-                                                            {hoveredOrderId === order.id && isLocked && (
-                                                                <div 
-                                                                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-white border border-border-custom p-3 rounded-xl shadow-xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200"
-                                                                    onMouseEnter={() => {
-                                                                        if (leaveTimer.current) clearTimeout(leaveTimer.current);
-                                                                    }}
-                                                                >
-                                                                    <div className="text-[11px] leading-relaxed text-text font-medium flex flex-col gap-2">
-                                                                        {(() => {
-                                                                            const targetStatus = order.status === "Pending" ? "Accepted" : "Processing";
-                                                                            const actionGoal = order.status === "Pending" ? "Accept order" : "mark as processing";
-                                                                            
-                                                                            if (tooltipStep === 1) {
-                                                                                return (
-                                                                                    <div className="flex items-start gap-2">
-                                                                                        <div className="mt-0.5 text-primary"><CheckCircle size={14} /></div>
-                                                                                        <p>Mark order as <span className="font-bold text-primary">{targetStatus}</span> to assign a rider.</p>
-                                                                                    </div>
-                                                                                );
-                                                                            }
-                                                                            
-                                                                            return (
-                                                                                <div className="flex items-start gap-2">
-                                                                                    <div className="mt-0.5 text-primary"><CheckCircle size={14} /></div>
-                                                                                    <p>Click on check icon to {actionGoal}, then assign rider.</p>
-                                                                                </div>
-                                                                            );
-                                                                        })()}
-                                                                        
-                                                                        <div className="flex justify-end border-t pt-2 mt-1">
-                                                                            <button 
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    setTooltipStep(tooltipStep === 1 ? 2 : 1);
-                                                                                }}
-                                                                                className="p-1 hover:bg-primary/10 rounded-full text-primary transition-colors border border-primary/20"
-                                                                            >
-                                                                                <ChevronRight size={14} className={cn("transition-transform", tooltipStep === 2 && "rotate-180")} />
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                    {/* Tooltip Arrow */}
-                                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-8 border-transparent border-t-white drop-shadow-sm"></div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })()}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <button
-                                                        onClick={() => setSelectedOrder(order)}
-                                                        className="p-2 hover:bg-primary-light text-text-muted hover:text-primary rounded-lg transition-colors"
-                                                        title="View status history"
-                                                    >
-                                                        <Eye size={18} />
-                                                    </button>
-                                                    {(() => {
-                                                        let nextStatus = ""
-                                                        let isTerminal = false
+        // Direct populated User object
+        if (typeof order.rider === "object") {
+            if (order.rider.name) return order.rider.name;
+            if (order.rider.user?.name) return order.rider.user.name;
 
-                                                        if (order.status === "Pending") {
-                                                            nextStatus = "Accepted"
-                                                        } else if (order.status === "Accepted") {
-                                                            nextStatus = "Processing"
-                                                        } else {
-                                                            isTerminal = true
-                                                        }
+            const riderId = normalizeId(order.rider._id);
+            if (riderId) {
+                const foundRider = riders.find(r => {
+                    const rUserId = normalizeId(r.user?._id);
+                    const rId = normalizeId(r._id);
+                    return rUserId === riderId || rId === riderId;
+                });
+                if (foundRider) return foundRider.user?.name || foundRider.name;
+            }
+        }
 
-                                                        return (
-                                                            <button
-                                                                onClick={() => !isTerminal && handleStatusUpdate(order.id, nextStatus)}
-                                                                disabled={isTerminal}
-                                                                className={cn(
-                                                                    "p-2 rounded-lg transition-colors",
-                                                                    isTerminal
-                                                                        ? "text-gray-300 cursor-not-allowed"
-                                                                        : "hover:bg-blue-50 text-text-muted hover:text-blue-600"
-                                                                )}
-                                                                title={isTerminal ? (order.status === "Delivered" ? "Order Delivered" : "No further retailer actions") : `Mark as ${nextStatus}`}
-                                                            >
-                                                                <CheckCircle size={18} />
-                                                            </button>
-                                                        )
-                                                    })()}
-                                                </div>
-                                            </td>
+        if (typeof order.rider === "string") {
+            const foundRider = riders.find(r => {
+                const rUserId = normalizeId(r.user?._id);
+                const rId = normalizeId(r._id);
+                return rUserId === order.rider || rId === order.rider;
+            });
+            if (foundRider) return foundRider.user?.name || foundRider.name;
+        }
+
+        return "";
+    };
+
+    const getCurrentRiderId = () => {
+      if (order.rider?._id) return normalizeId(order.rider._id);
+      if (order.rider?.user?._id) return normalizeId(order.rider.user._id);
+      if (typeof order.rider === 'string') return order.rider;
+      return "";
+    };
+    
+    const assignedRiderName = getRiderName();
+    const currentRiderId = getCurrentRiderId();
+    
+    const handleMouseEnter = () => {
+      if (!isLocked) return;
+      if (leaveTimer.current) clearTimeout(leaveTimer.current);
+      setTooltipStep(1);
+      setHoveredOrderId(order.id);
+    };
+    
+    const handleMouseLeave = () => {
+      leaveTimer.current = setTimeout(() => {
+        setHoveredOrderId(null);
+        setTooltipStep(1);
+      }, 500);
+    };
+    
+    return (
+      <div
+        className="relative"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <select
+          value={currentRiderId}
+          onChange={(e) => handleAssignRider(order.id, e.target.value)}
+          disabled={isLocked}
+          className={cn(
+            "text-xs bg-background-soft border-transparent rounded p-1 outline-none focus:ring-1 focus:ring-primary/30 transition-all w-full",
+            isLocked ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-primary/30"
+          )}
+        >
+          {!assignedRiderName && <option value="">Assign Rider</option>}
+          {isLocked && !assignedRiderName && <option value="">🔒 Locked</option>}
+          {assignedRiderName && (
+            <option value={currentRiderId}>✓ {assignedRiderName}</option>
+          )}
+          {riders.map((rider: any) => (
+            <option key={normalizeId(rider._id)} value={normalizeId(rider.user?._id) || normalizeId(rider._id)}>
+              {rider.user?.name || rider.name}
+            </option>
+          ))}
+        </select>
+        
+        {/* Show assigned rider badge */}
+        {assignedRiderName && (
+          <div className="text-[10px] text-primary mt-0.5 text-center truncate font-semibold">
+            {assignedRiderName}
+          </div>
+        )}
+        
+        {/* Tooltip for locked orders */}
+        {hoveredOrderId === order.id && isLocked && (
+          <div
+            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-white border border-border-custom p-3 rounded-xl shadow-xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200"
+            onMouseEnter={() => {
+              if (leaveTimer.current) clearTimeout(leaveTimer.current);
+            }}
+          >
+            <div className="text-[11px] leading-relaxed text-text font-medium flex flex-col gap-2">
+              {(() => {
+                const targetStatus = order.status === "Pending" ? "Accepted" : "Processing";
+                const actionGoal = order.status === "Pending" ? "Accept order" : "mark as processing";
+                
+                if (tooltipStep === 1) {
+                  return (
+                    <div className="flex items-start gap-2">
+                      <div className="mt-0.5 text-primary"><CheckCircle size={14} /></div>
+                      <p>Mark order as <span className="font-bold text-primary">{targetStatus}</span> to assign a rider.</p>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div className="flex items-start gap-2">
+                    <div className="mt-0.5 text-primary"><CheckCircle size={14} /></div>
+                    <p>Click on check icon to {actionGoal}, then assign rider.</p>
+                  </div>
+                );
+              })()}
+              
+              <div className="flex justify-end border-t pt-2 mt-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTooltipStep(tooltipStep === 1 ? 2 : 1);
+                  }}
+                  className="p-1 hover:bg-primary/10 rounded-full text-primary transition-colors border border-primary/20"
+                >
+                  <ChevronRight size={14} className={cn("transition-transform", tooltipStep === 2 && "rotate-180")} />
+                </button>
+              </div>
+            </div>
+            {/* Tooltip Arrow */}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-8 border-transparent border-t-white drop-shadow-sm"></div>
+          </div>
+        )}
+      </div>
+    );
+  })()}
+</td>
+
+
+<td className="px-6 py-4">
+  <div className="flex items-center justify-center gap-2">
+    {/* View status history button */}
+    <button
+      onClick={() => setSelectedOrder(order)}
+      className="p-2 hover:bg-primary-light text-text-muted hover:text-primary rounded-lg transition-colors"
+      title="View status history"
+    >
+      <Eye size={18} />
+    </button>
+
+    {/* AUTO BUTTON - First set to Processing, then assign rider */}
+    {["Pending", "Accepted", "Rider Assigned"].includes(order.status) && (
+      <button
+        onClick={async () => {
+          try {
+            // Step 1: First update status to Processing
+            const statusRes = await retailerService.updateOrderStatus(order.id, "Processing");
+            if (!statusRes.success) {
+              toast.error(statusRes.message || "Failed to update status");
+              return;
+            }
+            toast.success("Order status updated to Processing");
+            
+            // Step 2: Then assign a rider
+            const ridersRes = await retailerService.getRiders();
+            if (ridersRes.success && ridersRes.data.length > 0) {
+              const availableRiders = ridersRes.data.filter((r: any) => r.status === "Available");
+              if (availableRiders.length === 0) {
+                toast.warning("No riders available, but order is now Processing");
+                fetchOrders();
+                return;
+              }
+              const riderToAssign = availableRiders[0];
+              const assignRes = await retailerService.assignRider(order.id, riderToAssign.user?._id);
+              if (assignRes.success) {
+                toast.success(`Rider ${riderToAssign.user?.name} assigned`);
+              } else {
+                toast.warning("Order is Processing but rider assignment failed");
+              }
+            } else {
+              toast.warning("No riders found, but order is now Processing");
+            }
+            
+            fetchOrders(); // Refresh the data
+            
+          } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Auto action failed");
+          }
+        }}
+        className="p-2 hover:bg-purple-50 text-text-muted hover:text-purple-600 rounded-lg transition-colors"
+        title="Auto: Set to Processing & Assign Rider"
+      >
+        <RefreshCw size={18} />
+      </button>
+    )}
+
+    {/* Accept button - Pending to Accepted */}
+    {order.status === "Pending" && (
+      <button
+        onClick={() => handleStatusUpdate(order.id, "Accepted")}
+        className="p-2 hover:bg-blue-50 text-text-muted hover:text-blue-600 rounded-lg transition-colors"
+        title="Accept Order"
+      >
+        <CheckCircle size={18} />
+      </button>
+    )}
+    
+    {/* Process button - Accepted to Processing */}
+    {order.status === "Accepted" && (
+      <button
+        onClick={() => handleStatusUpdate(order.id, "Processing")}
+        className="p-2 hover:bg-blue-50 text-text-muted hover:text-blue-600 rounded-lg transition-colors"
+        title="Start Processing"
+      >
+        <CheckCircle size={18} />
+      </button>
+    )}
+
+    {/* Complete button - Processing to Completed */}
+    {order.status === "Processing" && (
+      <button
+        onClick={() => {
+          const hasRider = order.rider && (order.rider.name || order.rider.user?.name || order.rider._id);
+          if (!hasRider) {
+            toast.error("Please assign a rider before marking as Completed");
+            return;
+          }
+          handleStatusUpdate(order.id, "Completed");
+        }}
+        className={cn(
+          "p-2 rounded-lg transition-colors",
+          order.rider && (order.rider.name || order.rider.user?.name || order.rider._id)
+            ? "hover:bg-green-50 text-text-muted hover:text-green-600"
+            : "opacity-50 cursor-not-allowed text-gray-400"
+        )}
+        title={order.rider && (order.rider.name || order.rider.user?.name || order.rider._id) ? "Mark as Completed" : "Assign a rider first"}
+      >
+        <Check size={18} />
+      </button>
+    )}
+
+    {/* Complete button for Rider Assigned status */}
+    {order.status === "Rider Assigned" && (
+      <button
+        onClick={() => handleStatusUpdate(order.id, "Completed")}
+        className="p-2 hover:bg-green-50 text-text-muted hover:text-green-600 rounded-lg transition-colors"
+        title="Mark as Completed"
+      >
+        <Check size={18} />
+      </button>
+    )}
+
+    {/* Delivered badge */}
+    {order.status === "Delivered" && (
+      <span className="text-green-600 flex items-center gap-1 text-xs font-medium px-2 py-1 bg-green-50 rounded-lg">
+        <Check size={14} />
+        Delivered
+      </span>
+    )}
+
+    {/* Completed badge */}
+    {order.status === "Completed" && (
+      <span className="text-green-600 flex items-center gap-1 text-xs font-medium px-2 py-1 bg-green-50 rounded-lg">
+        <Check size={14} />
+        Completed
+      </span>
+    )}
+  </div>
+</td>
                                         </tr>
                                     ))
                                 )}
