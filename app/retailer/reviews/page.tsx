@@ -33,7 +33,12 @@ export default function RetailerReviewsPage() {
         )
     }
 
-    const { stats, reviews } = reviewData
+    const { stats = { 
+        averageRating: 0, 
+        totalReviews: 0, 
+        positivePercentage: 0, 
+        distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } 
+    }, reviews = [] } = reviewData || {}
 
     // Filter reviews
     const filteredReviews = reviews.filter((r: any) => {

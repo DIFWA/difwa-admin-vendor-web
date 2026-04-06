@@ -31,7 +31,9 @@ export default function StoreSettingsPage() {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const data = await retailerService.getProfile(user._id)
+                const response = await retailerService.getProfile(user._id)
+                const data = response.data || response; // Handle both direct data and {data: ...} structures
+
                 setFormData({
                     businessName: data.businessDetails?.businessName || "",
                     storeDisplayName: data.businessDetails?.storeDisplayName || "",
@@ -126,41 +128,41 @@ export default function StoreSettingsPage() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold">Store Display Name</label>
-                                <input
-                                    type="text"
-                                    value={formData.storeDisplayName}
-                                    onChange={e => setFormData({ ...formData, storeDisplayName: e.target.value })}
-                                    placeholder="e.g. Fresh Fish Haven"
-                                    className="w-full px-4 py-2.5 rounded-lg bg-background-soft border-transparent focus:bg-white focus:border-primary transition-all outline-none text-sm"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold">Legal Business Name</label>
-                                <input
-                                    type="text"
-                                    value={formData.businessName}
-                                    readOnly
-                                    className="w-full px-4 py-2.5 rounded-lg bg-gray-100 border-transparent text-sm text-text-muted font-medium outline-none"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold">WhatsApp Number</label>
-                                <div className="relative">
-                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
-                                    <input
-                                        type="tel"
-                                        value={formData.whatsappNumber}
-                                        onChange={e => setFormData({ ...formData, whatsappNumber: e.target.value })}
-                                        placeholder="+91 98765 43210"
-                                        className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-background-soft border-transparent focus:bg-white focus:border-primary outline-none text-sm"
-                                    />
-                                </div>
-                            </div>
+                             <div className="space-y-2">
+                                 <label className="text-sm font-semibold">Store Display Name</label>
+                                 <input
+                                     type="text"
+                                     value={formData.storeDisplayName}
+                                     onChange={e => setFormData({ ...formData, storeDisplayName: e.target.value })}
+                                     placeholder="e.g. Difwa Water Solutions"
+                                     className="w-full px-4 py-2.5 rounded-lg bg-background-soft border-transparent focus:bg-white focus:border-primary transition-all outline-none text-sm"
+                                 />
+                             </div>
+                             <div className="space-y-2">
+                                 <label className="text-sm font-semibold">Legal Business Name</label>
+                                 <input
+                                     type="text"
+                                     value={formData.businessName}
+                                     readOnly
+                                     className="w-full px-4 py-2.5 rounded-lg bg-gray-100 border-transparent text-sm text-text-muted font-medium outline-none"
+                                 />
+                             </div>
+                         </div>
+ 
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <div className="space-y-2">
+                                 <label className="text-sm font-semibold">WhatsApp Number</label>
+                                 <div className="relative">
+                                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
+                                     <input
+                                         type="tel"
+                                         value={formData.whatsappNumber}
+                                         onChange={e => setFormData({ ...formData, whatsappNumber: e.target.value })}
+                                         placeholder="+91 8989898989"
+                                         className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-background-soft border-transparent focus:bg-white focus:border-primary outline-none text-sm"
+                                     />
+                                 </div>
+                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold">Support Email</label>
                                 <div className="relative">

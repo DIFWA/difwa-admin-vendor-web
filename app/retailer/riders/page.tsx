@@ -49,10 +49,42 @@ export default function RidersPage() {
         setEditFormData({ ...editFormData, [e.target.name]: e.target.value })
     }
 
+    const formatAndValidatePhone = (phone: string) => {
+        // Remove all non-numeric characters except +
+        let cleaned = phone.replace(/[^\d+]/g, '');
+        
+        // If it starts with +91, get the last 10 digits
+        if (cleaned.startsWith('+91')) {
+            const digits = cleaned.slice(3);
+            if (digits.length !== 10) return { error: "Phone number must have exactly 10 digits after +91" };
+            return { formatted: `+91${digits}` };
+        }
+        
+        // If it starts with 91 (no +), get the last 10 digits
+        if (cleaned.length === 12 && cleaned.startsWith('91')) {
+            const digits = cleaned.slice(2);
+            return { formatted: `+91${digits}` };
+        }
+
+        // If it's just 10 digits
+        if (cleaned.length === 10 && /^\d+$/.test(cleaned)) {
+            return { formatted: `+91${cleaned}` };
+        }
+
+        return { error: "Please enter a valid 10-digit Indian phone number" };
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        
+        const phoneCheck = formatAndValidatePhone(formData.phone);
+        if (phoneCheck.error) {
+            return toast.error(phoneCheck.error);
+        }
+
         try {
-            const response = await addRider(formData)
+            const submissionData = { ...formData, phone: phoneCheck.formatted };
+            const response = await addRider(submissionData)
             if (response.success) {
                 toast.success("Rider added successfully")
                 setShowAddModal(false)
@@ -65,8 +97,15 @@ export default function RidersPage() {
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault()
+
+        const phoneCheck = formatAndValidatePhone(editFormData.phone);
+        if (phoneCheck.error) {
+            return toast.error(phoneCheck.error);
+        }
+
         try {
-            const response = await updateRider(selectedRider._id, editFormData)
+            const submissionData = { ...editFormData, phone: phoneCheck.formatted };
+            const response = await updateRider(selectedRider._id, submissionData)
             if (response.success) {
                 toast.success("Rider updated successfully")
                 setIsEditMode(false)

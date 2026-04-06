@@ -43,7 +43,8 @@ const useProductStore = create((set, get) => ({
         try {
             const res = await retailerService.createProduct(productData);
             if (res.success) {
-                await get().fetchProducts();
+                // Prepend optimistically — socket will deduplicate
+                set(state => ({ products: [res.data, ...state.products] }));
                 return res;
             }
         } catch (err) {
@@ -55,10 +56,16 @@ const useProductStore = create((set, get) => ({
         try {
             const res = await retailerService.updateProduct(id, productData);
             if (res.success) {
-                await get().fetchProducts();
-                if (get().selectedProduct?.id === id || get().selectedProduct?._id === id) {
-                    set({ selectedProduct: res.data });
-                }
+                // Patch in-place immediately — no full refetch needed
+                set(state => ({
+                    products: state.products.map(p =>
+                        (p._id === id || p.id === id) ? { ...p, ...res.data } : p
+                    ),
+                    selectedProduct:
+                        (state.selectedProduct?._id === id || state.selectedProduct?.id === id)
+                            ? { ...state.selectedProduct, ...res.data }
+                            : state.selectedProduct
+                }));
                 return res;
             }
         } catch (err) {

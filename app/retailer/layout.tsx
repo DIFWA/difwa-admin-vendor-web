@@ -6,12 +6,22 @@ import Sidebar from "@/components/layout/Sidebar"
 import Topbar from "@/components/layout/Topbar"
 import { cn } from "@/lib/utils"
 import useAuthStore from "@/data/store/useAuthStore"
+import useSocketStore from "@/data/store/useSocketStore"
 
 export default function RetailerLayout({ children }: { children: React.ReactNode }) {
     const [mounted, setMounted] = useState(false)
     const router = useRouter()
 
     const { user, checkAuth, loading } = useAuthStore()
+    const connect = useSocketStore((state: any) => state.connect)
+    const disconnect = useSocketStore((state: any) => state.disconnect)
+
+    useEffect(() => {
+        if (user?._id || user?.id) {
+            connect(user._id || user.id)
+        }
+        // No need to disconnect here as we want it persistent across navigation
+    }, [user?._id, user?.id, connect])
 
     useEffect(() => {
         setMounted(true)

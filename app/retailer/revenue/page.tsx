@@ -150,7 +150,7 @@ export default function RetailerRevenuePage() {
                     {loadingStats ? (
                         <div className="h-10 bg-white/20 rounded animate-pulse w-32" />
                     ) : (
-                        <h2 className="text-4xl font-black">₹{revenueStats.availableBalance.toLocaleString()}</h2>
+                        <h2 className="text-4xl font-black">₹{(revenueStats.availableBalance || 0).toLocaleString()}</h2>
                     )}
                     <div className="mt-6 flex items-center gap-2 text-xs font-bold text-blue-300">
                         <ArrowUpRight size={14} /> Based on completed orders
@@ -168,7 +168,7 @@ export default function RetailerRevenuePage() {
                     {loadingStats ? (
                         <div className="h-9 bg-background-soft rounded animate-pulse w-32" />
                     ) : (
-                        <h2 className="text-3xl font-black text-primary">₹{revenueStats.estimatedEarnings.toLocaleString()}</h2>
+                        <h2 className="text-3xl font-black text-primary">₹{(revenueStats.estimatedEarnings || 0).toLocaleString()}</h2>
                     )}
                     <p className="mt-2 text-xs font-bold text-text-muted uppercase">
                         {currentRange === 'today' ? 'Today\'s Earnings' :
@@ -184,9 +184,9 @@ export default function RetailerRevenuePage() {
                     {loadingStats ? (
                         <div className="h-9 bg-background-soft rounded animate-pulse w-32" />
                     ) : (
-                        <h2 className="text-3xl font-black text-blue-600">₹{revenueStats.totalSettled.toLocaleString()}</h2>
+                        <h2 className="text-3xl font-black text-blue-600">₹{(revenueStats.totalSettled || 0).toLocaleString()}</h2>
                     )}
-                    <p className="mt-2 text-xs font-bold text-text-muted uppercase">Net Lifetime: ₹{revenueStats.totalEarnings.toLocaleString()}</p>
+                    <p className="mt-2 text-xs font-bold text-text-muted uppercase">Net Lifetime: ₹{(revenueStats.totalEarnings || 0).toLocaleString()}</p>
                 </div>
             </div>
 
@@ -211,17 +211,17 @@ export default function RetailerRevenuePage() {
                 <div className="flex flex-col md:flex-row gap-8 w-full md:w-auto md:items-center">
                     <div className="space-y-1">
                         <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Gross Lifetime Revenue</p>
-                        <p className="text-xl font-black text-primary">₹{revenueStats.totalGrossEarnings.toLocaleString()}</p>
+                        <p className="text-xl font-black text-primary">₹{(revenueStats.totalGrossEarnings || 0).toLocaleString()}</p>
                     </div>
                     <div className="h-8 w-[1px] bg-border-custom hidden md:block" />
                     <div className="space-y-1">
                         <p className="text-[10px] font-black text-text-muted uppercase tracking-widest text-amber-600">Total Commission Paid</p>
-                        <p className="text-xl font-black text-amber-600">- ₹{revenueStats.totalCommissionDeducted.toLocaleString()}</p>
+                        <p className="text-xl font-black text-amber-600">- ₹{(revenueStats.totalCommissionDeducted || 0).toLocaleString()}</p>
                     </div>
                     <div className="h-8 w-[1px] bg-border-custom hidden md:block" />
                     <div className="space-y-1">
                         <p className="text-[10px] font-black text-text-muted uppercase tracking-widest text-blue-600">Net Earnings (After Commission)</p>
-                        <p className="text-xl font-black text-blue-600">₹{revenueStats.totalEarnings.toLocaleString()}</p>
+                        <p className="text-xl font-black text-blue-600">₹{(revenueStats.totalEarnings || 0).toLocaleString()}</p>
                     </div>
                 </div>
             </div>

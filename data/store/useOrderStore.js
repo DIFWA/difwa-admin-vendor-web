@@ -7,21 +7,30 @@ const useOrderStore = create((set, get) => ({
     loading: false,
     error: null,
     totalCount: 0,
+    totalPages: 1,
+    currentPage: 1,
+    limit: 10,
     filterStatus: 'all',
+    stats: null,
 
     setFilterStatus: (status) => set({ filterStatus: status }),
 
-    fetchOrders: async (customerId = null, force = false) => {
-        // Skip if data is already loaded and not forcing a refresh
-        if (get().orders.length > 0 && !force && !customerId) return;
+    fetchOrders: async (page = 1, customerId = null, force = false) => {
+        // Skip if data for this page is already loaded and not forcing a refresh
+        if (get().orders.length > 0 && !force && !customerId && get().currentPage === page) return;
         
         set({ loading: true, error: null });
         try {
-            const res = await retailerService.getOrders(customerId);
+            const res = await retailerService.getOrders(customerId, page, get().limit);
             if (res.success) {
-                // Determine order list based on single user or list
-                const ordersRaw = Array.isArray(res.data) ? res.data : (res.data.orders || []);
-                set({ orders: ordersRaw, totalCount: ordersRaw.length, loading: false });
+                set({
+                    orders: res.data.orders || [],
+                    totalCount: res.data.pagination?.totalOrders || 0,
+                    totalPages: res.data.pagination?.totalPages || 1,
+                    currentPage: res.data.pagination?.currentPage || page,
+                    stats: res.data.stats,
+                    loading: false
+                });
             }
         } catch (err) {
             console.error("Fetch orders failed", err);
@@ -50,7 +59,8 @@ const useOrderStore = create((set, get) => ({
         try {
             const res = await retailerService.assignRider(orderId, riderId);
             if (res.success) {
-                await get().fetchOrders();
+                // After manual assignment, we force-refresh the current page
+                await get().fetchOrders(get().currentPage, null, true);
                 return res;
             }
         } catch (err) {
@@ -63,7 +73,7 @@ const useOrderStore = create((set, get) => ({
         try {
             const res = await retailerService.createManualOrder(orderData);
             if (res.success) {
-                await get().fetchOrders(null, true);
+                await get().fetchOrders(1, null, true);
                 return res;
             }
         } catch (err) {
@@ -77,13 +87,11 @@ const useOrderStore = create((set, get) => ({
         const socket = socketService.getSocket();
         if (!socket) return;
 
-        const eventName = `retailer_${userId}`;
-        
         socket.off("orderUpdate"); // Remove existing
         socket.on("orderUpdate", (data) => {
             console.log("⚡ Real-time Order Update in Store:", data);
-            // Refresh orders from server to get accurate state
-            get().fetchOrders(null, true);
+            // Refresh current page to get accurate state and stats
+            get().fetchOrders(get().currentPage, null, true);
         });
     }
 }));

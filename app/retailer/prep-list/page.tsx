@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Droplets, Package, ChevronRight, CheckCircle2, AlertCircle, Clock, Printer } from "lucide-react"
 import { cn } from "@/lib/utils"
 import retailerService from "@/data/services/retailerService"
+import useRetailerStore from "@/data/store/useRetailerStore"
 
 interface PrepItem {
     id: string;
@@ -18,8 +19,6 @@ interface PrepItem {
     status: 'Pending' | 'Ready' | 'Shortage';
 }
 
-import useRetailerStore from "@/data/store/useRetailerStore"
-
 export default function DailyPrepListPage() {
     const {
         prepList: prepItems,
@@ -32,7 +31,6 @@ export default function DailyPrepListPage() {
         fetchPrepList()
     }, [fetchPrepList])
 
-    const totalVolume = prepItems.reduce((acc: number, item: PrepItem) => acc + item.quantity, 0)
     const totalOrders = prepItems.reduce((acc: number, item: PrepItem) => acc + item.orderCount, 0)
     const totalRevenue = prepItems.reduce((acc: number, item: PrepItem) => acc + (item.totalRevenue || 0), 0)
 
@@ -45,8 +43,8 @@ export default function DailyPrepListPage() {
             <div className="space-y-8 animate-pulse p-4">
                 <div className="h-12 bg-background-soft rounded-2xl w-1/4" />
                 <div className="h-24 bg-background-soft rounded-[32px]" />
-                <div className="grid grid-cols-4 gap-6">
-                    {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-background-soft rounded-[32px]" />)}
+                <div className="grid grid-cols-3 gap-6">
+                    {[1, 2, 3].map(i => <div key={i} className="h-32 bg-background-soft rounded-[32px]" />)}
                 </div>
             </div>
         )
@@ -60,9 +58,6 @@ export default function DailyPrepListPage() {
                     <h1 className="text-3xl font-bold tracking-tight text-primary">Daily Prep List</h1>
                     <p className="text-text-muted mt-1">Inventory requirements for today&apos;s subscription &amp; pre-orders.</p>
                 </div>
-                <button className="flex items-center gap-2 px-6 py-3 bg-white border border-border-custom rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-50 transition-all shadow-sm">
-                    <Printer size={18} /> Print Prep Guide
-                </button>
             </div>
 
             {/* Date Info */}
@@ -77,14 +72,10 @@ export default function DailyPrepListPage() {
             </div>
 
             {/* Prep Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white p-6 rounded-[32px] border border-border-custom shadow-sm">
                     <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Total Items</p>
                     <h3 className="text-2xl font-black text-primary">{prepItems.length}</h3>
-                </div>
-                <div className="bg-white p-6 rounded-[32px] border border-border-custom shadow-sm">
-                    <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Total Volume</p>
-                    <h3 className="text-2xl font-black text-primary">{totalVolume.toFixed(1)} {prepItems[0]?.unit || 'L'}</h3>
                 </div>
                 <div className="bg-white p-6 rounded-[32px] border border-border-custom shadow-sm">
                     <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Total Orders</p>
@@ -121,9 +112,6 @@ export default function DailyPrepListPage() {
                                     <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">{item.category}</p>
                                     <h4 className="text-lg font-black text-primary uppercase tracking-tight">{item.productName}</h4>
                                     <div className="flex items-center gap-3 mt-2">
-                                        <div className="flex items-center gap-1 text-xs font-bold text-gray-700 bg-gray-50 px-2 py-1 rounded-md">
-                                            <Package size={12} /> {item.quantity}{item.unit}
-                                        </div>
                                         <div className="flex items-center gap-1 text-xs font-bold text-gray-700 bg-gray-50 px-2 py-1 rounded-md">
                                             <Clock size={12} /> {item.orderCount} Orders
                                         </div>
@@ -173,8 +161,8 @@ export default function DailyPrepListPage() {
                 <div>
                     <h5 className="font-black text-amber-900 uppercase tracking-tight">Logistics Notice</h5>
                     <p className="text-sm text-amber-800 leading-relaxed mt-1">
-                        Please ensure all &quot;Ready&quot; items are packed with correct volume variation tags by 05:00 AM.
-                        Shortage items will automatically notify customers of late delivery or partial refund at 06:00 AM.
+                        Please ensure all &quot;Ready&quot; items are packed and ready for dispatch by 05:00 AM.
+                        Shortage items will automatically notify customers of potential delivery delays.
                     </p>
                 </div>
             </div>
