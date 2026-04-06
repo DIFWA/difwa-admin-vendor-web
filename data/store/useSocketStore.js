@@ -10,11 +10,27 @@ const useSocketStore = create((set, get) => ({
     connected: false,
 
     connect: (userId) => {
-        // Already connected — don't create a second socket
-        if (get().socket?.connected) return;
+        const currentSocket = get().socket;
 
+        // Case 1: Already have a socket
+        if (currentSocket) {
+            // Re-join rooms if we have a userId, even if already connected
+            if (userId) {
+                currentSocket.emit('join', `retailer_${userId}`);
+                currentSocket.emit('join', `user_${userId}`);
+                console.log(`📡 [Sync] Joined rooms for: ${userId}`);
+            }
+            
+            // If disconnected, call connect()
+            if (!currentSocket.connected) {
+                currentSocket.connect();
+            }
+            return;
+        }
+
+        // Case 2: No socket - Create NEW connection
         const socket = io(SOCKET_URL, {
-            headers: { "ngrok-skip-browser-warning": "true" },
+            transports: ['websocket'],
             reconnection: true,
             reconnectionAttempts: 10,
             reconnectionDelay: 1000,

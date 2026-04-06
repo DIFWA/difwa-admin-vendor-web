@@ -19,8 +19,8 @@ import { cn } from "@/lib/utils"
 import adminService from "@/data/services/adminService"
 import { toast } from "sonner"
 import * as XLSX from "xlsx"
-import socket from "@/data/api/socket"
 import useAuthStore from "@/data/store/useAuthStore"
+import useSocketStore from "@/data/store/useSocketStore"
 
 const statusStyles: any = {
     "New": "bg-primary-light text-primary border-primary-100",
@@ -77,25 +77,36 @@ function AdminOrdersContent() {
         }
     }, [currentPage, searchQuery, statusFilter, typeFilter]);
 
+    const { socket, connect: connectSocket } = useSocketStore();
+
     useEffect(() => {
-        setMounted(true)
-        fetchOrdersData()
+        setMounted(true);
+        fetchOrdersData();
+        
+        // Ensure connected and joined
+        if (!socket) {
+            connectSocket(user?._id || user?.id);
+        }
 
-        socket.on("connect", () => {
-            console.log("🟢 Admin Connected to Socket Relay")
-            socket.emit("join", "admin")
-        })
+        const handleUpdate = (data: any) => {
+            console.log("⚡ Real-time Order Update (Admin):", data);
+            toast.info(`Order Update: ${data.orderId || 'New Order'} is now ${data.status || 'Pending'}`);
+            fetchOrdersData(true);
+        };
 
-        socket.on("orderUpdate", (data: any) => {
-            console.log("⚡ Real-time Order Update (Admin):", data)
-            toast.info(`Order Update: ${data.orderId} is now ${data.status}`)
-            fetchOrdersData(true) 
-        })
+        if (socket) {
+            socket.emit("join", "admin");
+            socket.on("orderUpdate", handleUpdate);
+            socket.on("NEW_ORDER", handleUpdate);
+        }
 
         return () => {
-            socket.off("orderUpdate")
-        }
-    }, [fetchOrdersData])
+            if (socket) {
+                socket.off("orderUpdate", handleUpdate);
+                socket.off("NEW_ORDER", handleUpdate);
+            }
+        };
+    }, [fetchOrdersData, socket, connectSocket, user?._id, user?.id]);
 
     if (!mounted || (loading && !ordersData)) {
         return <div className="space-y-6 animate-pulse p-4">
