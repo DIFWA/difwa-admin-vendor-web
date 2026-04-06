@@ -73,10 +73,14 @@ const useRetailerStore = create((set, get) => ({
         set({ loadingPayouts: true });
         try {
             const res = await retailerService.getPayoutHistory();
-            set({ payouts: res, loadingPayouts: false }); // getPayoutHistory returns data directly
+            if (res.success) {
+                set({ payouts: res.data || [], loadingPayouts: false });
+            } else {
+                set({ payouts: [], loadingPayouts: false });
+            }
         } catch (error) {
             console.error("Error fetching payouts:", error);
-            set({ loadingPayouts: false });
+            set({ payouts: [], loadingPayouts: false });
         }
     },
 

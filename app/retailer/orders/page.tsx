@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, Suspense, useRef, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import {
     Search,
@@ -12,15 +12,15 @@ import {
     RefreshCw,
     ChevronRight,
     Lock,
-    Clock
+    Clock,
+    Shield,
+    X
 } from "lucide-react"
-import { useRef } from "react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import * as XLSX from "xlsx"
-import useAuthStore from "@/data/store/useAuthStore"
-import useOrderStore from "@/data/store/useOrderStore"
-import useRetailerStore from "@/data/store/useRetailerStore"
+import retailerService from "@/data/services/retailerService"
+import socketService from "@/data/socket"
 
 const statusStyles: any = {
     "New": "bg-primary-light text-primary border-primary-100",
@@ -38,58 +38,121 @@ const statusStyles: any = {
 }
 
 function OrdersContent() {
-    const { user } = useAuthStore()
     const searchParams = useSearchParams()
     const [mounted, setMounted] = useState(false)
-    
-    // Stores
-    const { 
-        orders, 
-        loading, 
-        fetchOrders, 
-        updateOrderStatus, 
-        assignRider,
-        initSocketListeners 
-    } = useOrderStore()
-    const { riders, fetchRiders } = useRetailerStore()
+    const [orders, setOrders] = useState<any[]>([])
+    const [riders, setRiders] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+
+    // Auto-process logic
+    const [autoProcessEnabled, setAutoProcessEnabled] = useState(false)
+    const autoProcessInterval = useRef<NodeJS.Timeout | null>(null)
 
     const [searchQuery, setSearchQuery] = useState("")
     const [orderTypeFilter, setOrderTypeFilter] = useState<"All" | "Subscription" | "One-time">("All")
     const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Completed">("All")
     const [selectedOrder, setSelectedOrder] = useState<any>(null)
     const [currentPage, setCurrentPage] = useState(1)
-    
-    // Tooltip State
-    const [hoveredOrderId, setHoveredOrderId] = useState<string | null>(null)
-    const [tooltipStep, setTooltipStep] = useState(1)
-    const leaveTimer = useRef<NodeJS.Timeout | null>(null)
-    const [showMoreMenu, setShowMoreMenu] = useState(false)
+
     const moreMenuRef = useRef<HTMLDivElement>(null)
+    const [showMoreMenu, setShowMoreMenu] = useState(false)
 
     const ORDERS_PER_PAGE = 10
 
-    useEffect(() => {
-        const filter = searchParams.get("filter")
-        if (filter === "Pending" || filter === "Completed") {
-            setStatusFilter(filter)
-        } else {
-            setStatusFilter("All")
+    const fetchOrders = useCallback(async () => {
+        try {
+            const res = await retailerService.getOrders()
+            if (res.success) {
+                setOrders(res.data.orders || [])
+            }
+        } catch (error) {
+            console.error("Failed to fetch shop orders", error)
+        } finally {
+            setLoading(false)
         }
+    }, [])
 
-        const idParam = searchParams.get("id")
-        if (idParam) {
-            setSearchQuery(idParam)
+    const fetchRiders = useCallback(async () => {
+        try {
+            const res = await retailerService.getRiders()
+            if (res.success) {
+                setRiders(res.data || [])
+            }
+        } catch (error) {
+            console.error("Failed to fetch riders", error)
         }
-    }, [searchParams])
+    }, [])
+
+    const autoProcessOrders = async () => {
+        try {
+            const res = await retailerService.bulkProcessOrders();
+            if (res.success && res.processed > 0) {
+                console.log(`🤖 Auto-processed ${res.processed} orders`);
+                fetchOrders();
+                fetchRiders();
+                toast.info(`🤖 Auto-processed ${res.processed} orders`);
+            }
+        } catch (error) {
+            console.error("Auto-process error:", error);
+        }
+    };
 
     useEffect(() => {
         setMounted(true)
         fetchOrders()
         fetchRiders()
-        if (user?._id) {
-            initSocketListeners(user._id)
+
+        const userId = localStorage.getItem("userId")
+        if (userId) {
+            const socket = socketService.connect()
+
+            // Joining the retailer-specific room for updates
+            socket.emit("join", `retailer_${userId}`)
+
+            socket.on("connect", () => {
+                console.log("🟢 Connected to Socket Relay")
+                socket.emit("join", `retailer_${userId}`)
+            })
+
+            socket.on("orderUpdate", (payload: any) => {
+                console.log("⚡ Real-time Order Update:", payload)
+                const { orderId, status, data: orderData } = payload;
+
+                toast.info(`Order Update: ${status}`)
+
+                // 1. Proactively update the selectedOrder state if it's currently open
+                setSelectedOrder((prev: any) => {
+                    if (prev && (prev.id === orderId || prev._id === orderId)) {
+                        return { 
+                            ...prev, 
+                            status: status, 
+                            statusHistory: orderData?.statusHistory || prev.statusHistory,
+                            rider: orderData?.riderName ? { name: orderData.riderName } : prev.rider
+                        }
+                    }
+                    return prev;
+                });
+
+                // 2. Proactively update the main orders list state
+                setOrders((current: any[]) =>
+                    current.map((order: any) =>
+                        (order.id === orderId || order._id === orderId)
+                            ? { ...order, status: status, statusHistory: orderData?.statusHistory || order.statusHistory }
+                            : order
+                    )
+                );
+
+                // 3. Fallback refresh to keep everything in sync
+                fetchOrders()
+                fetchRiders()
+            })
+
+            return () => {
+                socket.off("orderUpdate")
+                socket.off("connect")
+            }
         }
-    }, [user?._id, fetchOrders, fetchRiders, initSocketListeners])
+    }, [fetchOrders, fetchRiders])
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -101,7 +164,33 @@ function OrdersContent() {
         return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [])
 
-    if (loading || (orders.length === 0 && mounted)) {
+    useEffect(() => {
+        if (autoProcessEnabled) {
+            autoProcessOrders();
+            autoProcessInterval.current = setInterval(autoProcessOrders, 30000);
+        } else {
+            if (autoProcessInterval.current) {
+                clearInterval(autoProcessInterval.current);
+            }
+        }
+        return () => {
+            if (autoProcessInterval.current) {
+                clearInterval(autoProcessInterval.current);
+            }
+        };
+    }, [autoProcessEnabled]);
+
+    // Sync selected order when orders list updates (for real-time timeline)
+    useEffect(() => {
+        if (selectedOrder) {
+            const updated = orders.find((o: any) => o.id === selectedOrder.id);
+            if (updated) {
+                setSelectedOrder(updated);
+            }
+        }
+    }, [orders, selectedOrder?.id]);
+
+    if (!mounted || (loading && orders.length === 0)) {
         return <div className="space-y-6 animate-pulse p-4">
             <div className="h-12 bg-background-soft rounded-xl w-1/4" />
             <div className="grid grid-cols-4 gap-6">
@@ -111,8 +200,6 @@ function OrdersContent() {
         </div>
     }
 
-    // Since our orders logic might depend on stats from retailerService, 
-    // we'll calculate local stats based on the orders in store for consistency.
     const orderStats = {
         totalOrders: orders.length,
         pendingOrders: orders.filter((o: any) => ['Pending', 'Accepted', 'Processing', 'Preparing', 'Shipped', 'Out for Delivery', 'Rider Assigned', 'Rider Accepted'].includes(o.status)).length,
@@ -121,10 +208,10 @@ function OrdersContent() {
     }
 
     const stats = [
-        { title: "Total Shop Orders", value: orderStats.totalOrders.toLocaleString(), change: "", trend: "up", color: "bg-primary-light text-primary", filterValue: "All" },
-        { title: "Pending Orders", value: orderStats.pendingOrders.toLocaleString(), change: "", trend: "down", color: "bg-warning-50 text-warning", filterValue: "Pending" },
-        { title: "Completed", value: orderStats.completedOrders.toLocaleString(), change: "", trend: "up", color: "bg-blue-50 text-blue-600", filterValue: "Completed" },
-        { title: "Avg. Order Value", value: orderStats.avgOrderValue, change: "", trend: "up", color: "bg-blue-50 text-blue-600", filterValue: null },
+        { title: "Total Shop Orders", value: orderStats.totalOrders.toLocaleString(), color: "bg-primary-light text-primary", filterValue: "All" },
+        { title: "Pending Orders", value: orderStats.pendingOrders.toLocaleString(), color: "bg-warning-50 text-warning", filterValue: "Pending" },
+        { title: "Completed", value: orderStats.completedOrders.toLocaleString(), color: "bg-blue-50 text-blue-600", filterValue: "Completed" },
+        { title: "Avg. Order Value", value: orderStats.avgOrderValue, color: "bg-blue-50 text-blue-600", filterValue: null },
     ]
 
     const filteredOrders = orders.filter((order: any) => {
@@ -142,24 +229,15 @@ function OrdersContent() {
         return matchesSearch && matchesType && matchesStatus
     })
 
+    const paginatedOrders = filteredOrders.slice((currentPage - 1) * ORDERS_PER_PAGE, currentPage * ORDERS_PER_PAGE)
     const totalPages = Math.ceil(filteredOrders.length / ORDERS_PER_PAGE)
-    const paginatedOrders = filteredOrders.slice(
-        (currentPage - 1) * ORDERS_PER_PAGE,
-        currentPage * ORDERS_PER_PAGE
-    )
-
-    const subscriptionCount = orders.filter((o: any) => o.orderType === "Subscription").length
-    const oneTimeCount = orders.filter((o: any) => o.orderType !== "Subscription").length
 
     const handleStatusUpdate = async (orderId: string, nextStatus: string) => {
-        // Confirmation dialog
-        const confirmed = window.confirm(`Are you sure you want to mark this order as "${nextStatus}"?`)
-        if (!confirmed) return
-
         try {
-            const res = await updateOrderStatus(orderId, nextStatus)
+            const res = await retailerService.updateOrderStatus(orderId, nextStatus)
             if (res.success) {
                 toast.success(`Order marked as ${nextStatus}`)
+                fetchOrders()
             }
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Failed to update status")
@@ -168,76 +246,28 @@ function OrdersContent() {
 
     const handleAssignRiderSelection = async (orderId: string, riderId: string) => {
         try {
-            const res = await assignRider(orderId, riderId)
+            const res = await retailerService.assignRider(orderId, riderId)
             if (res.success) {
                 toast.success("Rider assigned successfully")
+                fetchOrders()
             }
         } catch (error) {
             console.error("Failed to assign rider", error)
         }
     }
 
-    const handleBulkAccept = async () => {
-        const pendingOrders = orders.filter((o: any) => o.status === "Pending")
-        if (pendingOrders.length === 0) {
-            toast.info("No pending orders to accept")
-            return
-        }
-
-        if (!window.confirm(`Are you sure you want to accept all ${pendingOrders.length} pending orders?`)) return
-
-        try {
-            const promises = pendingOrders.map((o: any) => updateOrderStatus(o.id, "Accepted"))
-            await Promise.all(promises)
-            toast.success(`Successfully accepted ${pendingOrders.length} orders`)
-            setShowMoreMenu(false)
-        } catch (error) {
-            toast.error("Failed to accept some orders")
-        }
-    }
-
     const handleExport = () => {
-        try {
-            if (!orders || orders.length === 0) {
-                toast.error("No orders to export")
-                return
-            }
-
-            // Format data for Excel
-            const exportData = orders.map((o: any) => ({
-                "Order ID": o.id,
-                "Type": o.orderType,
-                "Product Details": o.product,
-                "Date": o.date,
-                "Total Amount": `₹${o.price}`,
-                "Payment": o.payment,
-                "Status": o.status,
-                "Rider": o.rider?.name || "Unassigned"
-            }))
-
-            const worksheet = XLSX.utils.json_to_sheet(exportData)
-            const workbook = XLSX.utils.book_new()
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Orders")
-
-            // Adjust column widths
-            const wscols = [
-                { wch: 15 }, // Order ID
-                { wch: 15 }, // Type
-                { wch: 40 }, // Product
-                { wch: 20 }, // Date
-                { wch: 12 }, // Price
-                { wch: 12 }, // Payment
-                { wch: 15 }, // Status
-                { wch: 20 }  // Rider
-            ]
-            worksheet["!cols"] = wscols
-
-            XLSX.writeFile(workbook, `Shrimpbite_Orders_${new Date().toISOString().split('T')[0]}.xlsx`)
-            toast.success("Order list exported successfully")
-        } catch (error) {
-            console.error("Export failed", error)
-            toast.error("Failed to export order list")
-        }
+        const exportData = orders.map((o: any) => ({
+            "Order ID": o.id,
+            "Type": o.orderType,
+            "Product": o.product,
+            "Total": `₹${o.price}`,
+            "Status": o.status
+        }))
+        const ws = XLSX.utils.json_to_sheet(exportData)
+        const wb = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(wb, ws, "Orders")
+        XLSX.writeFile(wb, "Shop_Orders.xlsx")
     }
 
     return (
@@ -250,150 +280,70 @@ function OrdersContent() {
                     </div>
                     <div className="flex items-center gap-3">
                         <button
+                            onClick={() => setAutoProcessEnabled(!autoProcessEnabled)}
+                            className={cn(
+                                "relative flex items-center gap-3 px-5 py-2.5 rounded-xl transition-all duration-300 font-semibold text-sm shadow-lg",
+                                autoProcessEnabled
+                                    ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-green-500/30"
+                                    : "bg-gradient-to-r from-gray-500 to-gray-600 text-white/90 shadow-gray-500/20"
+                            )}
+                        >
+                            <RefreshCw size={18} className={cn(autoProcessEnabled && "animate-spin")} />
+                            <span>{autoProcessEnabled ? "⚡ AUTO-PROCESS ACTIVE" : "🔘 AUTO-PROCESS OFF"}</span>
+                        </button>
+
+                        <button
                             onClick={handleExport}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary transition-all text-sm font-medium shadow-md shadow-primary/20"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary transition-all text-sm font-medium"
                         >
                             <Download size={16} />
-                            Export List
+                            Export
                         </button>
-                        <div className="relative" ref={moreMenuRef}>
-                            <button 
-                                onClick={() => setShowMoreMenu(!showMoreMenu)}
-                                className={cn(
-                                    "p-2 rounded-lg border transition-all",
-                                    showMoreMenu ? "bg-primary/10 border-primary text-primary" : "bg-white hover:bg-background-soft border-border-custom text-text-muted"
-                                )}
-                            >
-                                <MoreVertical size={18} />
-                            </button>
-                            
-                            {showMoreMenu && (
-                                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-border-custom shadow-xl z-[100] animate-in fade-in slide-in-from-top-2 duration-200 py-2">
-                                    <button 
-                                        onClick={() => {
-                                            fetchOrders(null, true);
-                                            fetchRiders();
-                                            setShowMoreMenu(false);
-                                            toast.success("Data refreshed");
-                                        }}
-                                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-background-soft transition-colors"
-                                    >
-                                        <RefreshCw size={16} className="text-primary" />
-                                        Refresh Data
-                                    </button>
-                                    <button 
-                                        onClick={handleBulkAccept}
-                                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-background-soft transition-colors"
-                                    >
-                                        <CheckCircle size={16} className="text-emerald-500" />
-                                        Accept All Pending
-                                    </button>
-                                    <button 
-                                        onClick={() => {
-                                            window.print();
-                                            setShowMoreMenu(false);
-                                        }}
-                                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-background-soft transition-colors"
-                                    >
-                                        <Download size={16} className="text-blue-500" />
-                                        Print/Save View
-                                    </button>
-                                </div>
-                            )}
-                        </div>
                     </div>
                 </div>
 
+                {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {stats.map((stat, index) => (
                         <div
                             key={index}
-                            onClick={() => {
-                                if (stat.filterValue) {
-                                    setStatusFilter(stat.filterValue as any)
-                                    setCurrentPage(1)
-                                }
-                            }}
+                            onClick={() => stat.filterValue && setStatusFilter(stat.filterValue as any)}
                             className={cn(
-                                "bg-white p-6 rounded-2xl border transition-all duration-200 flex flex-col justify-between group",
-                                stat.filterValue ? "cursor-pointer hover:shadow-md hover:border-primary/50" : "cursor-default border-border-custom shadow-sm",
-                                stat.filterValue && statusFilter === stat.filterValue ? "ring-2 ring-primary ring-offset-2 border-primary shadow-md" : "border-border-custom shadow-sm"
+                                "bg-white p-6 rounded-2xl border transition-all duration-200 cursor-pointer hover:shadow-md",
+                                statusFilter === stat.filterValue ? "border-primary ring-1 ring-primary" : "border-border-custom"
                             )}
                         >
-                            <div className="flex items-center justify-between mb-4">
-                                <p className={cn(
-                                    "text-xs font-bold uppercase tracking-wider transition-colors",
-                                    stat.filterValue && statusFilter === stat.filterValue ? "text-primary" : "text-text-muted"
-                                )}>
-                                    {stat.title}
-                                </p>
-                                <div className={cn(
-                                    "w-2 h-2 rounded-full",
-                                    stat.trend === "up" ? "bg-primary" : "bg-red-500",
-                                    stat.filterValue && statusFilter === stat.filterValue && "animate-pulse"
-                                )}></div>
-                            </div>
-                            <div className="flex items-end justify-between">
-                                <h3 className={cn(
-                                    "text-2xl font-bold transition-all",
-                                    stat.filterValue && statusFilter === stat.filterValue ? "text-primary scale-105" : "text-text"
-                                )}>
-                                    {stat.value}
-                                </h3>
-                            </div>
+                            <p className="text-xs font-bold uppercase tracking-wider text-text-muted mb-2">{stat.title}</p>
+                            <h3 className="text-2xl font-bold text-text">{stat.value}</h3>
                         </div>
                     ))}
                 </div>
 
                 <div className="bg-white rounded-2xl border border-border-custom overflow-hidden shadow-sm">
                     <div className="p-6 border-b border-border-custom flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <h2 className="text-lg font-bold">Recent Orders</h2>
-                            {/* Filter Tabs */}
-                            <div className="flex items-center gap-1 bg-background-soft rounded-lg p-1">
-                                {(["All", "Subscription", "One-time"] as const).map(tab => (
-                                    <button
-                                        key={tab}
-                                        onClick={() => {
-                                            setOrderTypeFilter(tab)
-                                            setCurrentPage(1)
-                                        }}
-                                        className={cn(
-                                            "text-xs font-bold px-3 py-1.5 rounded-md transition-all",
-                                            orderTypeFilter === tab
-                                                ? "bg-white shadow-sm text-primary"
-                                                : "text-text-muted hover:text-primary"
-                                        )}
-                                    >
-                                        {tab}
-                                        {tab === "Subscription" && (
-                                            <span className="ml-1.5 bg-primary/10 text-primary text-[10px] font-black px-1.5 py-0.5 rounded-full">
-                                                {subscriptionCount}
-                                            </span>
-                                        )}
-                                        {tab === "One-time" && (
-                                            <span className="ml-1.5 bg-gray-100 text-gray-600 text-[10px] font-black px-1.5 py-0.5 rounded-full">
-                                                {oneTimeCount}
-                                            </span>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
+                        <div className="flex items-center gap-1 bg-background-soft rounded-lg p-1">
+                            {(["All", "Subscription", "One-time"] as const).map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setOrderTypeFilter(tab)}
+                                    className={cn(
+                                        "text-xs font-bold px-3 py-1.5 rounded-md transition-all",
+                                        orderTypeFilter === tab ? "bg-white shadow-sm text-primary" : "text-text-muted hover:text-primary"
+                                    )}
+                                >
+                                    {tab}
+                                </button>
+                            ))}
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
-                                <input
-                                    type="text"
-                                    placeholder="Search orders..."
-                                    value={searchQuery}
-                                    onChange={(e) => {
-                                        setSearchQuery(e.target.value)
-                                        setCurrentPage(1)
-                                    }}
-                                    className="pl-9 pr-4 py-1.5 rounded-lg bg-background-soft border-transparent text-sm outline-none w-64 focus:ring-2 focus:ring-primary/20 transition-all"
-                                />
-                            </div>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
+                            <input
+                                type="text"
+                                placeholder="Search orders..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9 pr-4 py-1.5 rounded-lg bg-background-soft border-transparent text-sm outline-none w-64 focus:ring-1 focus:ring-primary/20 transition-all"
+                            />
                         </div>
                     </div>
 
@@ -414,187 +364,60 @@ function OrdersContent() {
                             </thead>
                             <tbody className="divide-y divide-border-custom text-sm">
                                 {paginatedOrders.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={9} className="px-6 py-12 text-center text-text-muted">
-                                            <Package size={48} className="mx-auto mb-4 opacity-20" />
-                                            <p>No orders found matching "{searchQuery}"</p>
-                                        </td>
-                                    </tr>
+                                    <tr><td colSpan={9} className="px-6 py-12 text-center text-text-muted">No orders found</td></tr>
                                 ) : (
                                     paginatedOrders.map((order: any) => (
                                         <tr key={order.id} className="hover:bg-background-soft/50 transition-colors">
                                             <td className="px-6 py-4 font-bold text-primary">{order.id}</td>
                                             <td className="px-6 py-4">
-                                                {order.orderType === "Subscription" ? (
-                                                    <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-blue-50 text-blue-700 border border-blue-200 w-fit">
-                                                        <RefreshCw size={10} />
-                                                        Sub
-                                                    </span>
-                                                ) : (
-                                                    <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-blue-50 text-blue-600 border border-blue-100 w-fit">
-                                                        One-off
-                                                    </span>
-                                                )}
+                                                <span className={cn(
+                                                    "px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider",
+                                                    order.orderType === "Subscription" ? "bg-blue-600 text-white" : "bg-blue-600/80 text-white"
+                                                )}>
+                                                    {order.orderType === "Subscription" ? "Sub" : "One-off"}
+                                                </span>
                                             </td>
-                                            <td className="px-6 py-4 font-medium max-w-[200px]" title={order.product}>
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="truncate block">{order.product}</span>
-                                                    {order.subscriptionDetails && (
-                                                        <span className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded w-fit">
-                                                            {order.subscriptionDetails.frequency === "Weekly"
-                                                                ? `Weekly: ${order.subscriptionDetails.customDays?.join(", ") || "No days"}`
-                                                                : order.subscriptionDetails.frequency}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-text-muted whitespace-nowrap text-xs">{order.date}</td>
+                                            <td className="px-6 py-4 font-medium truncate max-w-[180px]">{order.product}</td>
+                                            <td className="px-6 py-4 text-text-muted">{order.date}</td>
                                             <td className="px-6 py-4 font-bold">₹{order.price}</td>
                                             <td className="px-6 py-4">
-                                                <span className={cn(
-                                                    "flex items-center gap-1.5 font-semibold",
-                                                    (order.payment === "Paid" || order.payment === "Success") ? "text-primary" : "text-warning"
-                                                )}>
-                                                    <div className={cn("w-1.5 h-1.5 rounded-full", (order.payment === "Paid" || order.payment === "Success") ? "bg-primary" : "bg-warning")}></div>
-                                                    {order.payment || "Pending"}
+                                                <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold", order.payment === "Paid" ? "bg-primary/10 text-primary" : "bg-warning/10 text-warning")}>
+                                                    {order.payment}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <span className={cn(
-                                                    "px-3 py-1 rounded-full text-[11px] font-black uppercase border whitespace-nowrap",
-                                                    statusStyles[order.status] || "bg-gray-50 text-gray-600 border-gray-100"
-                                                )}>
-                                                    {order.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 relative group/rider">
-                                                {(() => {
-                                                    const isLocked = ["New", "Pending", "Accepted"].includes(order.status);
-                                                    
-                                                    const handleMouseEnter = () => {
-                                                        if (!isLocked) return;
-                                                        if (leaveTimer.current) clearTimeout(leaveTimer.current);
-                                                        setTooltipStep(1); // Always reset to step 1 on new hover
-                                                        setHoveredOrderId(order.id);
-                                                    };
-
-                                                    const handleMouseLeave = () => {
-                                                        leaveTimer.current = setTimeout(() => {
-                                                            setHoveredOrderId(null);
-                                                            setTooltipStep(1);
-                                                        }, 500);
-                                                    };
-
-                                                    return (
-                                                        <div 
-                                                            className="relative"
-                                                            onMouseEnter={handleMouseEnter}
-                                                            onMouseLeave={handleMouseLeave}
-                                                        >
-                                                            <select
-                                                                value={order.rider?._id || ""}
-                                                                onChange={(e) => handleAssignRiderSelection(order.id, e.target.value)}
-                                                                disabled={isLocked}
-                                                                className={cn(
-                                                                    "text-xs bg-background-soft border-transparent rounded p-1 outline-none focus:ring-1 focus:ring-primary/30 transition-all w-full",
-                                                                    isLocked ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-primary/30"
-                                                                )}
-                                                            >
-                                                                <option value="">{isLocked ? "🔒 Locked" : "Assign Rider"}</option>
-                                                                {riders.map((rider: any) => (
-                                                                    <option key={rider._id || rider.user?._id} value={rider.user?._id}>
-                                                                        {rider.user?.name}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-
-                                                            {/* Custom Interactive Tooltip */}
-                                                            {hoveredOrderId === order.id && isLocked && (
-                                                                <div 
-                                                                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-white border border-border-custom p-3 rounded-xl shadow-xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200"
-                                                                    onMouseEnter={() => {
-                                                                        if (leaveTimer.current) clearTimeout(leaveTimer.current);
-                                                                    }}
-                                                                >
-                                                                    <div className="text-[11px] leading-relaxed text-text font-medium flex flex-col gap-2">
-                                                                        {(() => {
-                                                                            const targetStatus = order.status === "Pending" ? "Accepted" : "Processing";
-                                                                            const actionGoal = order.status === "Pending" ? "Accept order" : "mark as processing";
-                                                                            
-                                                                            if (tooltipStep === 1) {
-                                                                                return (
-                                                                                    <div className="flex items-start gap-2">
-                                                                                        <div className="mt-0.5 text-primary"><CheckCircle size={14} /></div>
-                                                                                        <p>Mark order as <span className="font-bold text-primary">{targetStatus}</span> to assign a rider.</p>
-                                                                                    </div>
-                                                                                );
-                                                                            }
-                                                                            
-                                                                            return (
-                                                                                <div className="flex items-start gap-2">
-                                                                                    <div className="mt-0.5 text-primary"><CheckCircle size={14} /></div>
-                                                                                    <p>Click on check icon to {actionGoal}, then assign rider.</p>
-                                                                                </div>
-                                                                            );
-                                                                        })()}
-                                                                        
-                                                                        <div className="flex justify-end border-t pt-2 mt-1">
-                                                                            <button 
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    setTooltipStep(tooltipStep === 1 ? 2 : 1);
-                                                                                }}
-                                                                                className="p-1 hover:bg-primary/10 rounded-full text-primary transition-colors border border-primary/20"
-                                                                            >
-                                                                                <ChevronRight size={14} className={cn("transition-transform", tooltipStep === 2 && "rotate-180")} />
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                    {/* Tooltip Arrow */}
-                                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-8 border-transparent border-t-white drop-shadow-sm"></div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })()}
+                                            <td className="px-6 py-4 italic uppercase font-black text-blue-600 text-[10px] tracking-tight">
+                                                <span className="px-3 py-1 bg-blue-50 border border-blue-200 rounded-full">{order.status}</span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <button
-                                                        onClick={() => setSelectedOrder(order)}
-                                                        className="p-2 hover:bg-primary-light text-text-muted hover:text-primary rounded-lg transition-colors"
-                                                        title="View status history"
-                                                    >
+                                                <select
+                                                    value={order.rider?.id || ""}
+                                                    onChange={(e) => handleAssignRiderSelection(order.id, e.target.value)}
+                                                    className="text-[10px] bg-background-soft border-transparent rounded p-1.5 outline-none cursor-pointer hover:border-primary/20 w-32 font-bold uppercase transition-all"
+                                                >
+                                                    <option value="">{order.rider?.name || "Assign R"}</option>
+                                                    {riders.map((rider: any) => (
+                                                        <option key={rider.user?._id} value={rider.user?._id}>{rider.user?.name}</option>
+                                                    ))}
+                                                </select>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center justify-center gap-1">
+                                                    <button onClick={() => setSelectedOrder(order)} className="p-2 hover:bg-primary-light text-text-muted hover:text-primary rounded-lg transition-all" title="View Detail">
                                                         <Eye size={18} />
                                                     </button>
-                                                    {(() => {
-                                                        let nextStatus = ""
-                                                        let isTerminal = false
-
-                                                        if (order.status === "Pending") {
-                                                            nextStatus = "Accepted"
-                                                        } else if (order.status === "Accepted") {
-                                                            nextStatus = "Processing"
-                                                        } else {
-                                                            isTerminal = true
-                                                        }
-
-                                                        return (
-                                                            <button
-                                                                onClick={() => !isTerminal && handleStatusUpdate(order.id, nextStatus)}
-                                                                disabled={isTerminal}
-                                                                className={cn(
-                                                                    "p-2 rounded-lg transition-colors",
-                                                                    isTerminal
-                                                                        ? "text-gray-300 cursor-not-allowed"
-                                                                        : "hover:bg-blue-50 text-text-muted hover:text-blue-600"
-                                                                )}
-                                                                title={isTerminal ? (order.status === "Delivered" ? "Order Delivered" : "No further retailer actions") : `Mark as ${nextStatus}`}
-                                                            >
-                                                                <CheckCircle size={18} />
-                                                            </button>
-                                                        )
-                                                    })()}
+                                                    {order.status === "Pending" ? (
+                                                        <button onClick={() => handleStatusUpdate(order.id, "Accepted")} className="p-2 hover:bg-emerald-50 text-text-muted hover:text-emerald-600 rounded-lg transition-all" title="Accept">
+                                                            <CheckCircle size={18} />
+                                                        </button>
+                                                    ) : !['Completed', 'Delivered', 'Cancelled'].includes(order.status) && (
+                                                        <button 
+                                                            onClick={() => handleStatusUpdate(order.id, "Completed")} 
+                                                            className="p-2 hover:bg-blue-50 text-text-muted hover:text-blue-600 rounded-lg transition-all" 
+                                                            title="Mark Completed"
+                                                        >
+                                                            <CheckCircle size={18} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -603,136 +426,108 @@ function OrdersContent() {
                             </tbody>
                         </table>
                     </div>
-
-                    {/* Pagination Footer */}
-                    {totalPages > 1 && (
-                        <div className="p-4 border-t border-border-custom flex items-center justify-between bg-background-soft/30">
-                            <p className="text-xs text-text-muted font-medium">
-                                Showing <span className="text-text font-bold">{(currentPage - 1) * ORDERS_PER_PAGE + 1}</span> to <span className="text-text font-bold">{Math.min(currentPage * ORDERS_PER_PAGE, filteredOrders.length)}</span> of <span className="text-text font-bold">{filteredOrders.length}</span> orders
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                    disabled={currentPage === 1}
-                                    className="px-3 py-1.5 text-xs font-bold rounded-lg border bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background-soft transition-all"
-                                >
-                                    Previous
-                                </button>
-                                <div className="flex items-center gap-1">
-                                    {[...Array(totalPages)].map((_, i) => {
-                                        const pageNum = i + 1;
-                                        // Show only current, 1st, last, and neighbors if many pages
-                                        if (totalPages > 7 && pageNum !== 1 && pageNum !== totalPages && Math.abs(pageNum - currentPage) > 1) {
-                                            if (Math.abs(pageNum - currentPage) === 2) return <span key={pageNum} className="px-1 text-text-muted">...</span>;
-                                            return null;
-                                        }
-                                        return (
-                                            <button
-                                                key={pageNum}
-                                                onClick={() => setCurrentPage(pageNum)}
-                                                className={cn(
-                                                    "w-8 h-8 text-xs font-bold rounded-lg transition-all",
-                                                    currentPage === pageNum
-                                                        ? "bg-primary text-white shadow-md shadow-primary/20"
-                                                        : "bg-white border hover:bg-background-soft"
-                                                )}
-                                            >
-                                                {pageNum}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                    disabled={currentPage === totalPages}
-                                    className="px-3 py-1.5 text-xs font-bold rounded-lg border bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background-soft transition-all"
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
 
-            {/* Status History Side Panel */}
-            {
-                selectedOrder && (
-                    <div className="fixed inset-0 z-50 flex">
-                        <div className="flex-1 bg-black/30" onClick={() => setSelectedOrder(null)} />
-                        <div className="w-full max-w-md bg-white shadow-2xl flex flex-col animate-in slide-in-from-right-4 duration-300">
-                            <div className="flex items-center justify-between p-6 border-b">
-                                <div>
-                                    <h3 className="text-lg font-bold">Order #{selectedOrder.id}</h3>
-                                    <p className="text-sm text-text-muted mt-1">{selectedOrder.product}</p>
-                                </div>
-                                <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-lg hover:bg-background-soft text-text-muted">
-                                    ✕
+            {/* Side Panel (Fixed & Restored) */}
+            {selectedOrder && (
+                <div className="fixed inset-0 z-50 flex">
+                    <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedOrder(null)} />
+                    <div className="w-full max-w-md bg-white shadow-2xl flex flex-col animate-in slide-in-from-right-4 duration-300">
+                        <div className="flex items-center justify-between p-6 border-b border-border-custom bg-white">
+                            <div className="flex flex-col">
+                                <h3 className="text-xl font-black tracking-tight text-primary">Status History</h3>
+                                <p className="text-[10px] text-text-muted font-black uppercase tracking-widest mt-1">ID: {selectedOrder.id}</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {!['Completed', 'Delivered', 'Cancelled'].includes(selectedOrder.status) && (
+                                    <button 
+                                        onClick={() => handleStatusUpdate(selectedOrder.id, "Completed")}
+                                        className="px-4 py-1.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-2"
+                                    >
+                                        <CheckCircle size={14} />
+                                        Complete
+                                    </button>
+                                )}
+                                <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-background-soft rounded-full transition-colors text-text-muted">
+                                    <X className="w-6 h-6" />
                                 </button>
                             </div>
+                        </div>
 
-                            {/* Current Status */}
-                            <div className="p-6 border-b flex flex-col gap-4">
-                                <div>
-                                    <p className="text-xs text-text-muted uppercase font-bold mb-2">Current Status</p>
-                                    <span className={cn(
-                                        "px-3 py-1.5 rounded-full text-xs font-black uppercase border",
-                                        statusStyles[selectedOrder.status] || "bg-gray-50 text-gray-600"
-                                    )}>{selectedOrder.status}</span>
-                                </div>
-                                {selectedOrder.subscriptionDetails && (
-                                    <div>
-                                        <p className="text-xs text-text-muted uppercase font-bold mb-2">Subscription Schedule</p>
-                                        <div className="flex flex-col gap-1">
-                                            <span className="text-sm font-bold text-primary">{selectedOrder.subscriptionDetails.frequency}</span>
-                                            {selectedOrder.subscriptionDetails.customDays && selectedOrder.subscriptionDetails.customDays.length > 0 && (
-                                                <p className="text-xs text-text-muted">Days: {selectedOrder.subscriptionDetails.customDays.join(", ")}</p>
-                                            )}
+                        <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+                            <div className="mb-8 p-6 rounded-[32px] bg-background-soft border border-border-custom/50 shadow-inner">
+                                <p className="text-[10px] text-text-muted font-black uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <Package size={14} className="text-primary" /> Order Content
+                                </p>
+                                <p className="text-sm font-bold text-primary leading-relaxed">{selectedOrder.product}</p>
+                            </div>
+
+                            <div className="space-y-0 relative">
+                                <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-gradient-to-b from-primary via-primary/30 to-transparent" />
+
+                                {selectedOrder.statusHistory && selectedOrder.statusHistory.length > 0 ? (
+                                    selectedOrder.statusHistory.slice().reverse().map((history: any, idx: number) => (
+                                        <div key={idx} className="relative pl-9 animate-in fade-in slide-in-from-left-4 duration-500 pb-10 group last:pb-0">
+                                            <div className="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-md bg-primary z-10 group-hover:scale-125 transition-transform" />
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm font-black text-primary uppercase tracking-tight">{history.status}</span>
+                                                    <span className="text-[10px] font-bold text-text-muted bg-white px-2 py-0.5 rounded-lg border shadow-sm tabular-nums">
+                                                        {new Date(history.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-text-muted mt-1 font-medium">{new Date(history.timestamp).toLocaleDateString([], { day: 'numeric', month: 'short' })}</p>
+
+                                                <div className="flex items-center gap-2 mt-3">
+                                                    <div className={cn(
+                                                        "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest",
+                                                        history.role === 'system' ? "bg-blue-600 text-white" : "bg-emerald-600 text-white"
+                                                    )}>
+                                                        {history.role === 'system' ? '🤖 AUTO' : '👤 MANUAL'}
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-text-muted italic opacity-70">
+                                                        {history.role === 'system' ? 'Platform Bot' : 'Store Vendor'}
+                                                    </span>
+                                                </div>
+
+                                                {history.status === "Rider Assigned" && selectedOrder.rider?.name && (
+                                                    <div className="flex items-center gap-1.5 mt-2.5 text-[9px] font-black text-blue-700 bg-blue-100/50 px-2.5 py-1.5 rounded-xl w-fit border border-blue-200/50 animate-in zoom-in-75 duration-500">
+                                                        <Package size={12} strokeWidth={3} className="text-blue-600" />
+                                                        <span className="uppercase tracking-wider">Rider: {selectedOrder.rider.name}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="relative pl-9">
+                                        <div className="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-md bg-primary z-10" />
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-black text-primary uppercase">No History Found</span>
+                                            <p className="text-xs text-text-muted mt-1 uppercase font-bold">Standard Lifecycle active</p>
                                         </div>
                                     </div>
                                 )}
                             </div>
+                        </div>
 
-                            {/* Timeline Placeholder - In real app, this would be fetched history */}
-                            <div className="p-6 flex-1 overflow-y-auto">
-                                <p className="text-xs text-text-muted uppercase font-bold mb-6">Status History</p>
-                                <div className="space-y-8 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-gray-100">
-                                    <div className="flex gap-4 relative">
-                                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0 z-10 border-4 border-white shadow-sm">
-                                            <CheckCircle size={10} className="text-white" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold">{selectedOrder.status}</p>
-                                            <p className="text-xs text-text-muted mt-1 italic">Order state updated to {selectedOrder.status}</p>
-                                            <p className="text-[10px] text-text-muted mt-1 flex items-center gap-1 font-bold">
-                                                <Clock size={10} /> Just now
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-4 relative">
-                                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center shrink-0 z-10 border-4 border-white">
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-text-muted uppercase">Pending</p>
-                                            <p className="text-xs text-text-muted mt-1 italic">Order received by the shop</p>
-                                            <p className="text-[10px] text-text-muted mt-1 flex items-center gap-1 font-bold">
-                                                <Clock size={10} /> {selectedOrder.date}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div className="p-8 border-t border-border-custom bg-white">
+                            <div className="flex items-center gap-4 text-primary bg-primary/5 p-4 rounded-3xl border border-primary/10">
+                                <Shield size={20} className="shrink-0" />
+                                <p className="text-[10px] font-bold leading-relaxed opacity-80 uppercase tracking-wide">Secure platform audit trail enabled. Every action is uniquely identified.</p>
                             </div>
                         </div>
                     </div>
-                )
-            }
+                </div>
+            )}
         </>
     )
 }
 
 export default function OrdersPage() {
     return (
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<div className="p-10 text-center animate-pulse text-text-muted uppercase font-black">Loading orders relay...</div>}>
             <OrdersContent />
         </Suspense>
     )

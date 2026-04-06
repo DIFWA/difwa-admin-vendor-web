@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, Suspense, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import {
     Search,
@@ -37,88 +37,67 @@ const statusStyles: any = {
     "Cancelled": "bg-red-50 text-red-600 border-red-100",
 }
 
-import useAdminStore from "@/data/store/useAdminStore"
-
 function AdminOrdersContent() {
     const { user } = useAuthStore()
-    const { 
-        ordersData, 
-        loadingOrders: loadingState, 
-        fetchOrders 
-    } = useAdminStore()
-
-    const currentUserPermissions = user?.permissions && user.permissions.length > 0
-        ? user.permissions
-        : (user?.roleId?.permissions || []);
-
-    const canView = currentUserPermissions.includes("ORDERS_VIEW")
-    const canEditOrder = currentUserPermissions.includes("ORDERS_EDIT")
-
     const searchParams = useSearchParams()
+    
     const [mounted, setMounted] = useState(false)
+    const [ordersData, setOrdersData] = useState<any>(null)
+    const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
     const [statusFilter, setStatusFilter] = useState("All")
     const [typeFilter, setTypeFilter] = useState("All")
     const [currentPage, setCurrentPage] = useState(1)
     const [selectedOrder, setSelectedOrder] = useState<any>(null)
+    
     const ORDERS_PER_PAGE = 10
 
-    const loading = !ordersData || loadingState
+    const currentUserPermissions = user?.permissions && user.permissions.length > 0
+        ? user.permissions
+        : (user?.roleId?.permissions || []);
+
+    const canView = currentUserPermissions.includes("ORDERS_VIEW") || user?.role === "superadmin";
+
+    const fetchOrdersData = useCallback(async (isSilent = false) => {
+        if (!isSilent) setLoading(true);
+        try {
+            const res = await adminService.getOrders({
+                page: currentPage,
+                search: searchQuery,
+                status: statusFilter,
+                type: typeFilter
+            });
+            if (res.success) {
+                setOrdersData(res.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch admin orders", error);
+        } finally {
+            if (!isSilent) setLoading(false);
+        }
+    }, [currentPage, searchQuery, statusFilter, typeFilter]);
 
     useEffect(() => {
         setMounted(true)
-        
-        // Initial fetch with current params
-        performFetch(currentPage, searchQuery, statusFilter, typeFilter)
-
-        // Socket connection logic for Admin
-        socket.connect()
+        fetchOrdersData()
 
         socket.on("connect", () => {
             console.log("🟢 Admin Connected to Socket Relay")
             socket.emit("join", "admin")
         })
 
-        socket.on("orderUpdate", (data) => {
+        socket.on("orderUpdate", (data: any) => {
             console.log("⚡ Real-time Order Update (Admin):", data)
             toast.info(`Order Update: ${data.orderId} is now ${data.status}`)
-            performFetch(currentPage, searchQuery, statusFilter, typeFilter, true) // Force refresh
+            fetchOrdersData(true) 
         })
 
         return () => {
             socket.off("orderUpdate")
-            socket.disconnect()
         }
-    }, [])
+    }, [fetchOrdersData])
 
-    // Trigger fetch on filter/page change with debounce for search
-    useEffect(() => {
-        if (!mounted) return;
-        
-        const timeoutId = setTimeout(() => {
-            performFetch(currentPage, searchQuery, statusFilter, typeFilter)
-        }, 300);
-
-        return () => clearTimeout(timeoutId);
-    }, [currentPage, searchQuery, statusFilter, typeFilter, mounted])
-
-    const performFetch = async (page: number, search: string, status: string, type: string, force = false) => {
-        const params: any = {
-            page,
-            limit: ORDERS_PER_PAGE,
-            search
-        };
-
-        if (status !== "All") params.status = status;
-        if (type !== "All") params.type = type;
-
-        await fetchOrders(params, force)
-    }
-
-    const totalPages = ordersData?.pagination?.totalPages || 1
-    const totalItems = ordersData?.pagination?.totalOrders || 0
-
-    if (!mounted || !ordersData) {
+    if (!mounted || (loading && !ordersData)) {
         return <div className="space-y-6 animate-pulse p-4">
             <div className="h-12 bg-background-soft rounded-xl w-1/4" />
             <div className="grid grid-cols-4 gap-6">
@@ -128,128 +107,80 @@ function AdminOrdersContent() {
         </div>
     }
 
-    const stats = [
-        { title: "Total Orders", value: ordersData.stats.totalOrders.toLocaleString(), color: "bg-primary-light text-primary", filterValue: "All" },
-        { title: "Pending Orders", value: ordersData.stats.pendingOrders.toLocaleString(), color: "bg-warning-50 text-warning", filterValue: "Pending" },
-        { title: "Completed", value: ordersData.stats.completedOrders.toLocaleString(), color: "bg-blue-50 text-blue-600", filterValue: "Completed" },
-        { title: "Cancelled", value: ordersData.stats.canceledOrders.toLocaleString(), color: "bg-red-50 text-red-600", filterValue: "Cancelled" },
-    ]
+    if (!canView) {
+        return (
+            <div className="flex flex-col items-center justify-center p-20 bg-white rounded-3xl border border-border-custom border-dashed">
+                <Shield className="w-16 h-16 text-primary/20 mb-4" />
+                <h3 className="text-xl font-bold">Access Denied</h3>
+                <p className="text-text-muted mt-2">You don't have permission to view orders.</p>
+            </div>
+        )
+    }
+
+    const orders = ordersData?.orders || []
+    const totalPages = Math.ceil((ordersData?.total || 0) / ORDERS_PER_PAGE)
 
     const handleExport = () => {
         try {
-            // Note: Exporting only current view for now, usually admin expects ALL data
-            // To export ALL data, we might need a separate endpoint or fetch all without limit
-            const exportData = ordersData.orders.map((o: any) => ({
+            const exportData = orders.map((o: any) => ({
                 "Order ID": o.orderId,
+                "User": o.user?.name || "Guest",
+                "Retailer": o.retailer?.businessName || "Unknown",
                 "Type": o.orderType,
-                "Shop": o.items?.[0]?.retailer?.businessDetails?.businessName || "N/A",
-                "Product": o.items?.map((i: any) => i.product?.name).join(", "),
-                "Date": new Date(o.createdAt).toLocaleString(),
-                "Amount": `₹${o.totalAmount}`,
-                "Payment": o.paymentStatus,
-                "Status": o.status
+                "Price": `₹${o.totalAmount}`,
+                "Status": o.status,
+                "Date": new Date(o.createdAt).toLocaleString()
             }))
-
             const worksheet = XLSX.utils.json_to_sheet(exportData)
             const workbook = XLSX.utils.book_new()
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Admin Orders Current Page")
-            XLSX.writeFile(workbook, `Shrimbite_Admin_Orders_${new Date().toISOString().split('T')[0]}.xlsx`)
-            toast.success("Orders exported successfully")
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Orders")
+            XLSX.writeFile(workbook, `Admin_Orders_${new Date().toISOString().split('T')[0]}.xlsx`)
+            toast.success("Order list exported successfully")
         } catch (error) {
             toast.error("Export failed")
         }
     }
 
-    if (!canView) return (
-        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-border-custom shadow-sm text-center my-12">
-            <div className="w-16 h-16 bg-red-50 text-red-400 rounded-full flex items-center justify-center mb-4">
-                <Package size={32} />
-            </div>
-            <h2 className="text-xl font-bold text-foreground">Access Restricted</h2>
-            <p className="text-text-muted mt-2 max-w-xs">You do not have permission to view the Order Management module.</p>
-        </div>
-    )
-
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Order Management</h1>
-                    <p className="text-text-muted">Monitor and track every order across all shops.</p>
+                    <h1 className="text-2xl font-bold tracking-tight">Manage Orders</h1>
+                    <p className="text-text-muted text-sm">Oversee all platform transactions and fulfillment.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    {canEditOrder && (
-                        <button
-                            onClick={handleExport}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary transition-all text-sm font-medium shadow-md shadow-primary/20"
-                        >
-                            <Download size={16} />
-                            Export All
-                        </button>
-                    )}
-                    <button className="p-2 rounded-lg border bg-white hover:bg-background-soft">
-                        <Filter size={18} />
+                    <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all font-medium text-sm shadow-lg shadow-primary/20">
+                        <Download size={16} /> Export
+                    </button>
+                    <button onClick={() => fetchOrdersData()} className="p-2 bg-white border border-border-custom text-text-muted hover:text-primary hover:bg-primary/5 rounded-xl transition-all">
+                        <RefreshCw size={18} />
                     </button>
                 </div>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {stats.map((stat, index) => (
-                    <div
-                        key={index}
-                        onClick={() => {
-                            setStatusFilter(stat.filterValue)
-                            setCurrentPage(1)
-                        }}
-                        className={cn(
-                            "bg-white p-6 rounded-2xl border transition-all duration-200 cursor-pointer hover:shadow-md",
-                            statusFilter === stat.filterValue ? "ring-2 ring-primary ring-offset-2 border-primary" : "border-border-custom shadow-sm"
-                        )}
-                    >
-                        <p className="text-xs font-bold uppercase tracking-wider text-text-muted mb-2">{stat.title}</p>
-                        <h3 className="text-2xl font-bold text-text">{stat.value}</h3>
-                    </div>
-                ))}
-            </div>
-
-            {/* Table Section */}
             <div className="bg-white rounded-2xl border border-border-custom overflow-hidden shadow-sm">
                 <div className="p-6 border-b border-border-custom flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <h2 className="text-lg font-bold">Comprehensive Order List</h2>
-                        <div className="flex items-center gap-1 bg-background-soft rounded-lg p-1">
-                            {(["All", "Subscription", "One-time"] as const).map(tab => (
-                                <button
-                                    key={tab}
-                                    onClick={() => {
-                                        setTypeFilter(tab)
-                                        setCurrentPage(1)
-                                    }}
-                                    className={cn(
-                                        "text-xs font-bold px-3 py-1.5 rounded-md transition-all",
-                                        typeFilter === tab ? "bg-white shadow-sm text-primary" : "text-text-muted hover:text-primary"
-                                    )}
-                                >
-                                    {tab}
-                                </button>
-                            ))}
-                        </div>
+                    <div className="relative w-full max-w-md">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Search by ID, User, or Retailer..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 rounded-xl bg-background-soft border-transparent outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                        />
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
-                            <input
-                                type="text"
-                                placeholder="Search by ID, product, or shop..."
-                                value={searchQuery}
-                                onChange={(e) => {
-                                    setSearchQuery(e.target.value)
-                                    setCurrentPage(1)
-                                }}
-                                className="pl-9 pr-4 py-1.5 rounded-lg bg-background-soft border-transparent text-sm outline-none w-72 focus:ring-2 focus:ring-primary/20 transition-all"
-                            />
-                        </div>
+                        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 rounded-xl bg-background-soft border-transparent text-sm outline-none cursor-pointer">
+                            <option value="All">All Status</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="px-3 py-2 rounded-xl bg-background-soft border-transparent text-sm outline-none cursor-pointer">
+                            <option value="All">All Types</option>
+                            <option value="One-time">One-time</option>
+                            <option value="Subscription">Subscription</option>
+                        </select>
                     </div>
                 </div>
 
@@ -257,100 +188,43 @@ function AdminOrdersContent() {
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-primary/5 text-xs font-bold text-primary uppercase tracking-wider border-b border-border-custom">
-                                <th className="px-6 py-4">No.</th>
-                                <th className="px-6 py-4">Order Id</th>
-                                <th className="px-6 py-4">Type</th>
-                                <th className="px-6 py-4">Shop Name</th>
-                                <th className="px-6 py-4">Product Details</th>
-                                <th className="px-6 py-4">Date & Time</th>
-                                <th className="px-6 py-4">Price</th>
-                                <th className="px-6 py-4">Payment</th>
+                                <th className="px-6 py-4">Order ID</th>
+                                <th className="px-6 py-4">User</th>
+                                <th className="px-6 py-4">Retailer</th>
                                 <th className="px-6 py-4">Status</th>
-                                <th className="px-1 py-4"></th>
+                                <th className="px-6 py-4">Total</th>
+                                <th className="px-6 py-4 text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border-custom text-sm">
-                            {(loading || ordersData.orders.length === 0) ? (
+                            {!orders || orders.length === 0 ? (
                                 <tr>
-                                    <td colSpan={10} className="px-6 py-12 text-center text-text-muted">
-                                        {loading ? (
-                                            <div className="flex justify-center"><RefreshCw className="animate-spin text-primary" /></div>
-                                        ) : (
-                                            <>
-                                                <Package size={48} className="mx-auto mb-4 opacity-20" />
-                                                <p>No orders found matching your criteria.</p>
-                                            </>
-                                        )}
+                                    <td colSpan={6} className="px-6 py-12 text-center text-text-muted">
+                                        <Package className="mx-auto mb-2 opacity-20" size={48} />
+                                        <p>No orders record found.</p>
                                     </td>
                                 </tr>
                             ) : (
-                                ordersData.orders.map((order: any, i: number) => (
+                                orders.map((order: any) => (
                                     <tr key={order._id} className="hover:bg-background-soft/50 transition-colors">
-                                        <td className="px-6 py-4 text-text-muted font-medium">
-                                            {(currentPage - 1) * ORDERS_PER_PAGE + i + 1}
-                                        </td>
                                         <td className="px-6 py-4 font-bold text-primary">{order.orderId}</td>
                                         <td className="px-6 py-4">
-                                            {order.orderType === "Subscription" ? (
-                                                <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-blue-50 text-blue-700 border border-blue-200 w-fit">
-                                                    <RefreshCw size={10} />
-                                                    Sub
-                                                </span>
-                                            ) : (
-                                                <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wide bg-blue-50 text-blue-600 border border-blue-100 w-fit">
-                                                    One-off
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 font-semibold text-text">
-                                            {order.items?.[0]?.retailer?.businessDetails?.businessName || "Unknown Shop"}
-                                        </td>
-                                        <td className="px-6 py-4 font-medium max-w-[200px]">
-                                            <span className="truncate block" title={order.items?.map((i: any) => i.product?.name).join(", ")}>
-                                                {order.items?.map((i: any) => i.product?.name).join(", ") || "No Products"}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-text-muted whitespace-nowrap text-xs">
-                                            {new Date(order.createdAt).toLocaleString('en-IN', {
-                                                day: '2-digit',
-                                                month: '2-digit',
-                                                year: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                                hour12: true
-                                            })}
-                                        </td>
-                                        <td className="px-6 py-4 font-bold">₹{order.totalAmount}</td>
-                                        <td className="px-6 py-4">
-                                            <span className={cn(
-                                                "flex items-center gap-1.5 font-semibold",
-                                                (order.paymentStatus === "Paid" || order.paymentStatus === "Success") ? "text-primary" : "text-warning"
-                                            )}>
-                                                <div className={cn("w-1.5 h-1.5 rounded-full", (order.paymentStatus === "Paid" || order.paymentStatus === "Success") ? "bg-primary" : "bg-warning")}></div>
-                                                {order.paymentStatus || "Pending"}
-                                            </span>
+                                            <p className="font-medium">{order.user?.name || "Guest"}</p>
+                                            <p className="text-[10px] text-text-muted">{order.user?.phone}</p>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={cn(
-                                                "px-3 py-1 rounded-full text-[11px] font-black uppercase border whitespace-nowrap",
-                                                statusStyles[order.status] || "bg-gray-50 text-gray-600 border-gray-100"
-                                            )}>
+                                            <p className="font-medium">{order.retailer?.businessDetails?.businessName || order.retailer?.name}</p>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase border", statusStyles[order.status] || "bg-gray-50 text-gray-500")}>
                                                 {order.status}
                                             </span>
                                         </td>
-                                        <td className="px-1 py-4">
-                                            {canEditOrder ? (
-                                                <button 
-                                                    onClick={() => setSelectedOrder(order)}
-                                                    className="p-1 hover:bg-primary-light text-text-muted hover:text-primary rounded-md transition-all"
-                                                >
-                                                    <Eye size={16} />
-                                                </button>
-                                            ) : (
-                                                <div className="w-6 h-6 flex items-center justify-center opacity-20">
-                                                    <Shield size={14} />
-                                                </div>
-                                            )}
+                                        <td className="px-6 py-4 font-bold">₹{order.totalAmount}</td>
+                                        <td className="px-6 py-4 text-center">
+                                            <button onClick={() => setSelectedOrder(order)} className="p-2 hover:bg-primary-light text-text-muted hover:text-primary rounded-xl transition-all">
+                                                <Eye size={18} />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))
@@ -359,113 +233,24 @@ function AdminOrdersContent() {
                     </table>
                 </div>
 
-                {/* Pagination */}
                 {totalPages > 1 && (
-                    <div className="p-4 border-t border-border-custom flex items-center justify-between bg-background-soft/30">
-                        <p className="text-xs text-text-muted">
-                            Showing <span className="text-text font-bold">{(currentPage - 1) * ORDERS_PER_PAGE + 1}</span> to <span className="text-text font-bold">{Math.min(currentPage * ORDERS_PER_PAGE, totalItems)}</span> of <span className="text-text font-bold">{totalItems}</span> orders
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                disabled={currentPage === 1}
-                                className="px-3 py-1.5 text-xs font-bold rounded-lg border bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background-soft transition-all"
-                            >
-                                <ChevronLeft size={16} />
-                            </button>
-                            <div className="flex items-center gap-1">
-                                {[...Array(totalPages)].map((_, i) => (
-                                    <button
-                                        key={i + 1}
-                                        onClick={() => setCurrentPage(i + 1)}
-                                        className={cn(
-                                            "w-8 h-8 rounded-md text-[10px] font-bold transition-all",
-                                            currentPage === i + 1 ? "bg-primary text-white shadow-md shadow-primary/20" : "hover:bg-background-soft text-text-muted border border-border-custom"
-                                        )}
-                                    >
-                                        {i + 1}
-                                    </button>
-                                ))}
-                            </div>
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                disabled={currentPage === totalPages}
-                                className="px-3 py-1.5 text-xs font-bold rounded-lg border bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background-soft transition-all"
-                            >
-                                <ChevronRight size={16} />
-                            </button>
+                    <div className="p-6 border-t border-border-custom flex items-center justify-between">
+                        <p className="text-xs text-text-muted">Page {currentPage} of {totalPages}</p>
+                        <div className="flex gap-2">
+                            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-4 py-2 bg-white border border-border-custom rounded-xl text-xs font-bold disabled:opacity-50">Prev</button>
+                            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-4 py-2 bg-white border border-border-custom rounded-xl text-xs font-bold disabled:opacity-50">Next</button>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Simple Detail Overlay (if needed) */}
-            {selectedOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-6 border-b flex items-center justify-between">
-                            <h3 className="text-lg font-bold">Order Details</h3>
-                            <button onClick={() => setSelectedOrder(null)} className="text-text-muted hover:text-text text-xl">&times;</button>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-[10px] uppercase font-bold text-text-muted">Order ID</p>
-                                    <p className="font-bold">{selectedOrder.orderId}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] uppercase font-bold text-text-muted">Status</p>
-                                    <span className={cn(
-                                        "px-2 py-0.5 rounded-full text-[10px] font-black uppercase border",
-                                        statusStyles[selectedOrder.status]
-                                    )}>{selectedOrder.status}</span>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] uppercase font-bold text-text-muted">Shop Name</p>
-                                    <p className="font-semibold">{selectedOrder.items?.[0]?.retailer?.businessDetails?.businessName || "N/A"}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] uppercase font-bold text-text-muted">Customer</p>
-                                    <p className="font-semibold">{selectedOrder.user?.fullName || "Guest"}</p>
-                                </div>
-                                <div className="col-span-2">
-                                    <p className="text-[10px] uppercase font-bold text-text-muted">Delivery Address</p>
-                                    <p className="text-xs text-text-muted">{selectedOrder.deliveryAddress?.address || "N/A"}</p>
-                                </div>
-                            </div>
-                            <div className="border rounded-xl overflow-hidden text-xs">
-                                <div className="bg-background-soft p-3 font-bold border-b">Products</div>
-                                <div className="p-3 space-y-2">
-                                    {selectedOrder.items?.map((item: any, idx: number) => (
-                                        <div key={idx} className="flex justify-between">
-                                            <span>{item.quantity}x {item.product?.name}</span>
-                                            <span className="font-bold">₹{item.price * item.quantity}</span>
-                                        </div>
-                                    ))}
-                                    <div className="border-t pt-2 flex justify-between font-bold text-sm text-primary">
-                                        <span>Total</span>
-                                        <span>₹{selectedOrder.totalAmount}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }
 
 export default function AdminOrdersPage() {
     return (
-        <Suspense fallback={
-            <div className="space-y-6 animate-pulse p-4">
-                <div className="h-12 bg-background-soft rounded-xl w-1/4" />
-                <div className="grid grid-cols-4 gap-6">
-                    {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-background-soft rounded-2xl" />)}
-                </div>
-            </div>
-        }>
+        <Suspense fallback={<div className="p-20 text-center text-text-muted animate-pulse">Loading platform orders...</div>}>
             <AdminOrdersContent />
         </Suspense>
     )

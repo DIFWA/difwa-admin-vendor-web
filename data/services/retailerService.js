@@ -175,6 +175,11 @@ const retailerService = {
     getDueOrdersForCustomer: async (customerId) => {
         const response = await apiClient.get(`/retailer/customers/${customerId}/due-orders`);
         return response.data;
+    },
+
+    bulkProcessOrders: async () => {
+        const response = await apiClient.post("/retailer/orders/bulk-process");
+        return response.data;
     }
 };
 
