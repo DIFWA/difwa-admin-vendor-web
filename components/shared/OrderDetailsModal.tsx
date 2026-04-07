@@ -99,6 +99,7 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
                             <div className={cn("px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border", statusColorStyles[order.status] || "bg-gray-50 text-gray-500")}>
                                 {order.status}
                             </div>
+
                         </div>
                         <div className="flex items-center gap-2 text-xs font-bold text-text-muted tracking-wide">
                             <CreditCard size={14} /> {payMethod} • {payStatus}
@@ -138,9 +139,9 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
                                         <div>
                                             <p className="font-bold text-sm">Partner Assigned</p>
                                             <p className="text-xs text-text-muted font-black mt-1 uppercase">{userRider.name || "Delivery Partner"}</p>
-                                            <p className="text-xs text-primary font-bold mt-2 flex items-center gap-1.5 bg-primary/5 px-2 py-1 rounded-lg w-fit print:border print:border-primary/20">
+                                            <div className="text-xs text-primary font-bold mt-2 flex items-center gap-1.5 bg-primary/5 px-2 py-1 rounded-lg w-fit print:border print:border-primary/20">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse print:animate-none" /> Live Status: {order.status}
-                                            </p>
+                                            </div>
                                         </div>
                                     </div>
                                 ) : (
@@ -153,7 +154,24 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
                         </div>
                     </div>
 
-                    {/* Order Content */}
+                    {/* Delivery Slot Section */}
+                    {order.deliverySlot && (
+                        <div className="p-5 bg-orange-50/50 rounded-2xl border border-orange-100/50 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-500">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-white rounded-xl shadow-sm text-orange-600 border border-orange-100">
+                                    <Clock size={20} />
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-black text-orange-600 uppercase tracking-widest">Delivery Time Slot</h4>
+                                    <p className="text-sm font-bold text-text mt-0.5">{order.deliverySlot}</p>
+                                </div>
+                            </div>
+                            <div className="text-[10px] font-black text-orange-600/60 uppercase tracking-tighter bg-white px-3 py-1 rounded-full border border-orange-100 shadow-sm">
+                                Timed Delivery
+                            </div>
+                        </div>
+                    )}
+
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xs font-black text-primary uppercase tracking-[0.2em]">Order Summary</h3>

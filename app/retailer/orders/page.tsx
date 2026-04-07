@@ -13,7 +13,6 @@ import {
     ChevronRight,
     Lock,
     Clock,
-    Shield,
     X
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -42,14 +41,14 @@ function OrdersContent() {
     const searchParams = useSearchParams()
     const [mounted, setMounted] = useState(false)
     const [riders, setRiders] = useState<any[]>([])
-    
-    const { 
-        orders, 
-        loading, 
-        fetchOrders, 
-        currentPage, 
-        totalPages, 
-        stats: storeStats 
+
+    const {
+        orders,
+        loading,
+        fetchOrders,
+        currentPage,
+        totalPages,
+        stats: storeStats
     } = useOrderStore();
 
     // Auto-process logic
@@ -59,7 +58,6 @@ function OrdersContent() {
     const [searchQuery, setSearchQuery] = useState("")
     const [orderTypeFilter, setOrderTypeFilter] = useState<"All" | "Subscription" | "One-time">("All")
     const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Completed">("All")
-    const [selectedOrder, setSelectedOrder] = useState<any>(null)
     const [viewingOrder, setViewingOrder] = useState<any>(null)
 
     const moreMenuRef = useRef<HTMLDivElement>(null)
@@ -125,15 +123,7 @@ function OrdersContent() {
         };
     }, [autoProcessEnabled]);
 
-    // Sync selected order when orders list updates (for real-time timeline)
-    useEffect(() => {
-        if (selectedOrder) {
-            const updated = orders.find((o: any) => o.id === selectedOrder.id);
-            if (updated) {
-                setSelectedOrder(updated);
-            }
-        }
-    }, [orders, selectedOrder?.id]);
+
 
     if (!mounted || (loading && orders.length === 0)) {
         return <div className="space-y-6 animate-pulse p-4">
@@ -292,15 +282,16 @@ function OrdersContent() {
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-primary/5 text-xs font-bold text-primary uppercase tracking-wider border-b border-border-custom">
-                                <th className="px-6 py-4">Order ID</th>
-                                <th className="px-6 py-4">Type</th>
-                                <th className="px-6 py-4">Product Details</th>
-                                <th className="px-6 py-4">Date</th>
-                                <th className="px-6 py-4">Total</th>
-                                <th className="px-6 py-4">Payment</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4">Rider</th>
-                                <th className="px-6 py-4 text-center">Action</th>
+                                <th className="px-6 py-4 whitespace-nowrap">Order ID</th>
+                                <th className="px-6 py-4 whitespace-nowrap">Type</th>
+                                <th className="px-6 py-4 whitespace-nowrap">Product Details</th>
+                                <th className="px-6 py-4 whitespace-nowrap">Delivery Slot</th>
+                                <th className="px-6 py-4 whitespace-nowrap">Date</th>
+                                <th className="px-6 py-4 whitespace-nowrap text-right">Total</th>
+                                <th className="px-6 py-4 whitespace-nowrap">Payment</th>
+                                <th className="px-6 py-4 whitespace-nowrap">Status</th>
+                                <th className="px-6 py-4 whitespace-nowrap">Rider</th>
+                                <th className="px-6 py-4 whitespace-nowrap text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border-custom text-sm">
@@ -309,18 +300,35 @@ function OrdersContent() {
                             ) : (
                                 filteredOrders.map((order: any) => (
                                     <tr key={order.id} className="hover:bg-background-soft/50 transition-colors cursor-pointer group" onClick={() => setViewingOrder(order)}>
-                                        <td className="px-6 py-4 font-bold text-primary group-hover:underline">{order.id}</td>
                                         <td className="px-6 py-4">
-                                            <span className={cn(
-                                                "px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider",
-                                                order.orderType === "Subscription" ? "bg-blue-600 text-white" : "bg-blue-600/80 text-white"
-                                            )}>
-                                                {order.orderType === "Subscription" ? "Sub" : "One-off"}
-                                            </span>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black tracking-tight text-primary group-hover:underline truncate max-w-[100px]">
+                                                    {order.id}
+                                                </span>
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 font-medium truncate max-w-[180px]">{order.product}</td>
-                                        <td className="px-6 py-4 text-text-muted">{order.date}</td>
-                                        <td className="px-6 py-4 font-bold">₹{order.price}</td>
+                                        <td className="px-6 py-4">
+                                            <div className={cn(
+                                                "px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter whitespace-nowrap w-fit border shadow-sm",
+                                                order.orderType === "Subscription" ? "bg-primary text-white border-primary" : "bg-blue-600 text-white border-blue-600"
+                                            )}>
+                                                {order.orderType === "Subscription" ? "SUB" : "ONE-OFF"}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 font-medium truncate max-w-[180px]">
+                                            {order.product}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {order.deliverySlot ? (
+                                                <div className="text-[10px] text-orange-600 font-black bg-orange-50 w-fit px-3 py-1 rounded-full flex items-center gap-1.5 border border-orange-200 shadow-sm animate-pulse whitespace-nowrap">
+                                                    <Clock size={12} /> {order.deliverySlot}
+                                                </div>
+                                            ) : (
+                                                <span className="text-[10px] text-text-muted font-bold opacity-30 italic">No Slot</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-[11px] font-medium text-text-muted whitespace-nowrap">{order.date}</td>
+                                        <td className="px-6 py-4 font-black text-primary text-right whitespace-nowrap">₹{order.price}</td>
                                         <td className="px-6 py-4">
                                             <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold", order.payment === "Paid" ? "bg-primary/10 text-primary" : "bg-warning/10 text-warning")}>
                                                 {order.payment}
@@ -329,10 +337,13 @@ function OrdersContent() {
                                         <td className="px-6 py-4 italic uppercase font-black text-blue-600 text-[10px] tracking-tight">
                                             <span className="px-3 py-1 bg-blue-50 border border-blue-200 rounded-full">{order.status}</span>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                                             <select
                                                 value={order.rider?.id || ""}
-                                                onChange={(e) => handleAssignRiderSelection(order.id, e.target.value)}
+                                                onChange={(e) => {
+                                                    e.stopPropagation();
+                                                    handleAssignRiderSelection(order.id, e.target.value);
+                                                }}
                                                 className="text-[10px] bg-background-soft border-transparent rounded p-1.5 outline-none cursor-pointer hover:border-primary/20 w-32 font-bold uppercase transition-all"
                                             >
                                                 <option value="">{order.rider?.name || "Assign R"}</option>
@@ -341,18 +352,21 @@ function OrdersContent() {
                                                 ))}
                                             </select>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex items-center justify-center gap-1">
-                                                <button onClick={() => setSelectedOrder(order)} className="p-2 hover:bg-primary-light text-text-muted hover:text-primary rounded-lg transition-all" title="View Detail">
-                                                    <Eye size={18} />
-                                                </button>
                                                 {order.status === "Pending" ? (
-                                                    <button onClick={() => handleStatusUpdate(order.id, "Accepted")} className="p-2 hover:bg-emerald-50 text-text-muted hover:text-emerald-600 rounded-lg transition-all" title="Accept">
+                                                    <button onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleStatusUpdate(order.id, "Accepted");
+                                                    }} className="p-2 hover:bg-emerald-50 text-text-muted hover:text-emerald-600 rounded-lg transition-all" title="Accept">
                                                         <CheckCircle size={18} />
                                                     </button>
                                                 ) : !['Completed', 'Delivered', 'Cancelled'].includes(order.status) && (
                                                     <button
-                                                        onClick={() => handleStatusUpdate(order.id, "Completed")}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleStatusUpdate(order.id, "Completed");
+                                                        }}
                                                         className="p-2 hover:bg-blue-50 text-text-muted hover:text-blue-600 rounded-lg transition-all"
                                                         title="Mark Completed"
                                                     >
@@ -408,98 +422,7 @@ function OrdersContent() {
                 )}
             </div>
 
-            {/* Side Panel */}
-            {selectedOrder && (
-                <div className="fixed inset-0 z-50 flex">
-                    <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedOrder(null)} />
-                    <div className="w-full max-w-md bg-white shadow-2xl flex flex-col animate-in slide-in-from-right-4 duration-300">
-                        <div className="flex items-center justify-between p-6 border-b border-border-custom bg-white">
-                            <div className="flex flex-col">
-                                <h3 className="text-xl font-black tracking-tight text-primary">Status History</h3>
-                                <p className="text-[10px] text-text-muted font-black uppercase tracking-widest mt-1">ID: {selectedOrder.id}</p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                {!['Completed', 'Delivered', 'Cancelled'].includes(selectedOrder.status) && (
-                                    <button
-                                        onClick={() => handleStatusUpdate(selectedOrder.id, "Completed")}
-                                        className="px-4 py-1.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-2"
-                                    >
-                                        <CheckCircle size={14} />
-                                        Complete
-                                    </button>
-                                )}
-                                <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-background-soft rounded-full transition-colors text-text-muted">
-                                    <X className="w-6 h-6" />
-                                </button>
-                            </div>
-                        </div>
 
-                        <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
-                            <div className="mb-8 p-6 rounded-[32px] bg-background-soft border border-border-custom/50 shadow-inner">
-                                <p className="text-[10px] text-text-muted font-black uppercase tracking-widest mb-3 flex items-center gap-2">
-                                    <Package size={14} className="text-primary" /> Order Content
-                                </p>
-                                <p className="text-sm font-bold text-primary leading-relaxed">{selectedOrder.product}</p>
-                            </div>
-
-                            <div className="space-y-0 relative">
-                                <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-gradient-to-b from-primary via-primary/30 to-transparent" />
-
-                                {selectedOrder.statusHistory && selectedOrder.statusHistory.length > 0 ? (
-                                    selectedOrder.statusHistory.slice().reverse().map((history: any, idx: number) => (
-                                        <div key={idx} className="relative pl-9 animate-in fade-in slide-in-from-left-4 duration-500 pb-10 group last:pb-0">
-                                            <div className="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-md bg-primary z-10 group-hover:scale-125 transition-transform" />
-                                            <div className="flex flex-col">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-sm font-black text-primary uppercase tracking-tight">{history.status}</span>
-                                                    <span className="text-[10px] font-bold text-text-muted bg-white px-2 py-0.5 rounded-lg border shadow-sm tabular-nums">
-                                                        {new Date(history.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-text-muted mt-1 font-medium">{new Date(history.timestamp).toLocaleDateString([], { day: 'numeric', month: 'short' })}</p>
-
-                                                <div className="flex items-center gap-2 mt-3">
-                                                    <div className={cn(
-                                                        "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest",
-                                                        history.role === 'system' ? "bg-blue-600 text-white" : "bg-emerald-600 text-white"
-                                                    )}>
-                                                        {history.role === 'system' ? '🤖 AUTO' : '👤 MANUAL'}
-                                                    </div>
-                                                    <span className="text-[9px] font-bold text-text-muted italic opacity-70">
-                                                        {history.role === 'system' ? 'Platform Bot' : 'Store Vendor'}
-                                                    </span>
-                                                </div>
-
-                                                {history.status === "Rider Assigned" && selectedOrder.rider?.name && (
-                                                    <div className="flex items-center gap-1.5 mt-2.5 text-[9px] font-black text-blue-700 bg-blue-100/50 px-2.5 py-1.5 rounded-xl w-fit border border-blue-200/50 animate-in zoom-in-75 duration-500">
-                                                        <Package size={12} strokeWidth={3} className="text-blue-600" />
-                                                        <span className="uppercase tracking-wider">Rider: {selectedOrder.rider.name}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="relative pl-9">
-                                        <div className="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-md bg-primary z-10" />
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-black text-primary uppercase">No History Found</span>
-                                            <p className="text-xs text-text-muted mt-1 uppercase font-bold">Standard Lifecycle active</p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="p-8 border-t border-border-custom bg-white">
-                            <div className="flex items-center gap-4 text-primary bg-primary/5 p-4 rounded-3xl border border-primary/10">
-                                <Shield size={20} className="shrink-0" />
-                                <p className="text-[10px] font-bold leading-relaxed opacity-80 uppercase tracking-wide">Secure platform audit trail enabled. Every action is uniquely identified.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {viewingOrder && (
                 <OrderDetailsModal order={viewingOrder} onClose={() => setViewingOrder(null)} />

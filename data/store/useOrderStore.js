@@ -15,13 +15,13 @@ const useOrderStore = create((set, get) => ({
 
     setFilterStatus: (status) => set({ filterStatus: status }),
 
-    fetchOrders: async (page = 1, customerId = null, force = false) => {
+    fetchOrders: async (page = 1, customerId = null, force = false, statusFilter = 'All') => {
         // Skip if data for this page is already loaded and not forcing a refresh
-        if (get().orders.length > 0 && !force && !customerId && get().currentPage === page) return;
+        if (get().orders.length > 0 && !force && !customerId && get().currentPage === page && get().filterStatus === statusFilter) return;
         
-        set({ loading: true, error: null });
+        set({ loading: true, error: null, filterStatus: statusFilter });
         try {
-            const res = await retailerService.getOrders(customerId, page, get().limit);
+            const res = await retailerService.getOrders(customerId, page, get().limit, statusFilter);
             if (res.success) {
                 set({
                     orders: res.data.orders || [],

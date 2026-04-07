@@ -7,9 +7,9 @@ const retailerService = {
         return response.data;
     },
 
-    getOrders: async (customerId = null, page = 1, limit = 10) => {
+    getOrders: async (customerId = null, page = 1, limit = 10, statusFilter = 'All') => {
         const response = await apiClient.get(API_ENDPOINTS.RETAILER.ORDERS, {
-            params: { customerId, page, limit }
+            params: { customerId, page, limit, statusFilter }
         });
         
         // Handle the paginated object structure from backend
@@ -29,7 +29,8 @@ const retailerService = {
                 statusHistory: order.statusHistory || [],
                 items: order.items || [],
                 user: order.user || null,
-                deliveryAddress: order.deliveryAddress || null
+                deliveryAddress: order.deliveryAddress || null,
+                deliverySlot: order.deliverySlot || null
             }));
             
             if (response.data.data?.orders) {
