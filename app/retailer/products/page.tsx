@@ -94,6 +94,7 @@ function RetailerProductsContent() {
                     <h1 className="text-2xl font-bold tracking-tight">My Products</h1>
                     <p className="text-text-muted">Manage your shop&apos;s inventory and listings.</p>
                 </div>
+                <div className="flex items-center gap-3">
                     <Link href="/retailer/products/add" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary transition-all text-sm font-medium shadow-md shadow-primary/20">
                         <Plus size={16} />
                         Add New Item
@@ -135,6 +136,7 @@ function RetailerProductsContent() {
                             </div>
                         )}
                     </div>
+                </div>
             </div>
 
             {/* Stats Cards */}

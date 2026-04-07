@@ -48,7 +48,7 @@ export default function RegisterPage() {
         <div className="relative h-screen overflow-hidden">
             <img
                 src="https://i.ibb.co/8DP10d22/Image-Mar-17-2026-12-50-45-PM.png"
-                alt="Fresh Shrimp Dish"
+                alt="Fresh Water Delivery"
                 className="absolute inset-0 w-full h-full object-cover"
             />
             {/* Dark Overlay */}

@@ -55,7 +55,7 @@ export default function LoginPage() {
         <div className="relative h-screen overflow-hidden ">
             <img
                 src="https://i.ibb.co/8DP10d22/Image-Mar-17-2026-12-50-45-PM.png"
-                alt="Fresh Shrimp Dish"
+                alt="Fresh Water Delivery"
                 className="absolute inset-0 w-full h-full object-cover"
             />
 
@@ -65,7 +65,7 @@ export default function LoginPage() {
                 <div className="hidden lg:flex w-1/2 items-center justify-center p-10">
                     {/* <img
                         src="https://raw.githubusercontent.com/anushk2026a/img-url/c6df7976948ff2cc5b9e5c2fe7d432b8540e7f3b/image.png"
-                        alt="Fresh Shrimp Dish"
+                        alt="Fresh Water Delivery"
                         className="absolute inset-0 w-full h-full object-cover"
                     /> */}
                     <div className="absolute inset-0 bg-black/50"></div>
@@ -175,6 +175,7 @@ export default function LoginPage() {
                                                 onChange={(e) => setEmail(e.target.value)}
                                                 placeholder={process.env.NEXT_PUBLIC_RETAILER_EMAIL || "retailer@test.com"}
                                                 className="w-full pl-14 pr-5 py-[18px] rounded-2xl bg-[#F0F2F4] border-transparent focus:bg-white focus:ring-2 focus:ring-[#FF6B00]/10 transition-all outline-none text-sm font-bold text-[#1A1A1A]"
+                                                suppressHydrationWarning={true}
                                             />
                                         </div>
                                     </div>
@@ -195,11 +196,13 @@ export default function LoginPage() {
                                                 onChange={(e) => setPassword(e.target.value)}
                                                 placeholder="•••••"
                                                 className="w-full pl-14 pr-14 py-[13px] rounded-2xl bg-[#F0F2F4] border-transparent focus:bg-white focus:ring-2 focus:ring-[#FF6B00]/10 transition-all outline-none text-sm font-bold text-[#1A1A1A]"
+                                                suppressHydrationWarning={true}
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => setShowPassword(!showPassword)}
                                                 className="absolute right-5 top-1/2 -translate-y-1/2 text-[#A0A0A0] hover:text-[#1A1A1A] transition-colors"
+                                                suppressHydrationWarning={true}
                                             >
                                                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                             </button>
@@ -208,7 +211,7 @@ export default function LoginPage() {
                                 </div>
 
                                 <div className="flex items-center gap-3 ml-1 select-none">
-                                    <input id="rem" type="checkbox" className="w-5 h-5 rounded border-[#D1D1D1] accent-[#FF6B00] cursor-pointer" />
+                                    <input id="rem" type="checkbox" className="w-5 h-5 rounded border-[#D1D1D1] accent-[#FF6B00] cursor-pointer" suppressHydrationWarning={true} />
                                     <label htmlFor="rem" className="text-[15px] font-bold text-white/70 cursor-pointer">Stay logged in</label>
                                 </div>
 
@@ -219,6 +222,7 @@ export default function LoginPage() {
                                         "w-full mt-6 py-4 rounded-2xl font-bold text-white text-lg bg-gradient-to-br from-[#2563EB] via-[#1D4ED8] to-[#1E40AF] shadow-[0_12px_24px_-8px_rgba(37,99,235,0.5)] hover:shadow-[0_15px_30px_-5px_rgba(37,99,235,0.6)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2 group",
                                         loading && "opacity-70 cursor-not-allowed"
                                     )}
+                                    suppressHydrationWarning={true}
                                 >
                                     {loading ? (
                                         <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>

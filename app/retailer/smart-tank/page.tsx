@@ -117,7 +117,7 @@ const SmartTankPage = () => {
                             <MetadataRow label="Asset ID" value={deviceConfig.id} />
                             <MetadataRow label="Build Version" value={deviceConfig.model} />
                             <MetadataRow label="MAC Address" value={deviceConfig.mac} />
-                            <MetadataRow label="Firmware" value="shrimp-core-v1.2.0" />
+                            <MetadataRow label="Firmware" value="difwa-core-v1.2.0" />
                         </div>
                     </div>
 

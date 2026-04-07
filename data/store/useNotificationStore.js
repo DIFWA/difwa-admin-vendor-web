@@ -65,27 +65,6 @@ const useNotificationStore = create((set, get) => ({
         }
     },
 
-    initSocketListeners: (userId) => {
-        if (!userId) return;
-        
-        const socket = SocketService.getSocket();
-        if (!socket) return;
-
-        const eventName = `retailer_notifications_${userId}`;
-        
-        // Remove existing listener to avoid duplicates
-        socket.off(eventName);
-        
-        socket.on(eventName, (notification) => {
-            get().addNotification(notification);
-        });
-
-        // Also generic notification channel if used
-        socket.off("notification");
-        socket.on("notification", (notification) => {
-             get().addNotification(notification);
-        });
-    }
 }));
 
 export default useNotificationStore;

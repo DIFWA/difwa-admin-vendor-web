@@ -30,8 +30,7 @@ export default function Topbar() {
         unreadCount, 
         fetchNotifications, 
         markAsRead, 
-        markAllAsRead,
-        initSocketListeners 
+        markAllAsRead
     } = useNotificationStore()
 
     const [showDropdown, setShowDropdown] = useState(false)
@@ -48,7 +47,6 @@ export default function Topbar() {
         if (!user?._id) return
 
         fetchNotifications()
-        initSocketListeners(user._id)
 
         // Click outside to close dropdowns
         const handleClickOutside = (event: MouseEvent) => {
@@ -64,7 +62,7 @@ export default function Topbar() {
         return () => {
             document.removeEventListener("mousedown", handleClickOutside)
         }
-    }, [user?._id, fetchNotifications, initSocketListeners])
+    }, [user?._id, fetchNotifications])
 
     useEffect(() => {
         const timer = setTimeout(() => {

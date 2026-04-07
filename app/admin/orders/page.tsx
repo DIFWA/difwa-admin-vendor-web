@@ -21,6 +21,7 @@ import { toast } from "sonner"
 import * as XLSX from "xlsx"
 import useAuthStore from "@/data/store/useAuthStore"
 import useSocketStore from "@/data/store/useSocketStore"
+import OrderDetailsModal from "@/components/shared/OrderDetailsModal"
 
 const statusStyles: any = {
     "New": "bg-primary-light text-primary border-primary-100",
@@ -216,33 +217,43 @@ function AdminOrdersContent() {
                                     </td>
                                 </tr>
                             ) : (
-                                orders.map((order: any) => (
-                                    <tr key={order._id} className="hover:bg-background-soft/50 transition-colors">
-                                        <td className="px-6 py-4 font-bold text-primary">{order.orderId}</td>
-                                        <td className="px-6 py-4">
-                                            <p className="font-medium">{order.user?.name || "Guest"}</p>
-                                            <p className="text-[10px] text-text-muted">{order.user?.phone}</p>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <p className="font-medium">{order.retailer?.businessDetails?.businessName || order.retailer?.name}</p>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase border", statusStyles[order.status] || "bg-gray-50 text-gray-500")}>
-                                                {order.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 font-bold">₹{order.totalAmount}</td>
-                                        <td className="px-6 py-4 text-center">
-                                            <button onClick={() => setSelectedOrder(order)} className="p-2 hover:bg-primary-light text-text-muted hover:text-primary rounded-xl transition-all">
-                                                <Eye size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
+                                orders.map((order: any) => {
+                                    const retailer = order.items?.[0]?.retailer;
+                                    const userDisplay = order.user?.fullName || order.user?.name || "Guest";
+                                    const retailerDisplay = retailer?.businessDetails?.businessName || retailer?.name || "N/A";
+                                    
+                                    return (
+                                        <tr key={order._id} className="hover:bg-background-soft/50 transition-colors cursor-pointer group" onClick={() => setSelectedOrder(order)}>
+                                            <td className="px-6 py-4 font-bold text-primary group-hover:underline">{order.orderId}</td>
+                                            <td className="px-6 py-4">
+                                                <p className="font-medium">{userDisplay}</p>
+                                                <p className="text-[10px] text-text-muted">{order.user?.phoneNumber || order.user?.phone}</p>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className="font-medium">{retailerDisplay}</p>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase border", statusStyles[order.status] || "bg-gray-50 text-gray-500")}>
+                                                    {order.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 font-bold">₹{order.totalAmount}</td>
+                                            <td className="px-6 py-4 text-center">
+                                                <button onClick={() => setSelectedOrder(order)} className="p-2 hover:bg-primary-light text-text-muted hover:text-primary rounded-xl transition-all">
+                                                    <Eye size={18} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>
                 </div>
+
+                {selectedOrder && (
+                    <OrderDetailsModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
+                )}
 
                 {totalPages > 1 && (
                     <div className="p-6 border-t border-border-custom flex items-center justify-between">

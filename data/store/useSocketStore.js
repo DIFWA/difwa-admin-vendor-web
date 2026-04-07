@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { io } from 'socket.io-client';
 import useOrderStore from './useOrderStore';
 import useProductStore from './useProductStore';
+import useNotificationStore from './useNotificationStore';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000';
 
@@ -18,6 +19,7 @@ const useSocketStore = create((set, get) => ({
             if (userId) {
                 currentSocket.emit('join', `retailer_${userId}`);
                 currentSocket.emit('join', `user_${userId}`);
+                currentSocket.emit('join', `retailer_notifications_${userId}`);
                 console.log(`📡 [Sync] Joined rooms for: ${userId}`);
             }
             
@@ -41,8 +43,16 @@ const useSocketStore = create((set, get) => ({
             set({ connected: true });
             if (userId) {
                 socket.emit('join', `retailer_${userId}`);
-                console.log(`📡 Joined room: retailer_${userId}`);
+                socket.emit('join', `user_${userId}`);
+                socket.emit('join', `retailer_notifications_${userId}`);
+                console.log(`📡 Joined rooms for user: ${userId}`);
             }
+        });
+
+        // ─── Notifications: Global App Alerts ───────────────────────────────
+        socket.on('notification', (notification) => {
+            console.log('🔔 notification:', notification);
+            useNotificationStore.getState().addNotification(notification);
         });
 
         // ─── Order Updates: Patch in place, NO refetch ────────────────────────
@@ -65,8 +75,8 @@ const useSocketStore = create((set, get) => ({
                                     status,
                                     statusHistory: orderData?.statusHistory || o.statusHistory,
                                     rider: orderData?.riderName
-                                        ? { name: orderData.riderName }
-                                        : (orderData?.rider || o.rider),
+                                        ? { name: orderData.riderName, id: orderData.rider?.id || orderData.rider }
+                                        : (typeof orderData?.rider === 'object' ? orderData.rider : (orderData?.rider ? { id: orderData.rider } : o.rider)),
                                 }
                                 : o
                         )

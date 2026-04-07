@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-// const SOCKET_URL = "https://shrimpbite-socket-server.onrender.com";
+// const SOCKET_URL = "https://difwa-socket-server.onrender.com";
 const SOCKET_URL = "https://nontragic-rodney-allogenically.ngrok-free.dev";
 // const SOCKET_URL = "http://localhost:5001";
 

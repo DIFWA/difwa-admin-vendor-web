@@ -140,7 +140,7 @@ export default function EditProductPage() {
             await retailerService.updateProduct(id as string, formData)
             router.push("/retailer/products")
         } catch (error) {
-            console.error("Failed to update catch:", error)
+            console.error("Failed to update product:", error)
             alert("Failed to update product")
         } finally {
             setPublishing(false)
@@ -169,7 +169,7 @@ export default function EditProductPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Edit Product</h1>
-                    <p className="text-text-muted text-sm">Update your catch details.</p>
+                    <p className="text-text-muted text-sm">Update your product details.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
@@ -202,7 +202,7 @@ export default function EditProductPage() {
                                     type="text"
                                     value={formData.name}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    placeholder="e.g. Premium Tiger Shrimp (Head-on)"
+                                    placeholder="e.g. 20L Premium Water Can"
                                     className="w-full px-4 py-2.5 rounded-lg bg-background-soft border-transparent focus:bg-white focus:border-primary transition-all outline-none text-sm"
                                 />
                             </div>

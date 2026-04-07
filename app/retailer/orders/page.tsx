@@ -21,6 +21,7 @@ import { toast } from "sonner"
 import * as XLSX from "xlsx"
 import retailerService from "@/data/services/retailerService"
 import useOrderStore from "@/data/store/useOrderStore"
+import OrderDetailsModal from "@/components/shared/OrderDetailsModal"
 
 const statusStyles: any = {
     "New": "bg-primary-light text-primary border-primary-100",
@@ -59,6 +60,7 @@ function OrdersContent() {
     const [orderTypeFilter, setOrderTypeFilter] = useState<"All" | "Subscription" | "One-time">("All")
     const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Completed">("All")
     const [selectedOrder, setSelectedOrder] = useState<any>(null)
+    const [viewingOrder, setViewingOrder] = useState<any>(null)
 
     const moreMenuRef = useRef<HTMLDivElement>(null)
     const [showMoreMenu, setShowMoreMenu] = useState(false)
@@ -306,8 +308,8 @@ function OrdersContent() {
                                 <tr><td colSpan={9} className="px-6 py-12 text-center text-text-muted">No orders found</td></tr>
                             ) : (
                                 filteredOrders.map((order: any) => (
-                                    <tr key={order.id} className="hover:bg-background-soft/50 transition-colors">
-                                        <td className="px-6 py-4 font-bold text-primary">{order.id}</td>
+                                    <tr key={order.id} className="hover:bg-background-soft/50 transition-colors cursor-pointer group" onClick={() => setViewingOrder(order)}>
+                                        <td className="px-6 py-4 font-bold text-primary group-hover:underline">{order.id}</td>
                                         <td className="px-6 py-4">
                                             <span className={cn(
                                                 "px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider",
@@ -497,6 +499,10 @@ function OrdersContent() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {viewingOrder && (
+                <OrderDetailsModal order={viewingOrder} onClose={() => setViewingOrder(null)} />
             )}
         </div>
     )

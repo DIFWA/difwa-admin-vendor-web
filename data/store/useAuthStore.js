@@ -93,7 +93,7 @@ const useAuthStore = create(
             }
         }),
         {
-            name: 'shrimpbite-auth',
+            name: 'difwa-auth',
             storage: createJSONStorage(() => localStorage), // (optional) by default, 'localStorage' is used
         }
     )

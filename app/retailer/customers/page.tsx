@@ -124,16 +124,16 @@ function CustomersContent() {
     }
 
     const stats = [
-        { title: "My Total Customers", value: customersData.stats.totalCustomers.toLocaleString(), change: "", trend: "up", icon: Users, color: "bg-primary-light text-primary" },
-        { title: "New Customers", value: customersData.stats.newCustomers.toLocaleString(), change: "", trend: "up", icon: UserPlus, color: "bg-blue-50 text-blue-600" },
-        { title: "Repeat Customers", value: customersData.stats.repeatPercentage, change: "", trend: "up", icon: TrendingUp, color: "bg-purple-50 text-purple-600" },
+        { title: "My Total Customers", value: customersData.stats?.totalCustomers?.toLocaleString() || "0", change: "", trend: "up", icon: Users, color: "bg-primary-light text-primary" },
+        { title: "New Customers", value: customersData.stats?.newCustomers?.toLocaleString() || "0", change: "", trend: "up", icon: UserPlus, color: "bg-blue-50 text-blue-600" },
+        { title: "Repeat Customers", value: customersData.stats?.repeatPercentage || "0%", change: "", trend: "up", icon: TrendingUp, color: "bg-purple-50 text-purple-600" },
     ]
 
-    const filteredCustomers = customersData.customers.filter((c: any) =>
-        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.orderIds.some((id: string) => id.toLowerCase().includes(searchQuery.toLowerCase()))
+    const filteredCustomers = (customersData.customers || []).filter((c: any) =>
+        c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.orderIds || []).some((id: string) => id.toLowerCase().includes(searchQuery.toLowerCase()))
     )
 
     return (
@@ -251,6 +251,7 @@ function CustomersContent() {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-9 pr-4 py-1.5 rounded-lg bg-background-soft border-transparent text-sm outline-none w-64 focus:ring-2 focus:ring-primary/20 transition-all"
+                                suppressHydrationWarning={true}
                             />
                         </div>
                     </div>

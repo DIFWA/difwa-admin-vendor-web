@@ -5,6 +5,7 @@ import { Store, MapPin, Upload, Save, Loader2, X, Phone, Mail } from "lucide-rea
 import { cn } from "@/lib/utils"
 import retailerService from "@/data/services/retailerService"
 import useAuthStore from "@/data/store/useAuthStore"
+import { toast } from "sonner"
 
 export default function StoreSettingsPage() {
     const { user } = useAuthStore()
@@ -88,10 +89,10 @@ export default function StoreSettingsPage() {
                 },
                 whatsappNumber: formData.whatsappNumber
             })
-            alert("Settings saved successfully!")
+            toast.success("Settings saved successfully!")
         } catch (error) {
             console.error("Save failed:", error)
-            alert("Failed to save settings.")
+            toast.error("Failed to save settings.")
         } finally {
             setSaving(false)
         }

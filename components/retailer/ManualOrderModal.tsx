@@ -101,7 +101,8 @@ export default function ManualOrderModal({ isOpen, onClose, customer, onSuccess 
                 items: cart.map(item => ({ productId: item.productId, quantity: item.quantity })),
                 deliveryAddress: isAddingNew ? deliveryAddress : (customer.addresses?.find(a => a._id === selectedAddressId)?.fullAddress || deliveryAddress || "Manual Entry"),
                 paymentStatus,
-                paymentMethod
+                paymentMethod,
+                totalAmount
             })
 
             if (res.success) {

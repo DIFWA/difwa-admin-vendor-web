@@ -26,7 +26,10 @@ const retailerService = {
                 payment: order.payment || order.paymentStatus,
                 orderType: order.orderType,
                 rider: order.rider,
-                statusHistory: order.statusHistory || []
+                statusHistory: order.statusHistory || [],
+                items: order.items || [],
+                user: order.user || null,
+                deliveryAddress: order.deliveryAddress || null
             }));
             
             if (response.data.data?.orders) {

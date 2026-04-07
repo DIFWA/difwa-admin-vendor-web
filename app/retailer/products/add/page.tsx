@@ -111,7 +111,7 @@ export default function AddProductPage() {
             await retailerService.createProduct(formData)
             router.push("/retailer/products")
         } catch (error) {
-            console.error("Failed to publish catch:", error)
+            console.error("Failed to publish product:", error)
             alert("Failed to publish product")
         } finally {
             setPublishing(false)
@@ -131,7 +131,7 @@ export default function AddProductPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Add New Product</h1>
-                    <p className="text-text-muted text-sm">List a new catch to your Water shop.</p>
+                    <p className="text-text-muted text-sm">List a new product to your Water shop.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
@@ -146,7 +146,7 @@ export default function AddProductPage() {
                         className="px-6 py-2 rounded-lg bg-primary text-white hover:bg-primary transition-all text-sm font-medium shadow-md shadow-primary/20 flex items-center gap-2 disabled:opacity-50"
                     >
                         {publishing ? <Loader2 size={16} className="animate-spin" /> : null}
-                        {publishing ? "Publishing..." : "Publish Catch"}
+                        {publishing ? "Publishing..." : "Publish Product"}
                     </button>
                 </div>
             </div>
@@ -164,7 +164,7 @@ export default function AddProductPage() {
                                     type="text"
                                     value={formData.name}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    placeholder="e.g. water bottle"
+                                    placeholder="e.g. 20L Water Can"
                                     className="w-full px-4 py-2.5 rounded-lg bg-background-soft border-transparent focus:bg-white focus:border-primary transition-all outline-none text-sm"
                                 />
                             </div>
