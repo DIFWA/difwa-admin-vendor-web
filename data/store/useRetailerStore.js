@@ -19,7 +19,7 @@ const useRetailerStore = create((set, get) => ({
     loadingRiders: false,
 
     // Prep List
-    prepList: [],
+    prepList: { summary: [], active: [], paused: [] },
     loadingPrepList: false,
 
     // Reviews
@@ -215,7 +215,7 @@ const useRetailerStore = create((set, get) => ({
         try {
             const res = await retailerService.getPrepList(date);
             if (res.success) {
-                set({ prepList: res.data, loadingPrepList: false });
+                set({ prepList: res.data || { summary: [], active: [], paused: [] }, loadingPrepList: false });
             }
         } catch (err) {
             console.error("Fetch prep list failed", err);

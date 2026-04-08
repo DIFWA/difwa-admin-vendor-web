@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { createPortal } from "react-dom"
 import {
     ShoppingCart,
     Package,
@@ -25,6 +26,7 @@ import {
     Tooltip,
     ResponsiveContainer
 } from "recharts"
+import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import useRetailerStore from "@/data/store/useRetailerStore"
@@ -32,6 +34,11 @@ import { toast } from "sonner"
 
 export default function RetailerDashboard() {
     const [mounted, setMounted] = useState(false)
+    const [portalRoot, setPortalRoot] = useState<Element | null>(null)
+
+    useEffect(() => {
+        setPortalRoot(document.body)
+    }, [])
     const { 
         stats: statsData, 
         loading, 
@@ -42,6 +49,7 @@ export default function RetailerDashboard() {
     
     const [actionLoading, setActionLoading] = useState(false)
     const [showStatusModal, setShowStatusModal] = useState(false)
+    const [showConfetti, setShowConfetti] = useState(false)
 
     useEffect(() => {
         setMounted(true)
@@ -66,6 +74,10 @@ export default function RetailerDashboard() {
             const res = await toggleShopStatus()
             if (res.success) {
                 toast.success(res.isShopActive ? "Shop is now ONLINE" : "Shop is now OFFLINE")
+                if (res.isShopActive) {
+                    setShowConfetti(true)
+                    setTimeout(() => setShowConfetti(false), 4500)
+                }
             }
         } catch (error) {
             console.error("Toggle failed", error)
@@ -139,30 +151,52 @@ export default function RetailerDashboard() {
                             onClick={handleToggle}
                             disabled={actionLoading}
                             className={cn(
-                                "flex items-center gap-3 px-6 py-2.5 rounded-full font-black text-xs uppercase tracking-[0.1em] transition-all border-2",
+                                "group relative overflow-hidden flex items-center gap-3 px-6 py-2.5 rounded-full font-black text-xs uppercase tracking-[0.1em] transition-all border-2",
                                 isShopActive
                                     ? "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100"
-                                    : "bg-red-50 text-red-600 border-red-100 hover:bg-red-100"
+                                    : "bg-red-50 text-red-600 border-red-100 hover:bg-red-100",
+                                actionLoading && "opacity-70 pointer-events-none"
                             )}
                         >
-                            <div className={cn("w-2 h-2 rounded-full", isShopActive ? "bg-blue-500 animate-pulse" : "bg-red-500")} />
-                            {isShopActive ? "Shop is Open" : "Shop is Closed"}
+                            {/* Pure Tailwind CSS Shine Effect */}
+                            <div className="absolute inset-0 -translate-x-[150%] group-hover:translate-x-[200%] bg-gradient-to-r from-transparent via-white/50 to-transparent w-1/2 skew-x-12 transition-transform duration-[1200ms] ease-in-out z-10" />
+
+                            {actionLoading ? (
+                                <>
+                                    <svg className="animate-spin -ml-1 h-3 w-3 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V4a10 10 0 00-10 10h2z"></path>
+                                    </svg>
+                                    UPDATING...
+                                </>
+                            ) : (
+                                <>
+                                    <div className={cn("w-2 h-2 rounded-[4px] relative z-20", isShopActive ? "bg-blue-500 animate-pulse" : "bg-red-500")} />
+                                    <span className="relative z-20">{isShopActive ? "Shop is Open" : "Shop is Closed"}</span>
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* Shop Opening Confirmation Modal */}
-            {showStatusModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white rounded-[40px] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-8 duration-500">
-                        <div className="p-8 text-center">
-                            <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <AlertCircle className="text-blue-600" size={40} />
+            {/* Shop Opening Confirmation Modal — rendered via portal to cover sidebar/topbar */}
+            {showStatusModal && portalRoot && createPortal(
+                <>
+                    {/* True full-screen blur: rendered at body level */}
+                    <div className="fixed inset-0 bg-black/50" style={{ zIndex: 99998, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }} onClick={() => setShowStatusModal(false)} />
+                    <div className="fixed inset-0 flex items-center justify-center p-4 pointer-events-none" style={{ zIndex: 99999 }}>
+                    <div className="pointer-events-auto bg-white rounded-[40px] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 relative">
+                        {/* Decorative Background Blur */}
+                        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 blur-[50px] -mr-10 -mt-10 rounded-full" />
+                        
+                        <div className="p-8 text-center relative z-10">
+                            <div className="w-20 h-20 bg-blue-50 rounded-[28px] rotate-3 flex items-center justify-center mx-auto mb-6 shadow-sm border border-blue-100/50">
+                                <CheckCircle className="text-blue-600 -rotate-3" size={36} strokeWidth={2.5} />
                             </div>
-                            <h3 className="text-2xl font-black uppercase text-primary tracking-tight mb-2">Ready to Open?</h3>
-                            <p className="text-text-muted font-medium italic">
-                                &quot;Are you sure you want to open the shop? New orders will start appearing in your dashboard.&quot;
+                            <h3 className="text-2xl font-black uppercase text-foreground tracking-tight mb-2">Ready to Open?</h3>
+                            <p className="text-text-muted font-medium text-sm leading-relaxed px-4">
+                                Once online, customers can see your products and place orders. Prepare for new orders to arrive.
                             </p>
                         </div>
                         
@@ -181,8 +215,32 @@ export default function RetailerDashboard() {
                             </button>
                         </div>
                     </div>
-                </div>
+                    </div>
+                </>, portalRoot
             )}
+
+            {/* Framer Motion Confetti */}
+            <AnimatePresence>
+                {showConfetti && (
+                    <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">
+                        {[...Array(24)].map((_, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ x: `${Math.random() * 100}vw`, y: -100, opacity: 0, scale: 0.5 + Math.random(), rotate: Math.random() * 360 }}
+                                animate={{ y: ["0vh", "120vh"], opacity: [0, 1, 0.8, 0], rotate: Math.random() * 720, x: `${(Math.random() * 100) + (Math.sin(i) * 10)}vw` }}
+                                transition={{ duration: 2 + Math.random() * 2, ease: [0.4, 0, 0.2, 1], delay: Math.random() * 0.5 }}
+                                className={cn(
+                                    "absolute w-3 h-3 rounded-sm",
+                                    i % 4 === 0 ? "bg-primary shadow-[0_0_12px_rgba(0,150,255,0.6)]" 
+                                    : i % 4 === 1 ? "bg-sky-400 shadow-[0_0_12px_rgba(56,189,248,0.5)]" 
+                                    : i % 4 === 2 ? "bg-blue-300 rounded-full" 
+                                    : "bg-cyan-500 shadow-[0_0_12px_rgba(6,182,212,0.5)]"
+                                )}
+                            />
+                        ))}
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Quick Actions / Prep List Focus */}
             <Link

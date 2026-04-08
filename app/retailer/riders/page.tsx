@@ -8,9 +8,9 @@ import { toast } from "sonner"
 import useRetailerStore from "@/data/store/useRetailerStore"
 
 export default function RidersPage() {
-    const { 
-        riders, 
-        loadingRiders: loading, 
+    const {
+        riders,
+        loadingRiders: loading,
         fetchRiders,
         addRider,
         updateRider,
@@ -24,12 +24,12 @@ export default function RidersPage() {
     const [isEditMode, setIsEditMode] = useState(false)
     const [formData, setFormData] = useState({
         name: "",
-        email: "",
-        password: "",
         phone: "",
         vehicleType: "Bike",
         plateNumber: ""
     })
+    const [phoneError, setPhoneError] = useState("")
+    const [editPhoneError, setEditPhoneError] = useState("")
     const [editFormData, setEditFormData] = useState({
         name: "",
         phone: "",
@@ -42,24 +42,55 @@ export default function RidersPage() {
     }, [fetchRiders])
 
     const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value })
+        let value = e.target.value;
+        const name = e.target.name;
+
+        if (name === 'name') {
+            value = capitalizeName(value);
+        }
+
+        if (name === 'phone') {
+            const check = formatAndValidatePhone(value);
+            setPhoneError(check.error || "");
+        }
+
+        setFormData({ ...formData, [name]: value })
     }
 
     const handleEditInput = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setEditFormData({ ...editFormData, [e.target.name]: e.target.value })
+        let value = e.target.value;
+        const name = e.target.name;
+
+        if (name === 'name') {
+            value = capitalizeName(value);
+        }
+
+        if (name === 'phone') {
+            const check = formatAndValidatePhone(value);
+            setEditPhoneError(check.error || "");
+        }
+
+        setEditFormData({ ...editFormData, [name]: value })
+    }
+
+    const capitalizeName = (name: string) => {
+        return name
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
     }
 
     const formatAndValidatePhone = (phone: string) => {
         // Remove all non-numeric characters except +
         let cleaned = phone.replace(/[^\d+]/g, '');
-        
+
         // If it starts with +91, get the last 10 digits
         if (cleaned.startsWith('+91')) {
             const digits = cleaned.slice(3);
             if (digits.length !== 10) return { error: "Phone number must have exactly 10 digits after +91" };
             return { formatted: `+91${digits}` };
         }
-        
+
         // If it starts with 91 (no +), get the last 10 digits
         if (cleaned.length === 12 && cleaned.startsWith('91')) {
             const digits = cleaned.slice(2);
@@ -76,19 +107,24 @@ export default function RidersPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        
+
         const phoneCheck = formatAndValidatePhone(formData.phone);
         if (phoneCheck.error) {
-            return toast.error(phoneCheck.error);
+            setPhoneError(phoneCheck.error);
+            return;
         }
 
         try {
-            const submissionData = { ...formData, phone: phoneCheck.formatted };
+            const submissionData = { 
+                ...formData, 
+                name: capitalizeName(formData.name),
+                phone: phoneCheck.formatted 
+            };
             const response = await addRider(submissionData)
             if (response.success) {
                 toast.success("Rider added successfully")
                 setShowAddModal(false)
-                setFormData({ name: "", email: "", password: "", phone: "", vehicleType: "Bike", plateNumber: "" })
+                setFormData({ name: "", phone: "", vehicleType: "Bike", plateNumber: "" })
             }
         } catch (error: any) {
             toast.error(error.response?.data?.message || "Failed to add rider")
@@ -100,7 +136,8 @@ export default function RidersPage() {
 
         const phoneCheck = formatAndValidatePhone(editFormData.phone);
         if (phoneCheck.error) {
-            return toast.error(phoneCheck.error);
+            setEditPhoneError(phoneCheck.error);
+            return;
         }
 
         try {
@@ -118,12 +155,14 @@ export default function RidersPage() {
 
     const openDetails = (rider: any) => {
         setSelectedRider(rider)
+        console.log("Rider details: ", rider)
         setEditFormData({
             name: rider.user?.name || "",
             phone: rider.user?.phone || "",
             vehicleType: rider.vehicleDetails?.vehicleType || "Bike",
             plateNumber: rider.vehicleDetails?.plateNumber || ""
         })
+        setEditPhoneError("")
         setShowDetailsModal(true)
         setIsEditMode(false)
     }
@@ -206,7 +245,7 @@ export default function RidersPage() {
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-lg">{rider.user?.name}</h3>
-                                        <p className="text-xs text-text-muted">{rider.user?.email}</p>
+                                        <p className="text-xs text-text-muted">{rider.user?.phone}</p>
                                     </div>
                                 </div>
                                 {/* <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${rider.status === 'Available' ? 'bg-blue-100 text-blue-700' :
@@ -257,8 +296,14 @@ export default function RidersPage() {
 
             {/* Add Rider Modal */}
             {showAddModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200 overflow-hidden">
+                <div 
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+                    onClick={() => setShowAddModal(false)}
+                >
+                    <div 
+                        className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200 overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="p-6 border-b border-border-custom flex items-center justify-between">
                             <h2 className="text-xl font-bold">Add Delivery Rider</h2>
                             <button onClick={() => setShowAddModal(false)} className="p-2 rounded-lg hover:bg-background-soft transition-colors text-text-muted hover:text-foreground">
@@ -278,32 +323,6 @@ export default function RidersPage() {
                                     placeholder="Enter rider name"
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-semibold ml-1">Email</label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        required
-                                        value={formData.email}
-                                        onChange={handleInput}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-border-custom focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                                        placeholder="email@example.com"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-semibold ml-1">Password</label>
-                                    <input
-                                        type="password"
-                                        name="password"
-                                        required
-                                        value={formData.password}
-                                        onChange={handleInput}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-border-custom focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                                        placeholder="••••••••"
-                                    />
-                                </div>
-                            </div>
                             <div className="space-y-1.5">
                                 <label className="text-sm font-semibold ml-1">Phone Number</label>
                                 <input
@@ -312,9 +331,14 @@ export default function RidersPage() {
                                     required
                                     value={formData.phone}
                                     onChange={handleInput}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-border-custom focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                    className={`w-full px-4 py-2.5 rounded-xl border ${phoneError ? 'border-red-500 ring-1 ring-red-500' : 'border-border-custom'} focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all`}
                                     placeholder="+91 XXXXX XXXXX"
                                 />
+                                {phoneError && (
+                                    <p className="text-[10px] text-red-500 font-bold uppercase ml-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                        {phoneError}
+                                    </p>
+                                )}
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
@@ -366,8 +390,14 @@ export default function RidersPage() {
 
             {/* Rider Details Modal */}
             {showDetailsModal && selectedRider && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl animate-in fade-in zoom-in duration-200 overflow-hidden">
+                <div 
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+                    onClick={() => setShowDetailsModal(false)}
+                >
+                    <div 
+                        className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl animate-in fade-in zoom-in duration-200 overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="relative h-32 bg-gradient-to-r from-primary/10 to-orange-100">
                             <button
                                 onClick={() => setShowDetailsModal(false)}
@@ -448,10 +478,15 @@ export default function RidersPage() {
                                                     name="phone"
                                                     value={editFormData.phone}
                                                     onChange={handleEditInput}
-                                                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-border-custom focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-bold"
+                                                    className={`w-full pl-11 pr-4 py-3 rounded-2xl border ${editPhoneError ? 'border-red-500 ring-4 ring-red-500/10' : 'border-border-custom'} focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-bold`}
                                                     placeholder="+91 XXXX"
                                                 />
                                             </div>
+                                            {editPhoneError && (
+                                                <p className="text-[10px] text-red-500 font-bold uppercase ml-1 mt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                    {editPhoneError}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="space-y-4">
@@ -496,15 +531,6 @@ export default function RidersPage() {
                                             <div className="space-y-4">
                                                 <div className="flex items-center gap-4 group">
                                                     <div className="w-10 h-10 rounded-xl bg-background-soft flex items-center justify-center text-text-muted group-hover:bg-primary/10 group-hover:text-primary transition-all">
-                                                        <Mail size={18} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-text-muted font-bold uppercase tracking-tighter">Email Address</p>
-                                                        <p className="text-sm font-black text-foreground">{selectedRider.user?.email}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-4 group">
-                                                    <div className="w-10 h-10 rounded-xl bg-background-soft flex items-center justify-center text-text-muted group-hover:bg-primary/10 group-hover:text-primary transition-all">
                                                         <Phone size={18} />
                                                     </div>
                                                     <div>
@@ -526,17 +552,6 @@ export default function RidersPage() {
                                                     <div>
                                                         <p className="text-xs text-text-muted font-bold uppercase tracking-tighter">Vehicle Details</p>
                                                         <p className="text-sm font-black text-foreground">{selectedRider.vehicleDetails?.vehicleType} • {selectedRider.vehicleDetails?.plateNumber}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-4 group">
-                                                    <div className="w-10 h-10 rounded-xl bg-background-soft flex items-center justify-center text-text-muted group-hover:bg-primary/10 group-hover:text-primary transition-all">
-                                                        <MapPin size={18} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-text-muted font-bold uppercase tracking-tighter">Last Active Location</p>
-                                                        <p className="text-sm font-black text-foreground">
-                                                            {selectedRider.currentLocation ? `${selectedRider.currentLocation.lat.toFixed(4)}, ${selectedRider.currentLocation.lng.toFixed(4)}` : 'No location data'}
-                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
