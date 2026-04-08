@@ -22,7 +22,7 @@ const useSocketStore = create((set, get) => ({
                 currentSocket.emit('join', `retailer_notifications_${userId}`);
                 console.log(`📡 [Sync] Joined rooms for: ${userId}`);
             }
-            
+
             // If disconnected, call connect()
             if (!currentSocket.connected) {
                 currentSocket.connect();
