@@ -60,6 +60,19 @@ const useSocketStore = create((set, get) => ({
             const { orderId, status, data: orderData } = payload;
             console.log('⚡ orderUpdate:', { orderId, status });
 
+            // Helper to format date like "08-04, 01:19 pm"
+            const formatOrderDate = (date) => {
+                const d = new Date(date);
+                const day = String(d.getDate()).padStart(2, '0');
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                let hours = d.getHours();
+                const minutes = String(d.getMinutes()).padStart(2, '0');
+                const ampm = hours >= 12 ? 'pm' : 'am';
+                hours = hours % 12;
+                hours = hours ? hours : 12;
+                return `${day}-${month}, ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+            };
+
             useOrderStore.setState(state => {
                 const exists = state.orders.some(
                     o => o._id === orderId || o.id === orderId
@@ -77,6 +90,7 @@ const useSocketStore = create((set, get) => ({
                                     rider: orderData?.riderName
                                         ? { name: orderData.riderName, id: orderData.rider?.id || orderData.rider }
                                         : (typeof orderData?.rider === 'object' ? orderData.rider : (orderData?.rider ? { id: orderData.rider } : o.rider)),
+                                    deliverySlot: orderData?.deliverySlot || o.deliverySlot
                                 }
                                 : o
                         )
@@ -87,14 +101,16 @@ const useSocketStore = create((set, get) => ({
                         const newOrder = {
                             _id: orderData._id,
                             id: orderData.orderId || orderId,
-                            date: new Date(orderData.createdAt).toLocaleDateString(),
+                            createdAt: orderData.createdAt, // KEEP RAW TIMESTAMP FOR INVOICE
+                            date: formatOrderDate(orderData.createdAt),
                             product: orderData.items
                                 ? orderData.items.map(i => `${i.quantity}x ${i.product?.name || 'Product'}`).join(', ')
                                 : 'New Order',
-                            price: orderData.totalAmount,
+                            price: orderData.totalAmount || '0',
                             status: orderData.status || status,
                             payment: orderData.paymentStatus,
                             orderType: orderData.orderType,
+                            deliverySlot: orderData.deliverySlot,
                             rider: orderData.rider,
                             statusHistory: orderData.statusHistory,
                         };
