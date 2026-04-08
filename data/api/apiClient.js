@@ -1,7 +1,7 @@
 import axios from "axios";
-// const baseURL = process.env.NEXT_PUBLIC_API_URL || "https://api.difwa.com/api";
+const baseURL = process.env.NEXT_PUBLIC_API_URL || "https://api.difwa.com/api";
 // const baseURL = "http://localhost:5000/api";
-const baseURL = "https://nontragic-rodney-allogenically.ngrok-free.dev/api";
+// const baseURL = "https://nontragic-rodney-allogenically.ngrok-free.dev/api";
 // const baseURL = "https://difwa-backend.vercel.app/api";
 // const baseURL = "https://localhost:3000";
 // sdfsd
