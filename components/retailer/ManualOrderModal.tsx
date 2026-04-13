@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, ShoppingBag, Plus, Minus, Search, Loader2, Package } from "lucide-react"
+import { X, ShoppingBag, Plus, Minus, Search, Loader2, Package, Clock } from "lucide-react"
 import retailerService from "@/data/services/retailerService"
+import useAuthStore from "@/data/store/useAuthStore"
 import { cn } from "@/lib/utils"
 
 interface ManualOrderModalProps {
@@ -13,7 +14,7 @@ interface ManualOrderModalProps {
         name: string; 
         addresses?: Array<{ _id: string; fullAddress: string; label?: string; isDefault?: boolean }>;
     } | null
-    onSuccess: () => void
+    onSuccess: (order?: any) => void
 }
 
 interface Product {
@@ -25,6 +26,10 @@ interface Product {
 }
 
 export default function ManualOrderModal({ isOpen, onClose, customer, onSuccess }: ManualOrderModalProps) {
+    const { user } = useAuthStore()
+    const retailerSlots: string[] = user?.businessDetails?.deliverySlots || []
+    const slotOptions = retailerSlots.length > 0 ? retailerSlots : ["Standard"]
+
     const [loading, setLoading] = useState(false)
     const [products, setProducts] = useState<Product[]>([])
     const [productsLoading, setProductsLoading] = useState(true)
@@ -34,6 +39,7 @@ export default function ManualOrderModal({ isOpen, onClose, customer, onSuccess 
     const [paymentMethod, setPaymentMethod] = useState<string>("Cash")
     const [deliveryAddress, setDeliveryAddress] = useState("")
     const [selectedAddressId, setSelectedAddressId] = useState<string>("")
+    const [deliverySlot, setDeliverySlot] = useState<string>("")
     const [isAddingNew, setIsAddingNew] = useState(false)
     const [error, setError] = useState("")
 
@@ -92,6 +98,11 @@ export default function ManualOrderModal({ isOpen, onClose, customer, onSuccess 
 
     const handleSubmit = async () => {
         if (cart.length === 0) return
+        if (!deliverySlot) {
+            setError("Please select a delivery slot before creating the order.")
+            return
+        }
+        
         setLoading(true)
         setError("")
 
@@ -100,13 +111,14 @@ export default function ManualOrderModal({ isOpen, onClose, customer, onSuccess 
                 customerId: customer.id,
                 items: cart.map(item => ({ productId: item.productId, quantity: item.quantity })),
                 deliveryAddress: isAddingNew ? deliveryAddress : (customer.addresses?.find(a => a._id === selectedAddressId)?.fullAddress || deliveryAddress || "Manual Entry"),
+                deliverySlot,
                 paymentStatus,
                 paymentMethod,
                 totalAmount
             })
 
             if (res.success) {
-                onSuccess()
+                onSuccess(res.data) // pass order data back for optimistic update
                 onClose()
                 setCart([])
             } else {
@@ -124,8 +136,8 @@ export default function ManualOrderModal({ isOpen, onClose, customer, onSuccess 
     )
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300 flex flex-col">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}>
+            <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300 flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-6 border-b border-border-custom flex items-center justify-between bg-white sticky top-0 z-10">
                     <div className="flex items-center gap-3">
                         <div className="p-2.5 rounded-xl bg-primary-light text-primary">
@@ -259,6 +271,27 @@ export default function ManualOrderModal({ isOpen, onClose, customer, onSuccess 
                                     >
                                         Due (Credit)
                                     </button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3 pb-2 border-b border-border-custom border-dashed">
+                                <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest flex items-center gap-1.5">
+                                    <Clock size={12} />
+                                    Delivery Slot
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                    {slotOptions.map(slot => (
+                                        <button 
+                                            key={slot}
+                                            onClick={() => setDeliverySlot(slot)}
+                                            className={cn(
+                                                "px-3 py-2 rounded-xl text-xs font-bold transition-all border",
+                                                deliverySlot === slot ? "bg-primary text-white border-primary shadow-sm" : "bg-white text-text-muted border-border-custom hover:border-primary/50"
+                                            )}
+                                        >
+                                            {slot}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
 

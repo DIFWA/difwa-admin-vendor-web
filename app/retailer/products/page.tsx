@@ -244,8 +244,9 @@ function RetailerProductsContent() {
                                             <p className="font-black text-primary">{p.stock} lt.</p>
                                             <p className={cn(
                                                 "text-[9px] font-black uppercase",
-                                                (p.stockStatus === "In Stock" || p.stock >= 10) ? "text-emerald-500" : "text-red-500"
-                                            )}>{p.stockStatus || (p.stock >= 10 ? 'In Stock' : 'Low Stock')}</p>
+                                                p.stock <= 0 ? "text-red-600" :
+                                                (p.stockStatus === "In Stock" || p.stock >= 10) ? "text-emerald-500" : "text-orange-500"
+                                            )}>{p.stock <= 0 ? 'Out of Stock' : (p.stockStatus || (p.stock >= 10 ? 'In Stock' : 'Low Stock'))}</p>
                                         </td>
                                         <td className="px-6 py-4">
                                             <p className="font-black text-primary">₹{p.price}</p>

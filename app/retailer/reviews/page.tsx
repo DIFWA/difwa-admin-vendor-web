@@ -9,12 +9,12 @@ import useRetailerStore from "@/data/store/useRetailerStore"
 
 export default function RetailerReviewsPage() {
     const [mounted, setMounted] = useState(false)
-    const { 
-        reviewData, 
-        loadingReviews: loading, 
-        fetchReviews 
+    const {
+        reviewData,
+        loadingReviews: loading,
+        fetchReviews
     } = useRetailerStore()
-    
+
     const [filter, setFilter] = useState("All")
     const [searchQuery, setSearchQuery] = useState("")
 
@@ -33,11 +33,11 @@ export default function RetailerReviewsPage() {
         )
     }
 
-    const { stats = { 
-        averageRating: 0, 
-        totalReviews: 0, 
-        positivePercentage: 0, 
-        distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } 
+    const { stats = {
+        averageRating: 0,
+        totalReviews: 0,
+        positivePercentage: 0,
+        distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
     }, reviews = [] } = reviewData || {}
 
     // Filter reviews
@@ -58,10 +58,6 @@ export default function RetailerReviewsPage() {
                     <h1 className="text-2xl font-bold tracking-tight">Customer Reviews</h1>
                     <p className="text-text-muted">Manage your shop&apos;s feedback and customer sentiment.</p>
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-all text-sm font-medium shadow-md">
-                    <Star size={16} className="fill-current" />
-                    Review Settings
-                </button>
             </div>
 
             {/* Review Stats */}

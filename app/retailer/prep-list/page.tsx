@@ -107,15 +107,15 @@ export default function DailyPrepListPage() {
             retailerSlots.forEach((s: string) => slots.add(s))
         }
         prepList.active?.forEach((item: PrepRow) => slots.add(item.deliverySlot))
-        
+
         // Sort slots logically
         const slotOrder = [
-            "All", 
-            "6-7 AM", "7-8 AM", "8-9 AM", "9-10 AM", "10-11 AM", "11 AM-12 PM", 
-            "12-1 PM", "1-2 PM", "2-3 PM", "3-4 PM", "4-5 PM", "5-6 PM", 
+            "All",
+            "6-7 AM", "7-8 AM", "8-9 AM", "9-10 AM", "10-11 AM", "11 AM-12 PM",
+            "12-1 PM", "1-2 PM", "2-3 PM", "3-4 PM", "4-5 PM", "5-6 PM",
             "6-7 PM", "7-8 PM", "8-9 PM", "9-10 PM"
         ];
-        
+
         return Array.from(slots).sort((a, b) => {
             const getIndex = (val: string) => {
                 const idx = slotOrder.indexOf(val);
@@ -172,18 +172,11 @@ export default function DailyPrepListPage() {
 
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => window.print()}
-                        className="px-4 py-2.5 rounded-xl border border-border-custom bg-white hover:bg-gray-50 flex items-center gap-2 text-sm font-bold transition-all shadow-sm"
-                    >
-                        <Printer size={16} />
-                        Print Sheet
-                    </button>
-                    <button
                         onClick={() => setIsTomorrow(!isTomorrow)}
                         className={cn(
                             "px-4 py-2.5 rounded-xl border flex items-center gap-2 text-sm font-bold transition-all shadow-sm",
-                            isTomorrow 
-                                ? "bg-primary text-white border-primary" 
+                            isTomorrow
+                                ? "bg-primary text-white border-primary"
                                 : "bg-white text-foreground border-border-custom hover:bg-gray-50"
                         )}
                     >
@@ -243,135 +236,135 @@ export default function DailyPrepListPage() {
                 {isLoading && !isInitialLoad.current && (
                     <div className="absolute inset-0 z-20 bg-white/30 backdrop-blur-[1px] flex items-start justify-center pt-32 animate-in fade-in duration-300">
                         <div className="flex flex-col items-center gap-4 bg-white px-8 py-6 rounded-[32px] shadow-2xl border border-border-custom ring-4 ring-primary/5">
-                           <div className="w-10 h-10 border-4 border-primary/10 border-t-primary rounded-full animate-spin" />
-                           <div className="flex flex-col items-center gap-1">
-                               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">Updating List</p>
-                               <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest opacity-60">Fetching latest changes...</span>
-                           </div>
+                            <div className="w-10 h-10 border-4 border-primary/10 border-t-primary rounded-full animate-spin" />
+                            <div className="flex flex-col items-center gap-1">
+                                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">Updating List</p>
+                                <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest opacity-60">Fetching latest changes...</span>
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {/* MAIN ACTIVE TABLE */}
-            <div className="space-y-4">
-                <div className="flex items-center gap-2 ml-2">
-                    <CheckCircle2 size={18} className="text-blue-500" />
-                    <h3 className="text-sm font-black uppercase tracking-widest text-foreground">
-                        {isTomorrow ? "Scheduled for Tomorrow" : "Scheduled Deliveries"}
-                    </h3>
-                </div>
-
-                <div className="bg-white rounded-[32px] border border-border-custom overflow-hidden shadow-sm">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-background-soft/50 border-b border-border-custom">
-                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted">Customer Details</th>
-                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted">Product Item</th>
-                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted text-center">Qty</th>
-                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted">Shift Slot</th>
-                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted text-right">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border-custom/40">
-                                {filteredActive.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={5} className="px-6 py-12 text-center text-text-muted font-medium italic">
-                                            No active deliveries found for this slot.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filteredActive.map((item: PrepRow) => (
-                                        <tr key={item.id} className="hover:bg-primary/[0.02] transition-colors group">
-                                            <td className="px-6 py-5">
-                                                <div className="flex flex-col">
-                                                    <span className="font-black text-foreground group-hover:text-primary transition-colors">{item.customerName}</span>
-                                                    <span className="text-[11px] font-bold text-text-muted">{item.phoneNumber}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 rounded-full bg-blue-500/20" />
-                                                    <span className="text-sm font-bold text-foreground uppercase tracking-tight">{item.productName}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 text-center">
-                                                <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-background-soft font-black text-sm text-primary">
-                                                    {item.quantity}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <span className="px-3 py-1 bg-gray-50 border border-gray-100 rounded-full text-[10px] font-black text-text-muted uppercase tracking-wider">
-                                                    {item.deliverySlot}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-5 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <span className={cn(
-                                                        "text-[10px] font-black uppercase tracking-widest",
-                                                        (item.status === 'Delivered' || item.status === 'Completed') ? "text-emerald-600" :
-                                                        item.status === 'Predicted' ? "text-purple-600" : "text-blue-600"
-                                                    )}>
-                                                        {item.status || "Pending"}
-                                                    </span>
-                                                    <div className={cn(
-                                                        "w-2 h-2 rounded-full",
-                                                        (item.status === 'Delivered' || item.status === 'Completed') ? "bg-emerald-500" :
-                                                        item.status === 'Predicted' ? "bg-purple-500 animate-pulse" : "bg-blue-500 animate-pulse"
-                                                    )} />
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            {/* VACATION / PAUSED TABLE */}
-            {filteredPausedFilter.length > 0 && (
-                <div className="space-y-4 pt-10">
+                <div className="space-y-4">
                     <div className="flex items-center gap-2 ml-2">
-                        <PauseCircle size={18} className="text-red-400" />
-                        <h3 className="text-sm font-black uppercase tracking-widest text-text-muted">Paused / Vacation Orders</h3>
+                        <CheckCircle2 size={18} className="text-blue-500" />
+                        <h3 className="text-sm font-black uppercase tracking-widest text-foreground">
+                            {isTomorrow ? "Scheduled for Tomorrow" : "Scheduled Deliveries"}
+                        </h3>
                     </div>
 
-                    <div className="bg-white rounded-[32px] border border-border-custom overflow-hidden shadow-sm opacity-60">
+                    <div className="bg-white rounded-[32px] border border-border-custom overflow-hidden shadow-sm">
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse grayscale">
+                            <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="bg-gray-50 border-b border-border-custom">
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted">Customer</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted">Product</th>
+                                    <tr className="bg-background-soft/50 border-b border-border-custom">
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted">Customer Details</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted">Product Item</th>
                                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted text-center">Qty</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted text-right">Pause Reason</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted">Shift Slot</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted text-right">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border-custom/40">
-                                    {filteredPausedFilter.map((item: PrepRow) => (
-                                        <tr key={item.id} className="bg-gray-50/50">
-                                            <td className="px-6 py-4">
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-text-muted line-through">{item.customerName}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm font-medium text-text-muted">{item.productName}</td>
-                                            <td className="px-6 py-4 text-center font-bold text-text-muted">{item.quantity}</td>
-                                            <td className="px-6 py-4 text-right">
-                                                <span className="px-3 py-1 bg-red-50 text-red-600 rounded-full text-[9px] font-black uppercase tracking-widest">
-                                                    Scheduled Pause
-                                                </span>
+                                    {filteredActive.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-12 text-center text-text-muted font-medium italic">
+                                                No active deliveries found for this slot.
                                             </td>
                                         </tr>
-                                    ))}
+                                    ) : (
+                                        filteredActive.map((item: PrepRow) => (
+                                            <tr key={item.id} className="hover:bg-primary/[0.02] transition-colors group">
+                                                <td className="px-6 py-5">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-black text-foreground group-hover:text-primary transition-colors">{item.customerName}</span>
+                                                        <span className="text-[11px] font-bold text-text-muted">{item.phoneNumber}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-2 h-2 rounded-full bg-blue-500/20" />
+                                                        <span className="text-sm font-bold text-foreground uppercase tracking-tight">{item.productName}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5 text-center">
+                                                    <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-background-soft font-black text-sm text-primary">
+                                                        {item.quantity}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5">
+                                                    <span className="px-3 py-1 bg-gray-50 border border-gray-100 rounded-full text-[10px] font-black text-text-muted uppercase tracking-wider">
+                                                        {item.deliverySlot}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-5 text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <span className={cn(
+                                                            "text-[10px] font-black uppercase tracking-widest",
+                                                            (item.status === 'Delivered' || item.status === 'Completed') ? "text-emerald-600" :
+                                                                item.status === 'Predicted' ? "text-purple-600" : "text-blue-600"
+                                                        )}>
+                                                            {item.status || "Pending"}
+                                                        </span>
+                                                        <div className={cn(
+                                                            "w-2 h-2 rounded-full",
+                                                            (item.status === 'Delivered' || item.status === 'Completed') ? "bg-emerald-500" :
+                                                                item.status === 'Predicted' ? "bg-purple-500 animate-pulse" : "bg-blue-500 animate-pulse"
+                                                        )} />
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
-            )}
+
+                {/* VACATION / PAUSED TABLE */}
+                {filteredPausedFilter.length > 0 && (
+                    <div className="space-y-4 pt-10">
+                        <div className="flex items-center gap-2 ml-2">
+                            <PauseCircle size={18} className="text-red-400" />
+                            <h3 className="text-sm font-black uppercase tracking-widest text-text-muted">Paused / Vacation Orders</h3>
+                        </div>
+
+                        <div className="bg-white rounded-[32px] border border-border-custom overflow-hidden shadow-sm opacity-60">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse grayscale">
+                                    <thead>
+                                        <tr className="bg-gray-50 border-b border-border-custom">
+                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted">Customer</th>
+                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted">Product</th>
+                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted text-center">Qty</th>
+                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted text-right">Pause Reason</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border-custom/40">
+                                        {filteredPausedFilter.map((item: PrepRow) => (
+                                            <tr key={item.id} className="bg-gray-50/50">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-text-muted line-through">{item.customerName}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-medium text-text-muted">{item.productName}</td>
+                                                <td className="px-6 py-4 text-center font-bold text-text-muted">{item.quantity}</td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <span className="px-3 py-1 bg-red-50 text-red-600 rounded-full text-[9px] font-black uppercase tracking-widest">
+                                                        Scheduled Pause
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )

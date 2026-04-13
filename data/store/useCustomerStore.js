@@ -10,12 +10,22 @@ const useCustomerStore = create((set, get) => ({
 
     setSearchQuery: (query) => set({ searchQuery: query }),
     setSelectedCustomer: (customer) => set({ selectedCustomer: customer }),
+    setOptimisticCustomer: (customerId, updates) => set((state) => {
+        if (!state.customersData || !state.customersData.customers) return state;
+        const updatedCustomers = state.customersData.customers.map(c => 
+            c.id === customerId ? { ...c, ...updates } : c
+        );
+        return { 
+            customersData: { ...state.customersData, customers: updatedCustomers },
+            selectedCustomer: state.selectedCustomer?.id === customerId ? { ...state.selectedCustomer, ...updates } : state.selectedCustomer
+        };
+    }),
 
-    fetchCustomers: async (force = false) => {
+    fetchCustomers: async (force = false, background = false) => {
         // Skip if data is already loaded and not forcing a refresh
         if (get().customersData && !force) return;
 
-        set({ loading: true, error: null });
+        if (!background) set({ loading: true, error: null });
         try {
             const res = await retailerService.getCustomers();
             if (res.success) {

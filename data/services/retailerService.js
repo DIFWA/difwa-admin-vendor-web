@@ -204,8 +204,8 @@ const retailerService = {
         return response.data;
     },
 
-    getDueOrdersForCustomer: async (customerId) => {
-        const response = await apiClient.get(`${API_ENDPOINTS.RETAILER.CUSTOMERS}/${customerId}/due-orders`);
+    getDueOrdersForCustomer: async (customerId, type = 'due') => {
+        const response = await apiClient.get(`${API_ENDPOINTS.RETAILER.CUSTOMERS}/${customerId}/due-orders`, { params: { type } });
         return response.data;
     },
 

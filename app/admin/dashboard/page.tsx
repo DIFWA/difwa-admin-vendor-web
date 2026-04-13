@@ -8,8 +8,6 @@ import {
     TrendingDown,
     Package,
     MoreVertical,
-    Plus,
-    Filter,
 } from "lucide-react"
 import {
     XAxis,
@@ -70,10 +68,10 @@ import useAdminStore from "@/data/store/useAdminStore"
 
 export default function Dashboard() {
     const [mounted, setMounted] = useState(false)
-    const { 
-        stats: statsData, 
-        loadingStats: loading, 
-        fetchDashboardStats 
+    const {
+        stats: statsData,
+        loadingStats: loading,
+        fetchDashboardStats
     } = useAdminStore()
 
     useEffect(() => {
@@ -138,10 +136,6 @@ export default function Dashboard() {
                     <p className="text-text-muted">Welcome back, Admin. Here&apos;s a summary of all shop activities.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg border bg-white hover:bg-background-soft transition-all text-sm font-medium">
-                        <Filter size={16} />
-                        Filter
-                    </button>
                     {/* <Link href="/admin/shops" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary transition-all text-sm font-medium shadow-md shadow-primary/20">
                         <Plus size={16} />
                         Add Shop
@@ -233,7 +227,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="bg-white p-6 rounded-2xl border border-border-custom shadow-sm flex flex-col">
-                    <h3 className="text-lg font-bold mb-6">Recent Shop Activities</h3>
+                    <h3 className="text-lg font-bold mb-6">Retailers Registered</h3>
                     <div className="space-y-6 flex-1">
                         {statsData.recentShops.length === 0 ? (
                             <p className="text-sm text-text-muted">No recent activities.</p>
@@ -244,15 +238,15 @@ export default function Dashboard() {
                                         <ShoppingCart size={18} className="text-primary" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-semibold text-foreground">New Shop Signed: {shop.businessDetails?.businessName || shop.name}</p>
+                                        <p className="text-sm font-semibold text-foreground">Retailer Registered: {shop.businessDetails?.businessName || shop.name}</p>
                                         <p className="text-xs text-text-muted">{new Date(shop.createdAt).toLocaleDateString()}</p>
                                     </div>
                                 </div>
                             ))
                         )}
                     </div>
-                    <Link href="/admin/shops" className="block text-center w-full mt-6 py-2 rounded-lg border text-sm font-medium hover:bg-background-soft transition-all text-text-muted hover:text-foreground">
-                        View All Platform Activities
+                    <Link href="/admin/retailers" className="block text-center w-full mt-6 py-2 rounded-lg border text-sm font-medium hover:bg-background-soft transition-all text-text-muted hover:text-foreground">
+                        View All Retailers
                     </Link>
                 </div>
             </div>

@@ -39,6 +39,7 @@ import ManualOrderModal from "@/components/retailer/ManualOrderModal"
 import ManualSubscriptionModal from "@/components/retailer/ManualSubscriptionModal"
 import { useSearchParams } from "next/navigation"
 import useCustomerStore from "@/data/store/useCustomerStore"
+import useAuthStore from "@/data/store/useAuthStore"
 
 function CustomersContent() {
     const searchParams = useSearchParams()
@@ -47,16 +48,20 @@ function CustomersContent() {
         customersData, 
         loading, 
         fetchCustomers, 
-        selectedCustomer, 
+        selectedCustomer,
         setSelectedCustomer,
+        setOptimisticCustomer,
         searchQuery,
         setSearchQuery
     } = useCustomerStore()
+    const { user: authUser } = useAuthStore()
     
     // UI-only states remain local
     const [showHistoryModal, setShowHistoryModal] = useState(false)
     const [customerOrders, setCustomerOrders] = useState<any[]>([])
     const [historyLoading, setHistoryLoading] = useState(false)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [balanceFilter, setBalanceFilter] = useState<'All' | 'Due' | 'Cleared'>('All')
     const [showAddCustomerModal, setShowAddCustomerModal] = useState(false)
     const [showCreateOrderModal, setShowCreateOrderModal] = useState(false)
     const [showSettleModal, setShowSettleModal] = useState(false)
@@ -86,6 +91,10 @@ function CustomersContent() {
             setSearchQuery(q)
         }
     }, [searchParams, fetchCustomers, setSearchQuery])
+
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [searchQuery, balanceFilter])
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -129,12 +138,22 @@ function CustomersContent() {
         { title: "Repeat Customers", value: customersData.stats?.repeatPercentage || "0%", change: "", trend: "up", icon: TrendingUp, color: "bg-purple-50 text-purple-600" },
     ]
 
-    const filteredCustomers = (customersData.customers || []).filter((c: any) =>
-        c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (c.orderIds || []).some((id: string) => id.toLowerCase().includes(searchQuery.toLowerCase()))
-    )
+    const filteredCustomers = (customersData.customers || []).filter((c: any) => {
+        const matchesSearch = 
+            c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            c.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            c.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (c.orderIds || []).some((id: string) => id.toLowerCase().includes(searchQuery.toLowerCase()))
+        const matchesBalance =
+            balanceFilter === 'All' ? true :
+            balanceFilter === 'Due' ? parseFloat(c.balance) > 0 :
+            parseFloat(c.balance) === 0
+        return matchesSearch && matchesBalance
+    })
+
+    const ITEMS_PER_PAGE = 7;
+    const totalPages = Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE);
+    const paginatedCustomers = filteredCustomers.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
@@ -175,16 +194,7 @@ function CustomersContent() {
                                     <RefreshCw size={16} className="text-primary" />
                                     Refresh Data
                                 </button>
-                                <button 
-                                    onClick={() => {
-                                        window.print();
-                                        setShowMoreMenu(false);
-                                    }}
-                                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-background-soft transition-colors"
-                                >
-                                    <Download size={16} className="text-blue-500" />
-                                    Print/Save View
-                                </button>
+
                             </div>
                         )}
                     </div>
@@ -241,8 +251,25 @@ function CustomersContent() {
                     selectedCustomer ? "lg:col-span-3" : "lg:col-span-4"
                 )}>
 
-                    <div className="p-6 border-b border-border-custom flex items-center justify-between">
-                        <h3 className="text-lg font-bold">Customer Directory</h3>
+                    <div className="p-4 border-b border-border-custom flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-1.5 bg-background-soft rounded-xl p-1">
+                            {(['All', 'Due', 'Cleared'] as const).map(f => (
+                                <button
+                                    key={f}
+                                    onClick={() => setBalanceFilter(f)}
+                                    className={cn(
+                                        "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+                                        balanceFilter === f
+                                            ? f === 'Due' ? 'bg-orange-500 text-white shadow-sm' : 'bg-primary text-white shadow-sm'
+                                            : 'text-text-muted hover:text-text'
+                                    )}
+                                >
+                                    {f === 'All' ? `All (${(customersData.customers || []).length})` :
+                                     f === 'Due' ? `With Due (${(customersData.customers || []).filter((c: any) => parseFloat(c.balance) > 0).length})` :
+                                     `Cleared (${(customersData.customers || []).filter((c: any) => parseFloat(c.balance) === 0).length})`}
+                                </button>
+                            ))}
+                        </div>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
                             <input
@@ -271,14 +298,14 @@ function CustomersContent() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 text-sm">
-                                {filteredCustomers.length === 0 ? (
+                                {paginatedCustomers.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="px-6 py-12 text-center text-text-muted">
                                             No customers found matching &quot;{searchQuery}&quot;
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredCustomers.map((c: any) => (
+                                    paginatedCustomers.map((c: any) => (
                                         <tr key={c.id} onClick={() => setSelectedCustomer(c)} className={cn("hover:bg-background-soft cursor-pointer transition-colors", selectedCustomer?.id === c.id && "bg-background-soft/50")}>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-2">
@@ -305,7 +332,10 @@ function CustomersContent() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 font-bold text-primary">₹{c.spend}</td>
-                                            <td className="px-6 py-4 font-bold text-orange-600">₹{c.balance}</td>
+                                            <td className={cn(
+                                                "px-6 py-4 font-bold",
+                                                parseFloat(c.balance) > 0 ? "text-orange-600" : "text-emerald-600"
+                                            )}>₹{c.balance}</td>
                                             <td className="px-6 py-4">
                                                 <span className={cn(
                                                     "px-3 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 w-fit",
@@ -357,6 +387,44 @@ function CustomersContent() {
                         </table>
                     </div>
 
+                    {totalPages > 1 && (
+                        <div className="p-4 border-t border-border-custom flex items-center justify-between text-sm bg-background-soft/30">
+                            <span className="text-text-muted font-medium">
+                                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredCustomers.length)} of {filteredCustomers.length}
+                            </span>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1.5 border border-border-custom bg-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background-soft font-bold transition-colors"
+                                >
+                                    Prev
+                                </button>
+                                {Array.from({ length: totalPages }).map((_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setCurrentPage(i + 1)}
+                                        className={cn(
+                                            "w-8 h-8 rounded-lg flex items-center justify-center border font-bold transition-colors",
+                                            currentPage === i + 1 
+                                                ? "bg-primary text-white border-primary shadow-sm" 
+                                                : "bg-white border-border-custom hover:bg-background-soft text-text-muted"
+                                        )}
+                                    >
+                                        {i + 1}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1.5 border border-border-custom bg-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background-soft font-bold transition-colors"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
 
                 </div>
 
@@ -374,7 +442,9 @@ function CustomersContent() {
                                 <img src={selectedCustomer.image} alt={selectedCustomer.name} className="w-full h-full object-cover" />
                             </div>
                             <h3 className="font-bold text-lg">{selectedCustomer.name}</h3>
-                            <p className="text-xs text-text-muted">{selectedCustomer.email}</p>
+                            <p className="text-xs text-text-muted">
+                                {selectedCustomer.email && selectedCustomer.email !== "N/A" ? selectedCustomer.email : selectedCustomer.phone}
+                            </p>
                         </div>
                         <div className="space-y-4 pt-4 border-t">
                             <div className="flex items-center gap-3 text-sm">
@@ -415,29 +485,29 @@ function CustomersContent() {
                                             Settle Balance
                                         </button>
                                     )}
-                                    {parseFloat(selectedCustomer.balance) > 0 && (
-                                        <button
-                                            onClick={async () => {
-                                                setInvoiceLoading(true)
-                                                setShowInvoiceModal(true)
-                                                try {
-                                                    const res = await retailerService.getDueOrdersForCustomer(selectedCustomer.id)
-                                                    if (res.success) {
-                                                        setInvoiceData(res.data)
-                                                    }
-                                                } catch (err) {
-                                                    console.error("Failed to fetch invoice", err)
-                                                    toast.error("Failed to generate invoice")
-                                                } finally {
-                                                    setInvoiceLoading(false)
+                                    {/* Always show — Due = Invoice, Cleared = Receipt */}
+                                    <button
+                                        onClick={async () => {
+                                            setInvoiceLoading(true)
+                                            setShowInvoiceModal(true)
+                                            try {
+                                                const hasDue = parseFloat(selectedCustomer.balance) > 0
+                                                const res = await retailerService.getDueOrdersForCustomer(selectedCustomer.id, hasDue ? 'due' : 'paid')
+                                                if (res.success) {
+                                                    setInvoiceData(res.data)
                                                 }
-                                            }}
-                                            className="w-full py-2 px-4 bg-white border border-border-custom text-text rounded-lg text-[10px] font-black uppercase hover:bg-background-soft transition-all flex items-center justify-center gap-2"
-                                        >
-                                            <FileText size={14} className="text-primary" />
-                                            Generate Invoice
-                                        </button>
-                                    )}
+                                            } catch (err) {
+                                                console.error("Failed to fetch invoice", err)
+                                                toast.error("Failed to generate invoice")
+                                            } finally {
+                                                setInvoiceLoading(false)
+                                            }
+                                        }}
+                                        className="w-full py-2 px-4 bg-white border border-border-custom text-text rounded-lg text-[10px] font-black uppercase hover:bg-background-soft transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <FileText size={14} className="text-primary" />
+                                        {parseFloat(selectedCustomer.balance) > 0 ? 'Generate Invoice' : 'View Receipt'}
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -553,7 +623,17 @@ function CustomersContent() {
                     setCustomerForOrder(null)
                 }}
                 customer={customerForOrder}
-                onSuccess={fetchCustomers}
+                onSuccess={(order?: any) => {
+                    // Optimistic instant update for order count and balance
+                    if (selectedCustomer && selectedCustomer.id === customerForOrder?.id) {
+                        const addedBalance = order?.paymentStatus === 'Due' ? (order?.totalAmount || 0) : 0
+                        setOptimisticCustomer(selectedCustomer.id, {
+                            orderCount: (selectedCustomer.orderCount || 0) + 1,
+                            balance: (parseFloat(selectedCustomer.balance || '0') + addedBalance).toFixed(2),
+                        })
+                    }
+                    fetchCustomers(true, true) // force background list refresh
+                }}
             />
 
             <ManualSubscriptionModal
@@ -597,11 +677,17 @@ function CustomersContent() {
                                     try {
                                         const res = await retailerService.settleCustomerDue(selectedCustomer.id, parseFloat(settleAmount))
                                         if (res.success) {
-                                            await fetchCustomers()
+                                            // Instantly update UI — compute new balance
+                                            const newBalance = Math.max(0, parseFloat(selectedCustomer.balance) - parseFloat(settleAmount)).toFixed(2)
+                                            setOptimisticCustomer(selectedCustomer.id, { balance: newBalance })
                                             setShowSettleModal(false)
+                                            toast.success(res.message || "Balance settled!")
+                                            // Refresh list in background
+                                            fetchCustomers(true, true)
                                         }
                                     } catch (err) {
                                         console.error("Settle failed", err)
+                                        toast.error("Failed to settle balance")
                                     } finally {
                                         setSettleLoading(false)
                                     }
@@ -745,7 +831,7 @@ function CustomersContent() {
                                         <tfoot className="border-t-2 border-text pt-4">
                                             <tr>
                                                 <td colSpan={2} className="px-4 py-4 text-sm font-black text-text uppercase tracking-widest">Total Outstanding Due</td>
-                                                <td className="px-4 py-4 text-right text-2xl font-black text-primary">₹{invoiceData.totalDue.toFixed(2)}</td>
+                                                <td className="px-4 py-4 text-right text-2xl font-black text-primary">₹{parseFloat(invoiceData.totalDue).toFixed(2)}</td>
                                             </tr>
                                         </tfoot>
                                     </table>
@@ -764,8 +850,13 @@ function CustomersContent() {
                         <div className="p-6 border-t border-border-custom bg-white flex flex-col md:flex-row gap-3 no-print">
                             <button
                                 onClick={() => {
-                                    const message = `*INVOICE FROM ${invoiceData.retailer.name.toUpperCase()}*%0A%0AHello *${invoiceData.customer.fullName}*,%0A%0AYour current outstanding balance is *₹${invoiceData.totalDue.toFixed(2)}*.%0A%0APlease find the summary of your orders below:%0A${invoiceData.orders.slice(0, 5).map((o: any) => `- ₹${o.totalAmount} (${new Date(o.createdAt).toLocaleDateString()})`).join('%0A')}${invoiceData.orders.length > 5 ? '%0A- ...and more' : ''}%0A%0A*Total Due: ₹${invoiceData.totalDue.toFixed(2)}*%0A%0APlease settle it at your earliest convenience. Thank you!`;
-                                    window.open(`https://wa.me/${invoiceData.customer.phoneNumber.replace(/[^0-9]/g, '')}?text=${message}`, '_blank');
+                                    const retailerName = authUser?.businessDetails?.shopName || authUser?.name || 'Retailer';
+                                    const totalDue = parseFloat(invoiceData.totalDue).toFixed(2);
+                                    const isReceipt = parseFloat(invoiceData.totalDue) === 0;
+                                    const message = isReceipt
+                                        ? `*RECEIPT FROM ${retailerName.toUpperCase()}*%0A%0AHello *${invoiceData.customer.fullName}*,%0A%0AThank you for clearing your dues! Here is your payment receipt:%0A${invoiceData.orders.slice(0, 5).map((o: any) => `- ₹${o.totalAmount} (${new Date(o.createdAt).toLocaleDateString()})`).join('%0A')}%0A%0AAll dues cleared. Thank you for your business! ✅`
+                                        : `*INVOICE FROM ${retailerName.toUpperCase()}*%0A%0AHello *${invoiceData.customer.fullName}*,%0A%0AYour current outstanding balance is *₹${totalDue}*.%0A%0APlease find the summary of your orders below:%0A${invoiceData.orders.slice(0, 5).map((o: any) => `- ₹${o.totalAmount} (${new Date(o.createdAt).toLocaleDateString()})`).join('%0A')}${invoiceData.orders.length > 5 ? '%0A- ...and more' : ''}%0A%0A*Total Due: ₹${totalDue}*%0A%0APlease settle it at your earliest convenience. Thank you!`;
+                                    window.open(`https://wa.me/91${invoiceData.customer.phoneNumber.replace(/[^0-9]/g, '').slice(-10)}?text=${message}`, '_blank');
                                 }}
                                 disabled={!invoiceData}
                                 className="flex-1 py-3 bg-[#25D366] text-white rounded-xl text-sm font-black shadow-lg shadow-[#25D366]/20 hover:bg-[#20bd5c] transition-all flex items-center justify-center gap-2 uppercase tracking-wide disabled:opacity-50"

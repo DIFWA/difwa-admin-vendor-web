@@ -19,6 +19,12 @@ export default function ManualCustomerModal({ isOpen, onClose, onSuccess }: Manu
     })
     const [error, setError] = useState("")
 
+    // Normalize: strip everything except digits, take last 10
+    const normalizePhone = (raw: string): string => {
+        const digits = raw.replace(/[^0-9]/g, '')
+        return digits.slice(-10)
+    }
+
     if (!isOpen) return null
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -26,8 +32,15 @@ export default function ManualCustomerModal({ isOpen, onClose, onSuccess }: Manu
         setLoading(true)
         setError("")
 
+        const normalizedPhone = normalizePhone(formData.phoneNumber)
+        if (normalizedPhone.length !== 10) {
+            setError("Please enter a valid 10-digit Indian mobile number")
+            setLoading(false)
+            return
+        }
+
         try {
-            const res = await retailerService.addManualCustomer(formData)
+            const res = await retailerService.addManualCustomer({ ...formData, phoneNumber: normalizedPhone })
             if (res.success) {
                 onSuccess()
                 onClose()
