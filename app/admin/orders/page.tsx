@@ -13,7 +13,8 @@ import {
     Package,
     RefreshCw,
     Eye,
-    Shield
+    Shield,
+    X
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import adminService from "@/data/services/adminService"
@@ -109,6 +110,11 @@ function AdminOrdersContent() {
         };
     }, [fetchOrdersData, socket, connectSocket, user?._id, user?.id]);
 
+    // Reset pagination on search/filter change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, statusFilter, typeFilter]);
+
     if (!mounted || (loading && !ordersData)) {
         return <div className="space-y-6 animate-pulse p-4">
             <div className="h-12 bg-background-soft rounded-xl w-1/4" />
@@ -130,14 +136,17 @@ function AdminOrdersContent() {
     }
 
     const orders = ordersData?.orders || []
-    const totalPages = Math.ceil((ordersData?.total || 0) / ORDERS_PER_PAGE)
+    const totalOrders = ordersData?.pagination?.totalOrders || 0
+    const totalPages = Math.ceil(totalOrders / ORDERS_PER_PAGE)
+    const startRange = ((currentPage - 1) * ORDERS_PER_PAGE) + 1
+    const endRange = Math.min(currentPage * ORDERS_PER_PAGE, totalOrders)
 
     const handleExport = () => {
         try {
             const exportData = orders.map((o: any) => ({
                 "Order ID": o.orderId,
-                "User": o.user?.name || "Guest",
-                "Retailer": o.retailer?.businessName || "Unknown",
+                "User": o.user?.fullName || "Guest",
+                "Retailer": o.items?.[0]?.retailer?.businessDetails?.businessName || "Unknown",
                 "Type": o.orderType,
                 "Price": `₹${o.totalAmount}`,
                 "Status": o.status,
@@ -152,6 +161,27 @@ function AdminOrdersContent() {
             toast.error("Export failed")
         }
     }
+
+    const getPageNumbers = () => {
+        const pages: (number | string)[] = [];
+        const maxPagesToShow = 5;
+        
+        if (totalPages <= maxPagesToShow) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            pages.push(1);
+            if (currentPage > 3) pages.push("...");
+            
+            const start = Math.max(2, currentPage - 1);
+            const end = Math.min(totalPages - 1, currentPage + 1);
+            
+            for (let i = start; i <= end; i++) pages.push(i);
+            
+            if (currentPage < totalPages - 2) pages.push("...");
+            pages.push(totalPages);
+        }
+        return pages;
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -176,19 +206,28 @@ function AdminOrdersContent() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
                         <input
                             type="text"
-                            placeholder="Search by ID, User, or Retailer..."
+                            placeholder="Search by ID, User Phone, or Retailer..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 rounded-xl bg-background-soft border-transparent outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                            className="w-full pl-10 pr-10 py-2 rounded-xl bg-background-soft border-transparent outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
                         />
+                        {searchQuery && (
+                            <button 
+                                onClick={() => setSearchQuery("")}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-white rounded-full text-text-muted hover:text-red-500 transition-all"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
                     </div>
                     <div className="flex items-center gap-3">
-                        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 rounded-xl bg-background-soft border-transparent text-sm outline-none cursor-pointer">
+                        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 rounded-xl bg-background-soft border-transparent text-sm outline-none cursor-pointer font-medium hover:bg-primary/5 transition-colors">
                             <option value="All">All Status</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Completed">Completed</option>
+                            {Object.keys(statusStyles).map(status => (
+                                <option key={status} value={status}>{status}</option>
+                            ))}
                         </select>
-                        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="px-3 py-2 rounded-xl bg-background-soft border-transparent text-sm outline-none cursor-pointer">
+                        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="px-3 py-2 rounded-xl bg-background-soft border-transparent text-sm outline-none cursor-pointer font-medium hover:bg-primary/5 transition-colors">
                             <option value="All">All Types</option>
                             <option value="One-time">One-time</option>
                             <option value="Subscription">Subscription</option>
@@ -209,7 +248,7 @@ function AdminOrdersContent() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border-custom text-sm">
-                            {!orders || orders.length === 0 ? (
+                            {orders.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="px-6 py-12 text-center text-text-muted">
                                         <Package className="mx-auto mb-2 opacity-20" size={48} />
@@ -233,7 +272,7 @@ function AdminOrdersContent() {
                                                 <p className="font-medium">{retailerDisplay}</p>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase border", statusStyles[order.status] || "bg-gray-50 text-gray-500")}>
+                                                <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase border shadow-sm", statusStyles[order.status] || "bg-gray-50 text-gray-500")}>
                                                     {order.status}
                                                 </span>
                                             </td>
@@ -255,17 +294,51 @@ function AdminOrdersContent() {
                     <OrderDetailsModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
                 )}
 
-                {totalPages > 1 && (
-                    <div className="p-6 border-t border-border-custom flex items-center justify-between">
-                        <p className="text-xs text-text-muted">Page {currentPage} of {totalPages}</p>
-                        <div className="flex gap-2">
-                            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-4 py-2 bg-white border border-border-custom rounded-xl text-xs font-bold disabled:opacity-50">Prev</button>
-                            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-4 py-2 bg-white border border-border-custom rounded-xl text-xs font-bold disabled:opacity-50">Next</button>
+                {(totalPages > 0 || totalOrders > 0) && (
+                    <div className="p-6 border-t border-border-custom flex items-center justify-between bg-background-soft/30">
+                        <p className="text-xs text-text-muted">
+                            Showing <span className="font-bold text-primary">{totalOrders > 0 ? startRange : 0}-{endRange}</span> of <span className="font-bold text-primary">{totalOrders}</span> orders
+                        </p>
+                        <div className="flex items-center gap-1">
+                            <button 
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                                disabled={currentPage === 1} 
+                                className="flex items-center gap-1 px-3 py-2 bg-white border border-border-custom rounded-xl text-[10px] font-black uppercase disabled:opacity-50 hover:bg-primary hover:text-white transition-all shadow-sm"
+                            >
+                                <ChevronLeft size={14} />
+                            </button>
+                            
+                            <div className="flex items-center gap-1 px-2">
+                                {getPageNumbers().map((page, idx) => (
+                                    <button
+                                        key={idx}
+                                        disabled={page === "..."}
+                                        onClick={() => typeof page === "number" && setCurrentPage(page)}
+                                        className={cn(
+                                            "w-8 h-8 rounded-lg text-xs font-bold transition-all",
+                                            page === currentPage 
+                                                ? "bg-primary text-white shadow-md scale-110" 
+                                                : page === "..." 
+                                                    ? "cursor-default text-text-muted" 
+                                                    : "bg-white border border-border-custom text-text-muted hover:border-primary hover:text-primary"
+                                        )}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button 
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                                disabled={currentPage === totalPages || totalPages === 0} 
+                                className="flex items-center gap-1 px-3 py-2 bg-white border border-border-custom rounded-xl text-[10px] font-black uppercase disabled:opacity-50 hover:bg-primary hover:text-white transition-all shadow-sm"
+                            >
+                                <ChevronRight size={14} />
+                            </button>
                         </div>
                     </div>
                 )}
             </div>
-
         </div>
     )
 }

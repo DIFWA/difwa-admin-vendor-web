@@ -307,8 +307,18 @@ export default function DailyPrepListPage() {
                                             </td>
                                             <td className="px-6 py-5 text-right">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Pending</span>
-                                                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                                    <span className={cn(
+                                                        "text-[10px] font-black uppercase tracking-widest",
+                                                        (item.status === 'Delivered' || item.status === 'Completed') ? "text-emerald-600" :
+                                                        item.status === 'Predicted' ? "text-purple-600" : "text-blue-600"
+                                                    )}>
+                                                        {item.status || "Pending"}
+                                                    </span>
+                                                    <div className={cn(
+                                                        "w-2 h-2 rounded-full",
+                                                        (item.status === 'Delivered' || item.status === 'Completed') ? "bg-emerald-500" :
+                                                        item.status === 'Predicted' ? "bg-purple-500 animate-pulse" : "bg-blue-500 animate-pulse"
+                                                    )} />
                                                 </div>
                                             </td>
                                         </tr>

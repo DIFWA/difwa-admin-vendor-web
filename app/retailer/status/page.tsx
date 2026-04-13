@@ -71,7 +71,7 @@ export default function StatusPage() {
                     </div>
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-500 hover:text-red-600 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-900 hover:text-red-600 transition-colors"
                     >
                         <LogOut size={18} />
                         Logout

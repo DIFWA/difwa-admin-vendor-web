@@ -17,7 +17,8 @@ export const API_ENDPOINTS = {
         SUBSCRIPTIONS: "/retailer/subscriptions",
         SEARCH: "/retailer/search",
         BULK_PROCESS_ORDERS: "/retailer/orders/bulk-process",
-        CUSTOMERS_SETTLE_DUE: "/retailer/customers/settle-due"
+        CUSTOMERS_SETTLE_DUE: "/retailer/customers/settle-due",
+        BANKS: "/retailer/banks"
     },
     ADMIN: {
         DASHBOARD_STATS: "/admin/dashboard-stats",
@@ -29,7 +30,9 @@ export const API_ENDPOINTS = {
         INVITE: "/admin/invite",
         CHANGE_PASSWORD: "/admin/change-password",
         ADMINS: "/admin/admins",
-        RETAILERS_STATUS: "/admin/retailers/status"
+        RETAILERS_STATUS: "/admin/retailers/status",
+        TRANSACTIONS: "/admin/all-transactions",
+        SEARCH: "/admin/search"
     },
     PAYOUT: {
         REQUEST: "/payout/request",

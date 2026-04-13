@@ -31,6 +31,9 @@ const useRetailerStore = create((set, get) => ({
     loadingStats: false,
     payouts: [],
     loadingPayouts: false,
+    payoutPagination: null,
+    bankAccounts: [],
+    loadingBanks: false,
 
     fetchDashboardStats: async (force = false) => {
         if (get().stats && !force) return;
@@ -67,14 +70,18 @@ const useRetailerStore = create((set, get) => ({
         }
     },
 
-    fetchPayoutHistory: async (force = false) => {
-        if (get().payouts.length > 0 && !force) return;
+    fetchPayoutHistory: async (page = 1, limit = 10, force = false) => {
+        if (get().payouts.length > 0 && get().payoutPagination?.page === page && !force) return;
 
         set({ loadingPayouts: true });
         try {
-            const res = await retailerService.getPayoutHistory();
+            const res = await retailerService.getPayoutHistory(page, limit);
             if (res.success) {
-                set({ payouts: res.data || [], loadingPayouts: false });
+                set({ 
+                    payouts: res.data || [], 
+                    payoutPagination: res.pagination,
+                    loadingPayouts: false 
+                });
             } else {
                 set({ payouts: [], loadingPayouts: false });
             }
@@ -248,6 +255,64 @@ const useRetailerStore = create((set, get) => ({
         } catch (err) {
             console.error("Fetch reviews failed", err);
             set({ loadingReviews: false });
+        }
+    },
+
+    // Bank Actions
+    fetchBanks: async (force = false) => {
+        if (get().bankAccounts.length > 0 && !force) return;
+        set({ loadingBanks: true });
+        try {
+            const res = await retailerService.getBanks();
+            if (res.success) {
+                set({ bankAccounts: res.data || [], loadingBanks: false });
+            }
+        } catch (err) {
+            console.error("Fetch banks failed", err);
+            set({ loadingBanks: false });
+        }
+    },
+
+    addBank: async (bankData) => {
+        try {
+            const res = await retailerService.addBank(bankData);
+            if (res.success) {
+                await get().fetchBanks(true);
+                return res;
+            }
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    deleteBank: async (id) => {
+        try {
+            const res = await retailerService.deleteBank(id);
+            if (res.success) {
+                set(state => ({
+                    bankAccounts: state.bankAccounts.filter(b => b._id !== id)
+                }));
+                return res;
+            }
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    setDefaultBank: async (id) => {
+        try {
+            const res = await retailerService.setDefaultBank(id);
+            if (res.success) {
+                set(state => ({
+                    bankAccounts: state.bankAccounts.map(b => ({
+                        ...b,
+                        isDefault: b._id === id
+                    }))
+                }));
+                return res;
+            }
+        } catch (err) {
+            throw err;
         }
     },
 }));

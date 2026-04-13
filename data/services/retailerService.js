@@ -112,8 +112,10 @@ const retailerService = {
         return response.data;
     },
 
-    getPayoutHistory: async () => {
-        const response = await apiClient.get(API_ENDPOINTS.PAYOUT.MY_HISTORY);
+    getPayoutHistory: async (page = 1, limit = 10) => {
+        const response = await apiClient.get(API_ENDPOINTS.PAYOUT.MY_HISTORY, {
+            params: { page, limit }
+        });
         return response.data;
     },
 
@@ -209,6 +211,26 @@ const retailerService = {
 
     bulkProcessOrders: async () => {
         const response = await apiClient.post(API_ENDPOINTS.RETAILER.BULK_PROCESS_ORDERS);
+        return response.data;
+    },
+
+    getBanks: async () => {
+        const response = await apiClient.get(API_ENDPOINTS.RETAILER.BANKS);
+        return response.data;
+    },
+
+    addBank: async (bankData) => {
+        const response = await apiClient.post(API_ENDPOINTS.RETAILER.BANKS, bankData);
+        return response.data;
+    },
+
+    deleteBank: async (id) => {
+        const response = await apiClient.delete(`${API_ENDPOINTS.RETAILER.BANKS}/${id}`);
+        return response.data;
+    },
+
+    setDefaultBank: async (id) => {
+        const response = await apiClient.patch(`${API_ENDPOINTS.RETAILER.BANKS}/${id}/default`);
         return response.data;
     }
 };

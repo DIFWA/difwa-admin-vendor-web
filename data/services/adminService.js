@@ -1,4 +1,5 @@
 import apiClient from "../api/apiClient";
+import { API_ENDPOINTS } from "../api/apiEndPoint";
 
 const adminService = {
     getDashboardStats: async () => {
@@ -8,6 +9,16 @@ const adminService = {
 
     getOrders: async (params = {}) => {
         const response = await apiClient.get("/admin/orders", { params });
+        return response.data;
+    },
+
+    getAllTransactions: async (params = {}) => {
+        const response = await apiClient.get(API_ENDPOINTS.ADMIN.TRANSACTIONS, { params });
+        return response.data;
+    },
+
+    globalSearch: async (q) => {
+        const response = await apiClient.get(API_ENDPOINTS.ADMIN.SEARCH, { params: { q } });
         return response.data;
     },
 
@@ -91,8 +102,8 @@ const adminService = {
     // },
 
     // Payout Management
-    getPayouts: async (search = "") => {
-        const response = await apiClient.get("/payout/all", { params: { search } });
+    getPayouts: async (page = 1, limit = 10, search = "") => {
+        const response = await apiClient.get("/payout/all", { params: { page, limit, search } });
         return response.data;
     },
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Wallet, CheckCircle, XCircle, Clock, Search, Filter, Download, Eye, Check } from "lucide-react"
+import { Wallet, CheckCircle, XCircle, Clock, Search, Filter, Download, Eye, Check, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import adminService from "@/data/services/adminService"
 
@@ -32,13 +32,16 @@ import useAdminStore from "@/data/store/useAdminStore"
 export default function AdminPayoutsPage() {
     const [mounted, setMounted] = useState(false)
     const {
-        payouts,
+        payoutsData,
         loadingPayouts: loading,
         fetchPayouts,
         payoutSearchQuery: searchTerm,
         setPayoutSearchQuery: setSearchTerm
     } = useAdminStore()
 
+    const payouts = payoutsData?.data || []
+    const pagination = payoutsData?.pagination
+    const [adminPayoutPage, setAdminPayoutPage] = useState(1)
     const [filterStatus, setFilterStatus] = useState("All")
     const [selectedPayout, setSelectedPayout] = useState<Payout | null>(null)
     const [showModal, setShowModal] = useState(false)
@@ -47,8 +50,8 @@ export default function AdminPayoutsPage() {
 
     useEffect(() => {
         setMounted(true)
-        fetchPayouts(searchTerm)
-    }, [fetchPayouts, searchTerm])
+        fetchPayouts(adminPayoutPage, 10, searchTerm)
+    }, [fetchPayouts, searchTerm, adminPayoutPage])
 
     const handleApprove = async () => {
         if (!selectedPayout || !transactionId) return
@@ -67,17 +70,18 @@ export default function AdminPayoutsPage() {
     }
 
     const filteredPayouts = payouts.filter((p: Payout) => {
-        const matchesSearch = p.retailer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.retailer.businessDetails?.businessName?.toLowerCase().includes(searchTerm.toLowerCase());
+        const retailerName = p.retailer?.name || "";
+        const businessName = p.retailer?.businessDetails?.businessName || "";
+        const searchTermLower = searchTerm.toLowerCase();
+
+        const matchesSearch = retailerName.toLowerCase().includes(searchTermLower) ||
+            businessName.toLowerCase().includes(searchTermLower);
+
         const matchesFilter = filterStatus === "All" || p.status === filterStatus;
         return matchesSearch && matchesFilter;
     })
 
-    const stats = {
-        total: payouts.reduce((acc: number, p: Payout) => acc + p.amount, 0),
-        pending: payouts.filter((p: Payout) => p.status === 'Pending').reduce((acc: number, p: Payout) => acc + p.amount, 0),
-        approved: payouts.filter((p: Payout) => p.status === 'Approved').reduce((acc: number, p: Payout) => acc + p.amount, 0)
-    }
+    const stats = payoutsData?.stats || { total: 0, pending: 0, approved: 0 }
 
     if (!mounted) return null
 
@@ -88,11 +92,6 @@ export default function AdminPayoutsPage() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-primary">Payout Settlements</h1>
                     <p className="text-text-muted mt-1">Review and approve retailer earnings disbursement.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white border border-border-custom rounded-xl font-bold text-sm hover:bg-gray-50 transition-all">
-                        <Download size={18} /> Export List
-                    </button>
                 </div>
             </div>
 
@@ -191,10 +190,10 @@ export default function AdminPayoutsPage() {
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center text-primary font-black">
-                                                    {payout.retailer.name[0].toUpperCase()}
+                                                    {payout.retailer?.name?.charAt(0).toUpperCase() || "R"}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-primary">{payout.retailer.businessDetails?.businessName || payout.retailer.name}</p>
+                                                    <p className="font-bold text-primary">{payout.retailer?.businessDetails?.businessName || payout.retailer?.name || "Retailer"}</p>
                                                     <p className="text-xs text-text-muted">{payout.retailer.email}</p>
                                                 </div>
                                             </div>
@@ -248,6 +247,47 @@ export default function AdminPayoutsPage() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination UI */}
+                {pagination && pagination.pages > 1 && (
+                    <div className="p-8 border-t border-border-custom flex items-center justify-between bg-white">
+                        <p className="text-[10px] text-text-muted font-black uppercase tracking-widest">
+                            Showing <span className="text-primary">{payouts.length}</span> of <span className="text-primary">{pagination.total}</span> settlements
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setAdminPayoutPage(prev => Math.max(1, prev - 1))}
+                                disabled={adminPayoutPage <= 1}
+                                className="p-3 rounded-2xl border border-border-custom hover:bg-background-soft disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            >
+                                <ChevronRight className="w-5 h-5 rotate-180" />
+                            </button>
+
+                            {[...Array(pagination.pages)].map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setAdminPayoutPage(i + 1)}
+                                    className={cn(
+                                        "w-11 h-11 rounded-2xl text-[10px] font-black transition-all border",
+                                        adminPayoutPage === i + 1
+                                            ? "bg-primary text-white border-primary shadow-lg shadow-primary/30"
+                                            : "hover:bg-background-soft text-text-muted border-border-custom"
+                                    )}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+
+                            <button
+                                onClick={() => setAdminPayoutPage(prev => Math.min(pagination.pages, prev + 1))}
+                                disabled={adminPayoutPage >= pagination.pages}
+                                className="p-3 rounded-2xl border border-border-custom hover:bg-background-soft disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            >
+                                <ChevronRight className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Modal */}

@@ -20,9 +20,10 @@ const useAdminStore = create((set, get) => ({
     lastFetchedTab: "",
 
     // Payouts
-    payouts: [],
+    payoutsData: null,
     loadingPayouts: false,
     payoutSearchQuery: "",
+    lastFetchedPayoutsParams: null,
 
     // Roles
     roles: [],
@@ -106,14 +107,17 @@ const useAdminStore = create((set, get) => ({
         }
     },
 
-    fetchPayouts: async (search = "", force = false) => {
-        if (get().payouts.length > 0 && get().payoutSearchQuery === search && !force) return;
+    fetchPayouts: async (page = 1, limit = 10, search = "", force = false) => {
+        const paramsKey = JSON.stringify({ page, limit, search });
+        if (get().payoutsData && get().lastFetchedPayoutsParams === paramsKey && !force) return;
+
         set({ loadingPayouts: true, payoutSearchQuery: search });
         try {
-            const res = await adminService.getPayouts(search);
+            const res = await adminService.getPayouts(page, limit, search);
             set({ 
-                payouts: res.success ? res.data : [], 
-                loadingPayouts: false 
+                payoutsData: res.success ? res : get().payoutsData, 
+                loadingPayouts: false,
+                lastFetchedPayoutsParams: res.success ? paramsKey : get().lastFetchedPayoutsParams
             });
         } catch (err) {
             console.error("Fetch admin payouts failed", err);

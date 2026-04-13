@@ -197,7 +197,6 @@ export default function RetailersPage() {
                                 <tr className="bg-primary/5 text-xs font-bold text-primary uppercase tracking-wider border-b border-border-custom">
                                     <th className="px-6 py-4">Business</th>
                                     <th className="px-6 py-4">Owner</th>
-                                    <th className="px-6 py-4">Type</th>
                                     <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4 text-center">Action</th>
                                 </tr>
@@ -216,11 +215,6 @@ export default function RetailersPage() {
                                                 <span className="font-bold">{ret.name}</span>
                                                 <span className="text-xs text-text-muted">{ret.email}</span>
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="px-3 py-1 rounded-lg bg-background-soft text-text-muted font-medium border border-border-custom text-xs">
-                                                {ret.businessDetails?.businessType}
-                                            </span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={cn(
@@ -250,7 +244,7 @@ export default function RetailersPage() {
                                     </tr>
                                 ))}
                                 {filteredRetailers.length === 0 && (
-                                    <tr><td colSpan={5} className="p-12 text-center text-text-muted">No retailers found</td></tr>
+                                    <tr><td colSpan={4} className="p-12 text-center text-text-muted">No retailers found</td></tr>
                                 )}
                             </tbody>
                         </table>

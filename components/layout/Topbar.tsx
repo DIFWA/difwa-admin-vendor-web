@@ -12,7 +12,10 @@ import {
     ShieldAlert,
     Truck,
     Package,
-    ArrowRight
+    ArrowRight,
+    Banknote,
+    User as UserIcon,
+    History
 } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
@@ -21,15 +24,17 @@ import useAuthStore from "@/data/store/useAuthStore"
 import socketService from "@/data/socket"
 import useNotificationStore from "@/data/store/useNotificationStore"
 import retailerService from "@/data/services/retailerService"
+import adminService from "@/data/services/adminService"
 import { toast } from "sonner"
 
 export default function Topbar() {
     const { user } = useAuthStore()
-    const { 
-        notifications, 
-        unreadCount, 
-        fetchNotifications, 
-        markAsRead, 
+    const isAdmin = user?.role === "admin"
+    const {
+        notifications,
+        unreadCount,
+        fetchNotifications,
+        markAsRead,
         markAllAsRead
     } = useNotificationStore()
 
@@ -39,7 +44,7 @@ export default function Topbar() {
     const router = useRouter()
 
     const [searchQuery, setSearchQuery] = useState("")
-    const [searchResults, setSearchResults] = useState<any>(null)
+    const [searchResults, setSearchResults] = useState<any[]>([])
     const [searchLoading, setSearchLoading] = useState(false)
     const [showSearchResults, setShowSearchResults] = useState(false)
 
@@ -48,7 +53,6 @@ export default function Topbar() {
 
         fetchNotifications()
 
-        // Click outside to close dropdowns
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setShowDropdown(false)
@@ -59,9 +63,7 @@ export default function Topbar() {
         }
         document.addEventListener("mousedown", handleClickOutside)
 
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside)
-        }
+        return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [user?._id, fetchNotifications])
 
     useEffect(() => {
@@ -69,7 +71,7 @@ export default function Topbar() {
             if (searchQuery.length >= 2) {
                 handleSearch()
             } else {
-                setSearchResults(null)
+                setSearchResults([])
                 setShowSearchResults(false)
             }
         }, 500)
@@ -81,9 +83,20 @@ export default function Topbar() {
         setSearchLoading(true)
         setShowSearchResults(true)
         try {
-            const res = await retailerService.searchAnything(searchQuery)
-            if (res.success) {
-                setSearchResults(res.data)
+            if (isAdmin) {
+                const res = await adminService.globalSearch(searchQuery)
+                if (res.success) {
+                    setSearchResults(res.results)
+                }
+            } else {
+                const res = await retailerService.searchAnything(searchQuery)
+                if (res.success) {
+                    const unified: any[] = []
+                    res.data.orders.forEach((o: any) => unified.push({ title: o.orderId, subtitle: o.customer, category: 'Order', url: `/retailer/orders?id=${o.id}` }))
+                    res.data.customers.forEach((c: any) => unified.push({ title: c.name, subtitle: c.phone, category: 'Customer', url: `/retailer/customers?q=${c.name}` }))
+                    res.data.products.forEach((p: any) => unified.push({ title: p.name, subtitle: `₹${p.price}`, category: 'Product', url: `/retailer/products?q=${p.name}` }))
+                    setSearchResults(unified)
+                }
             }
         } catch (error) {
             console.error("Search failed", error)
@@ -108,18 +121,19 @@ export default function Topbar() {
 
         const title = n.title.toLowerCase()
         const message = n.message.toLowerCase()
+        const isUserAdmin = user?.role === 'admin'
+        const baseRoute = isUserAdmin ? '/admin' : '/retailer'
 
         if (title.includes("new order") || message.includes("new order")) {
-            router.push("/retailer/orders?filter=Pending")
+            router.push(`${baseRoute}/orders?filter=Pending`)
         } else if (title.includes("delivered") || title.includes("completed") || message.includes("delivered") || message.includes("completed")) {
-            router.push("/retailer/orders?filter=Completed")
+            router.push(`${baseRoute}/orders?filter=Completed`)
         } else if (n.type === "Inventory" || title.includes("inventory")) {
-            router.push("/retailer/products")
+            router.push(`${baseRoute}/products`)
+        } else if (n.type === "Payout" || title.includes("payout")) {
+            router.push(isUserAdmin ? '/admin/payouts' : '/retailer/revenue')
         } else {
-            // Default: just stay on current page or go to dashboard
-            if (window.location.pathname !== "/retailer/dashboard" && !window.location.pathname.includes("/retailer/orders")) {
-                router.push("/retailer/dashboard")
-            }
+            router.push(`${baseRoute}/dashboard`)
         }
 
         setShowDropdown(false)
@@ -130,7 +144,28 @@ export default function Topbar() {
             case "Order": return <ShoppingCart size={16} className="text-primary" />
             case "Rider": return <Truck size={16} className="text-blue-500" />
             case "Inventory": return <ShieldAlert size={16} className="text-warning" />
+            case "Payout": return <Banknote size={16} className="text-emerald-500" />
             default: return <Bell size={16} className="text-text-muted" />
+        }
+    }
+
+    const getCategoryStyles = (category: string) => {
+        switch (category) {
+            case "Customer": return "bg-purple-50 text-purple-600 border-purple-100"
+            case "Retailer": return "bg-blue-50 text-blue-600 border-blue-100"
+            case "Order": return "bg-emerald-50 text-emerald-600 border-emerald-100"
+            case "Transaction": return "bg-amber-50 text-amber-600 border-amber-100"
+            default: return "bg-gray-50 text-gray-600 border-gray-100"
+        }
+    }
+
+    const getCategoryIcon = (category: string) => {
+        switch (category) {
+            case "Customer": return <UserIcon size={14} />
+            case "Retailer": return <ShieldAlert size={14} />
+            case "Order": return <ShoppingCart size={14} />
+            case "Transaction": return <History size={14} />
+            default: return <Search size={14} />
         }
     }
 
@@ -144,143 +179,72 @@ export default function Topbar() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onFocus={() => searchQuery.length >= 2 && setShowSearchResults(true)}
-                        placeholder="Search data, users, or reports"
-                        className="w-full pl-10 pr-4 py-2 rounded-full bg-background-soft border-transparent focus:border-primary focus:bg-white transition-all text-sm outline-none"
+                        placeholder={isAdmin ? "Search Users, Shops, Orders or Ledger..." : "Search data, users, or reports"}
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background-soft border-transparent focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all text-sm outline-none font-medium"
                     />
 
                     {/* Search Results Dropdown */}
                     {showSearchResults && (
-                        <div className="absolute top-full left-0 mt-2 w-full bg-white rounded-2xl border border-border-custom shadow-2xl z-50 overflow-hidden animate-in slide-in-from-top-2 duration-200">
-                            <div className="max-h-[450px] overflow-y-auto scrollbar-hide">
+                        <div className="absolute top-full left-0 mt-3 w-full bg-white rounded-2xl border border-border-custom shadow-2xl z-50 overflow-hidden animate-in slide-in-from-top-2 duration-300">
+                            <div className="max-h-[480px] overflow-y-auto scrollbar-hide">
                                 {searchLoading ? (
-                                    <div className="p-8 text-center bg-gray-50/50">
-                                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Searching across your shop...</p>
+                                    <div className="p-12 text-center">
+                                        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted animate-pulse">Scanning Global Database...</p>
                                     </div>
-                                ) : !searchResults || (searchResults.orders.length === 0 && searchResults.customers.length === 0 && searchResults.products.length === 0) ? (
-                                    <div className="p-12 text-center text-text-muted flex flex-col items-center gap-3">
-                                        <Search size={32} className="opacity-10" />
-                                        <p className="text-xs font-bold uppercase tracking-widest">No results found for &quot;{searchQuery}&quot;</p>
+                                ) : searchResults.length === 0 ? (
+                                    <div className="p-16 text-center text-text-muted flex flex-col items-center gap-4">
+                                        <div className="p-4 rounded-full bg-gray-50">
+                                            <Search size={32} className="opacity-10" />
+                                        </div>
+                                        <p className="text-xs font-bold uppercase tracking-widest opacity-40">No records match &quot;{searchQuery}&quot;</p>
                                     </div>
                                 ) : (
-                                    <div className="divide-y divide-border-custom">
-                                        {/* Orders */}
-                                        {searchResults.orders.length > 0 && (
-                                            <div className="p-4">
-                                                <h4 className="text-[10px] font-black uppercase text-primary tracking-[0.2em] mb-3 px-1">Orders</h4>
-                                                <div className="space-y-1">
-                                                    {searchResults.orders.map((o: any) => (
-                                                        <button
-                                                            key={o.id}
-                                                            onClick={() => {
-                                                                router.push(`/retailer/orders?id=${o.id}`)
-                                                                setShowSearchResults(false)
-                                                                setSearchQuery("")
-                                                            }}
-                                                            className="w-full flex items-center justify-between p-2 hover:bg-primary/5 rounded-xl transition-all group"
-                                                        >
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-8 h-8 rounded-lg bg-primary-light flex items-center justify-center text-primary">
-                                                                    <ShoppingCart size={16} />
-                                                                </div>
-                                                                <div className="text-left">
-                                                                    <p className="text-xs font-bold font-mono">#{o.orderId}</p>
-                                                                    <p className="text-[10px] text-text-muted font-medium italic">{o.customer}</p>
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex flex-col items-end">
-                                                                <span className="text-xs font-black">₹{o.total}</span>
-                                                                <span className={cn(
-                                                                    "text-[8px] font-black uppercase px-2 py-0.5 rounded-full",
-                                                                    o.status === "Pending" ? "bg-amber-100 text-amber-600" :
-                                                                    o.status === "Delivered" ? "bg-emerald-100 text-emerald-600" : "bg-gray-100 text-gray-600"
-                                                                )}>{o.status}</span>
-                                                            </div>
-                                                        </button>
-                                                    ))}
+                                    <div className="p-2 space-y-1">
+                                        <div className="px-3 py-2">
+                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/40">Suggested Results</p>
+                                        </div>
+                                        {searchResults.map((result: any, idx: number) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => {
+                                                    router.push(result.url)
+                                                    setShowSearchResults(false)
+                                                    setSearchQuery("")
+                                                }}
+                                                className="w-full flex items-center justify-between p-3 hover:bg-primary/5 rounded-xl transition-all group border border-transparent hover:border-primary/10"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className={cn(
+                                                        "w-10 h-10 rounded-xl flex items-center justify-center border transition-transform group-hover:scale-110",
+                                                        getCategoryStyles(result.category)
+                                                    )}>
+                                                        {getCategoryIcon(result.category)}
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">{result.title}</p>
+                                                        <p className="text-[10px] text-text-muted font-medium mt-0.5">{result.subtitle}</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
-
-                                        {/* Customers */}
-                                        {searchResults.customers.length > 0 && (
-                                            <div className="p-4 bg-gray-50/30">
-                                                <h4 className="text-[10px] font-black uppercase text-purple-600 tracking-[0.2em] mb-3 px-1">Customers</h4>
-                                                <div className="space-y-1">
-                                                    {searchResults.customers.map((c: any) => (
-                                                        <button
-                                                            key={c.id}
-                                                            onClick={() => {
-                                                                router.push(`/retailer/customers?q=${c.name}`)
-                                                                setShowSearchResults(false)
-                                                                setSearchQuery("")
-                                                            }}
-                                                            className="w-full flex items-center justify-between p-2 hover:bg-purple-50 rounded-xl transition-all group"
-                                                        >
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-8 h-8 rounded-full overflow-hidden border border-border-custom bg-white">
-                                                                    <img src={c.image} alt={c.name} className="w-full h-full object-cover" />
-                                                                </div>
-                                                                <div className="text-left">
-                                                                    <p className="text-xs font-bold text-foreground group-hover:text-purple-600 transition-colors">{c.name}</p>
-                                                                    <p className="text-[10px] text-text-muted font-medium">{c.phone}</p>
-                                                                </div>
-                                                            </div>
-                                                            <ArrowRight size={14} className="text-text-muted opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
-                                                        </button>
-                                                    ))}
+                                                <div className="flex items-center gap-3">
+                                                    <span className={cn(
+                                                        "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border",
+                                                        getCategoryStyles(result.category)
+                                                    )}>
+                                                        {result.category}
+                                                    </span>
+                                                    <ArrowRight size={14} className="text-text-muted opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
                                                 </div>
-                                            </div>
-                                        )}
-
-                                        {/* Products */}
-                                        {searchResults.products.length > 0 && (
-                                            <div className="p-4">
-                                                <h4 className="text-[10px] font-black uppercase text-blue-600 tracking-[0.2em] mb-3 px-1">Products</h4>
-                                                <div className="grid grid-cols-1 gap-1">
-                                                    {searchResults.products.map((p: any) => (
-                                                        <button
-                                                            key={p.id}
-                                                            onClick={() => {
-                                                                router.push(`/retailer/products?q=${p.name}`)
-                                                                setShowSearchResults(false)
-                                                                setSearchQuery("")
-                                                            }}
-                                                            className="w-full flex items-center justify-between p-2 hover:bg-blue-50 rounded-xl transition-all group"
-                                                        >
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-10 h-10 rounded-lg overflow-hidden border border-border-custom bg-white flex-shrink-0">
-                                                                    {p.image ? (
-                                                                        <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
-                                                                    ) : (
-                                                                        <div className="w-full h-full flex items-center justify-center bg-gray-50">
-                                                                             <Package size={16} className="text-gray-300" />
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="text-left">
-                                                                    <p className="text-xs font-bold text-foreground group-hover:text-blue-600 transition-colors line-clamp-1">{p.name}</p>
-                                                                    <span className="text-[10px] font-black text-blue-600">₹{p.price}</span>
-                                                                </div>
-                                                            </div>
-                                                            <span className={cn(
-                                                                "text-[8px] font-black uppercase px-2 py-0.5 rounded-full",
-                                                                p.stockStatus === "In Stock" ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
-                                                            )}>{p.stockStatus === "In Stock" ? "In Stock" : "Out of Stock"}</span>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
+                                            </button>
+                                        ))}
                                     </div>
                                 )}
                             </div>
-                            
-                            <div className="p-3 border-t border-border-custom bg-gray-50/50 flex items-center justify-between">
-                                <p className="text-[10px] font-medium text-text-muted italic">Press Enter to see all results</p>
-                                <div className="flex items-center gap-1">
-                                    <span className="px-1.5 py-0.5 rounded bg-white border border-border-custom text-[8px] font-black text-text-muted shadow-sm">ESC</span>
-                                    <span className="text-[8px] font-bold text-text-muted uppercase tracking-tighter">to close</span>
+
+                            <div className="p-4 border-t border-border-custom bg-background-soft/30 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    <p className="text-[10px] font-bold text-text-muted">Direct Navigation Active</p>
                                 </div>
                             </div>
                         </div>

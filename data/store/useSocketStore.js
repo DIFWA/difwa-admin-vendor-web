@@ -3,6 +3,8 @@ import { io } from 'socket.io-client';
 import useOrderStore from './useOrderStore';
 import useProductStore from './useProductStore';
 import useNotificationStore from './useNotificationStore';
+import useRetailerStore from './useRetailerStore';
+import useAdminStore from './useAdminStore';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://api.difwa.com';
 
@@ -42,10 +44,49 @@ const useSocketStore = create((set, get) => ({
             console.log('🟢 Socket Connected:', socket.id);
             set({ connected: true });
             if (userId) {
+                // Determine user role (can be passed or checked from storage)
+                const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
+                
                 socket.emit('join', `retailer_${userId}`);
                 socket.emit('join', `user_${userId}`);
                 socket.emit('join', `retailer_notifications_${userId}`);
+                
+                if (role === "admin") {
+                    socket.emit('join', 'admin');
+                    console.log(`📡 Joined admin room`);
+                }
+                
                 console.log(`📡 Joined rooms for user: ${userId}`);
+            }
+        });
+
+        // ─── Payout Updates: Real-time UI refresh ──────────────────────────
+        socket.on('payoutUpdate', (payload) => {
+            const { payoutId, status, data } = payload;
+            console.log('⚡ payoutUpdate:', { payoutId, status });
+
+            // Update Retailer Store
+            if (useRetailerStore) {
+                useRetailerStore.setState(state => ({
+                    payouts: state.payouts.some(p => p._id === payoutId) 
+                        ? state.payouts.map(p => p._id === payoutId ? { ...p, status, ...data } : p)
+                        : [data, ...state.payouts]
+                }));
+            }
+
+            // Update Admin Store
+            if (useAdminStore) {
+                useAdminStore.setState(state => {
+                    if (!state.payoutsData) return state;
+                    return {
+                        payoutsData: {
+                            ...state.payoutsData,
+                            data: state.payoutsData.data.some(p => p._id === payoutId)
+                                ? state.payoutsData.data.map(p => p._id === payoutId ? { ...p, status, ...data } : p)
+                                : [data, ...state.payoutsData.data]
+                        }
+                    };
+                });
             }
         });
 
@@ -119,6 +160,33 @@ const useSocketStore = create((set, get) => ({
                     return state;
                 }
             });
+
+            // Update Admin Store (if applicable)
+            if (useAdminStore) {
+                useAdminStore.setState(state => {
+                    if (!state.ordersData) return state;
+                    const orders = state.ordersData.data || [];
+                    const exists = orders.some(o => o._id === orderId || o.orderId === orderId);
+
+                    if (exists) {
+                        return {
+                            ordersData: {
+                                ...state.ordersData,
+                                data: orders.map(o => 
+                                    (o._id === orderId || o.orderId === orderId) 
+                                        ? { ...o, status, ...orderData } 
+                                        : o
+                                )
+                            }
+                        };
+                    } else if (status === "Pending") {
+                        // For new orders, we might want to refresh or prepend
+                        // For now just keep it consistent
+                        return state;
+                    }
+                    return state;
+                });
+            }
         });
 
         // ─── Product Updates: Patch in place, NO refetch ──────────────────────
@@ -151,6 +219,26 @@ const useSocketStore = create((set, get) => ({
 
                 return state;
             });
+        });
+
+        // ─── Shop Status Updates ───────────────────────────────────────────
+        socket.on('shopStatusUpdate', (payload) => {
+            const { shopId, isShopActive } = payload;
+            console.log('⚡ shopStatusUpdate:', { shopId, isShopActive });
+
+            if (useAdminStore) {
+                useAdminStore.setState(state => {
+                    if (!state.retailersData) return state;
+                    return {
+                        retailersData: {
+                            ...state.retailersData,
+                            data: state.retailersData.data.map(r => 
+                                r._id === shopId ? { ...r, isShopActive } : r
+                            )
+                        }
+                    };
+                });
+            }
         });
 
         socket.on('disconnect', () => {

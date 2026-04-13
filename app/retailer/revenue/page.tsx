@@ -1,9 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Wallet, ArrowUpRight, Clock, CheckCircle2, DollarSign, Download, Filter, Plus, X, Percent } from "lucide-react"
+import { Wallet, ArrowUpRight, Clock, CheckCircle2, DollarSign, Download, Filter, Plus, X, Percent, Building2, ChevronRight, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 import retailerService from "@/data/services/retailerService"
+import Link from "next/link"
 
 interface Payout {
     _id: string;
@@ -22,11 +24,16 @@ export default function RetailerRevenuePage() {
         loadingStats,
         payouts,
         loadingPayouts,
+        payoutPagination,
+        bankAccounts,
+        loadingBanks,
         fetchRevenueStats,
         fetchPayoutHistory,
+        fetchBanks,
         requestPayout: requestPayoutFromStore
     } = useRetailerStore()
 
+    const [payoutPage, setPayoutPage] = useState(1)
     const [showBreakdownModal, setShowBreakdownModal] = useState(false)
     const [breakdownTitle, setBreakdownTitle] = useState("")
     const [currentRange, setCurrentRange] = useState("month")
@@ -37,17 +44,14 @@ export default function RetailerRevenuePage() {
 
     const [showPayoutModal, setShowPayoutModal] = useState(false)
     const [payoutAmount, setPayoutAmount] = useState("")
-    const [bankDetails, setBankDetails] = useState({
-        bankName: "",
-        accountNumber: "",
-        ifscCode: ""
-    })
+    const [selectedBankId, setSelectedBankId] = useState("")
     const [submitting, setSubmitting] = useState(false)
 
     useEffect(() => {
         setMounted(true)
-        fetchPayoutHistory()
-    }, [fetchPayoutHistory])
+        fetchPayoutHistory(payoutPage)
+        fetchBanks()
+    }, [fetchPayoutHistory, fetchBanks, payoutPage])
 
     useEffect(() => {
         if (currentRange !== 'custom' || (customRange.startDate && customRange.endDate)) {
@@ -72,16 +76,30 @@ export default function RetailerRevenuePage() {
 
     const handleRequestPayout = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (!selectedBankId) {
+            toast.error("Please select a bank account")
+            return
+        }
+
+        const selectedBank = bankAccounts.find((b: any) => b._id === selectedBankId)
+        if (!selectedBank) return
+
         setSubmitting(true)
         try {
             await requestPayoutFromStore({
                 amount: Number(payoutAmount),
-                bankDetails
+                bankDetails: {
+                    bankName: selectedBank.bankName,
+                    accountHolderName: selectedBank.accountHolderName,
+                    accountNumber: selectedBank.accountNumber,
+                    ifscCode: selectedBank.ifscCode
+                }
             })
             setShowPayoutModal(false)
             setPayoutAmount("")
-        } catch (error) {
-            console.error("Payout request failed:", error)
+            toast.success("Payout request submitted successfully")
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Payout request failed")
         } finally {
             setSubmitting(false)
         }
@@ -125,8 +143,19 @@ export default function RetailerRevenuePage() {
                         <option value="month">THIS MONTH</option>
                         <option value="custom">DATE RANGE: CUSTOM</option>
                     </select>
+                    <Link
+                        href="/retailer/revenue/bankdetails"
+                        className="flex items-center gap-2 px-6 py-3 bg-white border border-border-custom text-primary rounded-2xl font-black uppercase tracking-widest text-xs hover:border-primary/30 transition-all shadow-sm whitespace-nowrap"
+                    >
+                        <Building2 size={18} /> Bank Details
+                    </Link>
                     <button
-                        onClick={() => setShowPayoutModal(true)}
+                        onClick={() => {
+                            const defaultBank = bankAccounts.find((b: any) => b.isDefault);
+                            if (defaultBank) setSelectedBankId(defaultBank._id);
+                            else if (bankAccounts.length > 0) setSelectedBankId(bankAccounts[0]._id);
+                            setShowPayoutModal(true);
+                        }}
                         className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
                     >
                         <Plus size={18} /> Request Payout
@@ -150,7 +179,7 @@ export default function RetailerRevenuePage() {
                     {loadingStats ? (
                         <div className="h-10 bg-white/20 rounded animate-pulse w-32" />
                     ) : (
-                        <h2 className="text-4xl font-black">₹{(revenueStats.availableBalance || 0).toLocaleString()}</h2>
+                        <h2 className="text-3xl md:text-4xl font-black break-words">₹{(revenueStats.availableBalance || 0).toLocaleString()}</h2>
                     )}
                     <div className="mt-6 flex items-center gap-2 text-xs font-bold text-blue-300">
                         <ArrowUpRight size={14} /> Based on completed orders
@@ -168,7 +197,7 @@ export default function RetailerRevenuePage() {
                     {loadingStats ? (
                         <div className="h-9 bg-background-soft rounded animate-pulse w-32" />
                     ) : (
-                        <h2 className="text-3xl font-black text-primary">₹{(revenueStats.estimatedEarnings || 0).toLocaleString()}</h2>
+                        <h2 className="text-2xl md:text-3xl font-black text-primary break-words">₹{(revenueStats.estimatedEarnings || 0).toLocaleString()}</h2>
                     )}
                     <p className="mt-2 text-xs font-bold text-text-muted uppercase">
                         {currentRange === 'today' ? 'Today\'s Earnings' :
@@ -184,7 +213,7 @@ export default function RetailerRevenuePage() {
                     {loadingStats ? (
                         <div className="h-9 bg-background-soft rounded animate-pulse w-32" />
                     ) : (
-                        <h2 className="text-3xl font-black text-blue-600">₹{(revenueStats.totalSettled || 0).toLocaleString()}</h2>
+                        <h2 className="text-2xl md:text-3xl font-black text-blue-600 break-words">₹{(revenueStats.totalSettled || 0).toLocaleString()}</h2>
                     )}
                     <p className="mt-2 text-xs font-bold text-text-muted uppercase">Net Lifetime: ₹{(revenueStats.totalEarnings || 0).toLocaleString()}</p>
                 </div>
@@ -208,17 +237,17 @@ export default function RetailerRevenuePage() {
                     </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-8 w-full md:w-auto md:items-center">
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Gross Lifetime Revenue</p>
-                        <p className="text-xl font-black text-primary">₹{(revenueStats.totalGrossEarnings || 0).toLocaleString()}</p>
+                <div className="flex flex-col sm:flex-row gap-6 w-full md:w-auto md:items-center">
+                    <div className="space-y-1 flex-1 min-w-0">
+                        <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Gross Revenue</p>
+                        <p className="text-xl font-black text-primary break-words">₹{(revenueStats.totalGrossEarnings || 0).toLocaleString()}</p>
                     </div>
-                    <div className="h-8 w-[1px] bg-border-custom hidden md:block" />
-                    <div className="space-y-1">
+                    <div className="h-8 w-[1px] bg-border-custom hidden sm:block" />
+                    <div className="space-y-1 flex-1 min-w-0">
                         <p className="text-[10px] font-black text-text-muted uppercase tracking-widest text-amber-600">Total Commission Paid</p>
-                        <p className="text-xl font-black text-amber-600">- ₹{(revenueStats.totalCommissionDeducted || 0).toLocaleString()}</p>
+                        <p className="text-xl font-black text-amber-600 break-words">- ₹{(revenueStats.totalCommissionDeducted || 0).toLocaleString()}</p>
                     </div>
-                    <div className="h-8 w-[1px] bg-border-custom hidden md:block" />
+                    <div className="h-8 w-[1px] bg-border-custom hidden sm:block" />
                     <div className="space-y-1">
                         <p className="text-[10px] font-black text-text-muted uppercase tracking-widest text-blue-600">Net Earnings (After Commission)</p>
                         <p className="text-xl font-black text-blue-600">₹{(revenueStats.totalEarnings || 0).toLocaleString()}</p>
@@ -230,14 +259,6 @@ export default function RetailerRevenuePage() {
             <div className="bg-white rounded-[40px] border border-border-custom shadow-xl overflow-hidden">
                 <div className="p-8 border-b border-border-custom flex items-center justify-between">
                     <h3 className="text-xl font-black text-primary uppercase tracking-tight">Recent Settlements</h3>
-                    <div className="flex items-center gap-2">
-                        <button className="p-2.5 rounded-xl bg-background-soft text-text-muted hover:text-primary transition-all border border-border-custom">
-                            <Filter size={18} />
-                        </button>
-                        <button className="p-2.5 rounded-xl bg-background-soft text-text-muted hover:text-primary transition-all border border-border-custom">
-                            <Download size={18} />
-                        </button>
-                    </div>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -295,6 +316,47 @@ export default function RetailerRevenuePage() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination UI */}
+                {payoutPagination && payoutPagination.pages > 1 && (
+                    <div className="p-8 border-t border-border-custom flex items-center justify-between bg-white">
+                        <p className="text-[10px] text-text-muted font-black uppercase tracking-widest">
+                            Showing <span className="text-primary">{payouts.length}</span> of <span className="text-primary">{payoutPagination.total}</span> requests
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setPayoutPage(prev => Math.max(1, prev - 1))}
+                                disabled={payoutPage <= 1}
+                                className="p-3 rounded-2xl border border-border-custom hover:bg-background-soft disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            >
+                                <ChevronRight className="w-5 h-5 rotate-180" />
+                            </button>
+
+                            {[...Array(payoutPagination.pages)].map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setPayoutPage(i + 1)}
+                                    className={cn(
+                                        "w-11 h-11 rounded-2xl text-[10px] font-black transition-all border",
+                                        payoutPage === i + 1
+                                            ? "bg-primary text-white border-primary shadow-lg shadow-primary/30"
+                                            : "hover:bg-background-soft text-text-muted border-border-custom"
+                                    )}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+
+                            <button
+                                onClick={() => setPayoutPage(prev => Math.min(payoutPagination.pages, prev + 1))}
+                                disabled={payoutPage >= payoutPagination.pages}
+                                className="p-3 rounded-2xl border border-border-custom hover:bg-background-soft disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            >
+                                <ChevronRight className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Payout Request Modal */}
@@ -327,34 +389,53 @@ export default function RetailerRevenuePage() {
                                 <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-1">Available: ₹{revenueStats.availableBalance.toLocaleString()}</p>
                             </div>
 
-                            <div className="bg-gray-50 rounded-[32px] p-6 space-y-4">
-                                <h3 className="text-xs font-black text-primary uppercase tracking-widest opacity-50 mb-2">Settlement Bank Details</h3>
-                                <div className="space-y-4">
-                                    <input
-                                        type="text"
-                                        required
-                                        placeholder="Bank Name"
-                                        value={bankDetails.bankName}
-                                        onChange={e => setBankDetails({ ...bankDetails, bankName: e.target.value })}
-                                        className="w-full bg-transparent border-b-2 border-primary/10 focus:border-primary outline-none py-2 font-bold text-sm transition-all text-primary"
-                                    />
-                                    <input
-                                        type="text"
-                                        required
-                                        placeholder="Account Number"
-                                        value={bankDetails.accountNumber}
-                                        onChange={e => setBankDetails({ ...bankDetails, accountNumber: e.target.value })}
-                                        className="w-full bg-transparent border-b-2 border-primary/10 focus:border-primary outline-none py-2 font-bold text-sm transition-all text-primary"
-                                    />
-                                    <input
-                                        type="text"
-                                        required
-                                        placeholder="IFSC Code"
-                                        value={bankDetails.ifscCode}
-                                        onChange={e => setBankDetails({ ...bankDetails, ifscCode: e.target.value })}
-                                        className="w-full bg-transparent border-b-2 border-primary/10 focus:border-primary outline-none py-2 font-bold text-sm transition-all text-primary"
-                                    />
-                                </div>
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-black text-primary uppercase tracking-widest opacity-50 ml-1">Select Settlement Account</h3>
+
+                                {bankAccounts.length === 0 ? (
+                                    <div className="bg-amber-50 md:p-6 p-4 rounded-[32px] border border-amber-100 flex flex-col items-center text-center gap-3">
+                                        <AlertCircle className="text-amber-600" size={32} />
+                                        <div className="space-y-1">
+                                            <p className="text-sm font-black text-amber-900 uppercase">No Bank Account Found</p>
+                                            <p className="text-xs text-amber-800/70 font-medium">You must link a bank account before you can request a payout.</p>
+                                        </div>
+                                        <Link href="/retailer/revenue/bankdetails" className="mt-2 px-6 py-2 bg-amber-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">
+                                            Link Account Now
+                                        </Link>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {bankAccounts.map((bank: any) => (
+                                            <div
+                                                key={bank._id}
+                                                onClick={() => setSelectedBankId(bank._id)}
+                                                className={cn(
+                                                    "p-4 rounded-[24px] border-2 cursor-pointer transition-all flex items-center justify-between group",
+                                                    selectedBankId === bank._id ? "border-primary bg-primary/5" : "border-gray-100 hover:border-primary/20"
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className={cn(
+                                                        "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+                                                        selectedBankId === bank._id ? "bg-primary text-white" : "bg-gray-100 text-text-muted group-hover:bg-primary/10 group-hover:text-primary"
+                                                    )}>
+                                                        <Building2 size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-black text-primary uppercase">{bank.bankName}</p>
+                                                        <p className="text-[10px] font-bold text-text-muted mt-0.5 tracking-wider">•••• {bank.accountNumber.slice(-4)}</p>
+                                                    </div>
+                                                </div>
+                                                <div className={cn(
+                                                    "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                                                    selectedBankId === bank._id ? "bg-primary border-primary text-white" : "border-gray-200"
+                                                )}>
+                                                    {selectedBankId === bank._id && <CheckCircle2 size={14} />}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
 

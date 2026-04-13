@@ -5,11 +5,19 @@ import { useRouter } from "next/navigation"
 import Sidebar from "@/components/layout/Sidebar"
 import Topbar from "@/components/layout/Topbar"
 import useAuthStore from "@/data/store/useAuthStore"
+import useSocketStore from "@/data/store/useSocketStore"
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter()
     const [hydrated, setHydrated] = useState(false)
     const { user, checkAuth, loading } = useAuthStore()
+    const connect = useSocketStore((state: any) => state.connect)
+
+    useEffect(() => {
+        if (user?._id || user?.id) {
+            connect(user._id || user.id)
+        }
+    }, [user?._id, user?.id, connect])
 
     useEffect(() => {
         setHydrated(true)
