@@ -113,7 +113,7 @@ export default function AuthorityPage() {
             })
 
             if (res.success) {
-                await fetchRoles(true) // Force refresh to update store
+                await fetchRoles(true, true) // Silent refresh to update store without flicker
                 toast.success(`Permission updated for ${role.name}`)
             }
         } catch (error) {
@@ -144,6 +144,11 @@ export default function AuthorityPage() {
                 </div>
             </div>
 
+            {/* Filter out root ADMIN as it shouldn't be edited here */}
+            {(() => {
+                const displayRoles = roles.filter((r: any) => r.name.toUpperCase() !== "ADMINISTRATOR");
+                
+                return (
             <div className="bg-white rounded-2xl border border-border-custom overflow-hidden shadow-sm">
                 <div className="p-6 border-b border-border-custom flex items-center justify-between">
                     <h2 className="text-lg font-bold">Role Permissions Matrix</h2>
@@ -161,7 +166,7 @@ export default function AuthorityPage() {
                         <thead className="bg-primary/5 text-[10px] font-black text-primary uppercase tracking-widest">
                             <tr>
                                 <th className="px-6 py-4 sticky left-0 bg-white z-10 border-r border-border-custom shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)]">Module Name</th>
-                                {roles.map((role: any) => (
+                                {displayRoles.map((role: any) => (
                                     <th key={role._id} className="px-6 py-4 text-center min-w-[120px]">
                                         <div className="flex flex-col items-center gap-1">
                                             <Shield size={16} />
@@ -185,7 +190,7 @@ export default function AuthorityPage() {
                                                 {module.description}
                                             </div>
                                         </td>
-                                        {roles.map((role: any) => {
+                                        {displayRoles.map((role: any) => {
                                             const isAuthorized = role.permissions.includes(module.id)
                                             const isPending = updating === `${role._id}-${module.id}`
 
@@ -221,6 +226,8 @@ export default function AuthorityPage() {
                     </table>
                 </div>
             </div>
+                )
+            })()}
 
             <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
                 <p className="text-xs text-primary flex gap-2 font-medium">

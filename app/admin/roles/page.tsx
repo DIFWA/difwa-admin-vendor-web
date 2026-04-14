@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Shield, UserPlus, MoreVertical, Edit2, Trash2, Key, Users, X, Mail, ShieldCheck, Check } from "lucide-react"
+import { Shield, UserPlus, MoreVertical, Edit2, Trash2, Key, Users, X, Mail, ShieldCheck, Check, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import adminService from "@/data/services/adminService"
 import { toast } from "sonner"
@@ -37,6 +37,10 @@ export default function AdminRolesPage() {
     const [selectedAdmin, setSelectedAdmin] = useState<any>(null)
     const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false)
     const [editedPermissions, setEditedPermissions] = useState<string[]>([])
+    
+    // Delete Confirmation
+    const [roleToDelete, setRoleToDelete] = useState<any>(null)
+    const [adminToDelete, setAdminToDelete] = useState<any>(null)
     
     // Permission Matrix
     const [allPossiblePermissions] = useState<any[]>([
@@ -106,26 +110,28 @@ export default function AdminRolesPage() {
         }
     }
 
-    const handleDeleteRole = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this role?")) return
+    const handleDeleteRole = async () => {
+        if (!roleToDelete) return
         try {
-            const res = await adminService.deleteRole(id)
+            const res = await adminService.deleteRole(roleToDelete._id)
             if (res.success) {
                 toast.success("Role deleted successfully")
                 fetchRoles(true)
+                setRoleToDelete(null)
             }
         } catch (error) {
             toast.error("Failed to delete role")
         }
     }
 
-    const handleDeleteAdmin = async (id: string) => {
-        if (!confirm("Are you sure you want to remove this administrator?")) return
+    const handleDeleteAdmin = async () => {
+        if (!adminToDelete) return
         try {
-            const res = await adminService.deleteAdmin(id)
+            const res = await adminService.deleteAdmin(adminToDelete._id)
             if (res.success) {
                 toast.success("Administrator removed successfully")
                 fetchAdmins(true)
+                setAdminToDelete(null)
             }
         } catch (error: any) {
             toast.error(error.response?.data?.message || "Failed to remove administrator")
@@ -297,10 +303,10 @@ export default function AdminRolesPage() {
                                                     <span className="text-[10px] text-primary/60 italic font-bold">System Role</span>
                                                 ) : (
                                                     <button
-                                                        onClick={() => handleDeleteRole(role._id)}
+                                                        onClick={() => setRoleToDelete(role)}
                                                         className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors group/trash" title="Delete Role"
                                                     >
-                                                        <Trash2 size={18} className="transition-transform group-hover/trash:scale-110" />
+                                                       <Trash2 size={18} className="transition-transform group-hover/trash:scale-110" />
                                                     </button>
                                                 )
                                             ) : (
@@ -386,7 +392,7 @@ export default function AdminRolesPage() {
                                             )}
                                             {canEditRoles && !admin.roleId?.isSystem && (
                                                 <button
-                                                    onClick={() => handleDeleteAdmin(admin._id)}
+                                                    onClick={() => setAdminToDelete(admin)}
                                                     className="p-2 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors text-text-muted"
                                                     title="Delete Administrator"
                                                 >
@@ -596,6 +602,40 @@ export default function AdminRolesPage() {
                     </div>
                 </div>
             )}
+            {/* Delete Confirmation Modals */}
+            {(roleToDelete || adminToDelete) && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border border-red-100">
+                        <div className="p-8 text-center">
+                            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500">
+                                <AlertTriangle size={40} />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">Wait a moment!</h3>
+                            <p className="text-sm text-text-muted leading-relaxed">
+                                {roleToDelete 
+                                    ? `Deleting "${roleToDelete.name}" is a critical action. Any administrators assigned to this role will lose platform access immediately.`
+                                    : `Are you sure you want to remove "${adminToDelete.name}"? This will revoke their access across the entire management console.`
+                                }
+                            </p>
+                        </div>
+                        <div className="flex border-t border-slate-100 bg-slate-50/50 p-4 gap-3">
+                            <button
+                                onClick={() => { setRoleToDelete(null); setAdminToDelete(null); }}
+                                className="flex-1 py-3 px-4 rounded-2xl text-sm font-bold text-slate-600 hover:bg-white transition-all border border-transparent hover:border-slate-200"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={roleToDelete ? handleDeleteRole : handleDeleteAdmin}
+                                className="flex-1 py-3 px-4 rounded-2xl text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-all shadow-lg shadow-red-200"
+                            >
+                                Confirm Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
+

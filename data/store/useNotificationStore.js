@@ -27,6 +27,10 @@ const useNotificationStore = create((set, get) => ({
 
     addNotification: (notification) => {
         set((state) => {
+            // Check if notification already exists to prevent duplicate keys/UI glitch
+            const exists = state.notifications.some(n => n._id === notification._id);
+            if (exists) return state;
+
             const updatedNotifications = [notification, ...state.notifications];
             return {
                 notifications: updatedNotifications,

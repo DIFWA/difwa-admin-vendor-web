@@ -133,9 +133,9 @@ const useAdminStore = create((set, get) => ({
         }
     },
 
-    fetchRoles: async (force = false) => {
+    fetchRoles: async (force = false, silent = false) => {
         if (get().roles.length > 0 && !force) return;
-        set({ loadingRoles: true });
+        if (!silent) set({ loadingRoles: true });
         try {
             const res = await adminService.getRoles();
             set({ 
