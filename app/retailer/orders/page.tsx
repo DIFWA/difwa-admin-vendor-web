@@ -339,12 +339,18 @@ function OrdersContent() {
                                         </td>
                                         <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                                             <select
+                                                disabled={['Out for Delivery', 'Delivered', 'Completed', 'Cancelled'].includes(order.status)}
                                                 value={order.rider?.id || ""}
                                                 onChange={(e) => {
                                                     e.stopPropagation();
                                                     handleAssignRiderSelection(order.id, e.target.value);
                                                 }}
-                                                className="text-[10px] bg-background-soft border-transparent rounded p-1.5 outline-none cursor-pointer hover:border-primary/20 w-32 font-bold uppercase transition-all"
+                                                className={cn(
+                                                    "text-[10px] bg-background-soft border-transparent rounded p-1.5 outline-none font-bold uppercase transition-all w-32",
+                                                    ['Out for Delivery', 'Delivered', 'Completed', 'Cancelled'].includes(order.status)
+                                                        ? "opacity-50 cursor-not-allowed"
+                                                        : "cursor-pointer hover:border-primary/20"
+                                                )}
                                             >
                                                 <option value="">{order.rider?.name || "Assign R"}</option>
                                                 {riders.map((rider: any) => (
