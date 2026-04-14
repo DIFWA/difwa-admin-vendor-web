@@ -47,7 +47,7 @@ export default function CommunicationHubPage() {
         ? user.permissions
         : (user?.roleId?.permissions || []);
 
-    const canSend = currentUserPermissions.includes("COMMUNICATION_SEND")
+    const canSend = currentUserPermissions.includes("ALL") || currentUserPermissions.includes("COMMUNICATION_SEND")
 
     // FCM State
     const [fcmData, setFcmData] = useState({

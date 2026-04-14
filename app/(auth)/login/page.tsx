@@ -85,11 +85,6 @@ export default function LoginPage() {
                         </div>
 
                         <div className="space-y-8 mt-4">
-                            {/* Status Badge */}
-                            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#2A2C1D]/80 backdrop-blur-md border border-white/5 select-none">
-
-
-                            </div>
 
                             {/* Heading */}
                             <div className="space-y-1">
@@ -107,7 +102,7 @@ export default function LoginPage() {
 
                         {/* Action Pill (Olive-blue) */}
                         <div className="mt-16">
-                            <div className="inline-flex items-center gap-4 pl-4 pr-8 py-3.5 rounded-full bg-[#3D422E]/60 backdrop-blur-xl border border-white/10 group cursor-pointer hover:bg-[#3D422E]/80 transition-all shadow-xl">
+                            <Link href="/register" className="inline-flex items-center gap-4 pl-4 pr-8 py-3.5 rounded-full bg-[#3D422E]/60 backdrop-blur-xl border border-white/10 group cursor-pointer hover:bg-[#3D422E]/80 transition-all shadow-xl">
                                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#3D422E] group-hover:scale-110 transition-transform shadow-md">
                                     <ChevronRight size={20} className="stroke-[3]" />
                                 </div>
@@ -115,7 +110,7 @@ export default function LoginPage() {
                                     <p className="text-[15px] font-black text-white leading-none mb-0.5">Join us</p>
                                     <p className="text-[9px] text-white/50 font-black tracking-widest uppercase">Platform Stats</p>
                                 </div>
-                            </div>
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -183,7 +178,7 @@ export default function LoginPage() {
                                     <div className="space-y-2.5">
                                         <div className="flex items-center justify-between ml-1">
                                             <label className="text-sm font-black text-[#1A1A1A] ml-1">Password</label>
-                                            <Link href="#" className="text-xs font-black text-[#9BE15D] hover:text-[#7ED957] transition-colors">Forgot password?</Link>
+                                            <Link href="/forgot-password" className="text-xs font-black text-[#9BE15D] hover:text-[#7ED957] transition-colors">Forgot password?</Link>
                                         </div>
                                         <div className="relative group">
                                             <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[#A0A0A0] group-focus-within:text-[#FF6B00] transition-colors">

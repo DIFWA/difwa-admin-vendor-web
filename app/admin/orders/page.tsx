@@ -58,7 +58,7 @@ function AdminOrdersContent() {
         ? user.permissions
         : (user?.roleId?.permissions || []);
 
-    const canView = currentUserPermissions.includes("ORDERS_VIEW") || user?.role === "superadmin";
+    const canView = currentUserPermissions.includes("ALL") || currentUserPermissions.includes("ORDERS_VIEW") || user?.role === "superadmin";
 
     const fetchOrdersData = useCallback(async (isSilent = false) => {
         if (!isSilent) setLoading(true);

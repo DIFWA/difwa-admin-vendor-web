@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Wallet, CheckCircle, XCircle, Clock, Search, Filter, Download, Eye, Check, ChevronRight } from "lucide-react"
+import { Wallet, CheckCircle, XCircle, Clock, Search, Filter, Calendar, Download, Eye, Check, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import adminService from "@/data/services/adminService"
 
@@ -47,11 +47,16 @@ export default function AdminPayoutsPage() {
     const [showModal, setShowModal] = useState(false)
     const [transactionId, setTransactionId] = useState("")
     const [actionLoading, setActionLoading] = useState(false)
+    const [dateFilter, setDateFilter] = useState("")
 
     useEffect(() => {
         setMounted(true)
-        fetchPayouts(adminPayoutPage, 10, searchTerm)
-    }, [fetchPayouts, searchTerm, adminPayoutPage])
+        fetchPayouts(adminPayoutPage, 10, searchTerm, dateFilter)
+    }, [fetchPayouts, searchTerm, adminPayoutPage, dateFilter])
+
+    useEffect(() => {
+        setAdminPayoutPage(1)
+    }, [searchTerm, dateFilter])
 
     const handleApprove = async () => {
         if (!selectedPayout || !transactionId) return
@@ -70,15 +75,8 @@ export default function AdminPayoutsPage() {
     }
 
     const filteredPayouts = payouts.filter((p: Payout) => {
-        const retailerName = p.retailer?.name || "";
-        const businessName = p.retailer?.businessDetails?.businessName || "";
-        const searchTermLower = searchTerm.toLowerCase();
-
-        const matchesSearch = retailerName.toLowerCase().includes(searchTermLower) ||
-            businessName.toLowerCase().includes(searchTermLower);
-
         const matchesFilter = filterStatus === "All" || p.status === filterStatus;
-        return matchesSearch && matchesFilter;
+        return matchesFilter;
     })
 
     const stats = payoutsData?.stats || { total: 0, pending: 0, approved: 0 }
@@ -150,6 +148,24 @@ export default function AdminPayoutsPage() {
                         <option value="Approved">Approved Only</option>
                         <option value="Rejected">Rejected Only</option>
                     </select>
+                </div>
+                <div className="flex items-center gap-2 bg-background-soft px-4 py-3 rounded-2xl">
+                    <Calendar size={18} className="text-text-muted" />
+                    <input
+                        type="date"
+                        value={dateFilter}
+                        onChange={(e) => setDateFilter(e.target.value)}
+                        className="bg-transparent outline-none text-sm font-bold text-primary cursor-pointer"
+                    />
+                    {dateFilter && (
+                        <button
+                            onClick={() => setDateFilter("")}
+                            className="text-text-muted hover:text-red-500 transition-colors text-xs font-bold ml-1"
+                            title="Clear date filter"
+                        >
+                            ✕
+                        </button>
+                    )}
                 </div>
             </div>
 

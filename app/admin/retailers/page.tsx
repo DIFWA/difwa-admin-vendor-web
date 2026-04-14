@@ -53,9 +53,9 @@ export default function RetailersPage() {
         ? user.permissions
         : (user?.roleId?.permissions || []);
 
-    const canView = currentUserPermissions.includes("RETAILERS_VIEW")
-    const canEdit = currentUserPermissions.includes("RETAILERS_EDIT")
-    const canApprove = currentUserPermissions.includes("RETAILERS_APPROVE")
+    const canView = currentUserPermissions.includes("ALL") || currentUserPermissions.includes("RETAILERS_VIEW")
+    const canEdit = currentUserPermissions.includes("ALL") || currentUserPermissions.includes("RETAILERS_EDIT")
+    const canApprove = currentUserPermissions.includes("ALL") || currentUserPermissions.includes("RETAILERS_APPROVE")
 
     const [selectedRetailer, setSelectedRetailer] = useState<Retailer | null>(null)
     const [rejectionReason, setRejectionReason] = useState("")
@@ -179,7 +179,7 @@ export default function RetailersPage() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
                             <input
                                 type="text"
-                                placeholder="Search..."
+                                placeholder="Search by business name or owner name..."
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 className="pl-9 pr-4 py-1.5 rounded-lg bg-background-soft border-transparent text-sm outline-none w-64"

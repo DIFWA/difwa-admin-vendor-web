@@ -102,8 +102,8 @@ const adminService = {
     // },
 
     // Payout Management
-    getPayouts: async (page = 1, limit = 10, search = "") => {
-        const response = await apiClient.get("/payout/all", { params: { page, limit, search } });
+    getPayouts: async (page = 1, limit = 10, search = "", date = "") => {
+        const response = await apiClient.get("/payout/all", { params: { page, limit, search, date } });
         return response.data;
     },
 
@@ -163,6 +163,21 @@ const adminService = {
 
     changePassword: async (currentPassword, newPassword) => {
         const response = await apiClient.put("/admin/change-password", { currentPassword, newPassword });
+        return response.data;
+    },
+
+    updateAdminProfile: async (email) => {
+        const response = await apiClient.put("/admin/profile", { email });
+        return response.data;
+    },
+
+    forgotPassword: async (email) => {
+        const response = await apiClient.post("/admin/forgot-password", { email });
+        return response.data;
+    },
+
+    resetPassword: async (email, otp, newPassword) => {
+        const response = await apiClient.post("/admin/reset-password", { email, otp, newPassword });
         return response.data;
     },
 

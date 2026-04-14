@@ -27,8 +27,8 @@ export default function AdminRolesPage() {
         ? user.permissions
         : (user?.roleId?.permissions || []);
 
-    const canView = currentUserPermissions.includes("ROLES_EDIT") || currentUserPermissions.includes("AUTHORITY_EDIT")
-    const canEditRoles = currentUserPermissions.includes("ROLES_EDIT")
+    const canView = currentUserPermissions.includes("ALL") || currentUserPermissions.includes("ROLES_EDIT") || currentUserPermissions.includes("AUTHORITY_EDIT")
+    const canEditRoles = currentUserPermissions.includes("ALL") || currentUserPermissions.includes("ROLES_EDIT")
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
@@ -293,12 +293,16 @@ export default function AdminRolesPage() {
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex items-center justify-end gap-2">
                                             {canEditRoles ? (
-                                                <button
-                                                    onClick={() => handleDeleteRole(role._id)}
-                                                    className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors group/trash" title="Delete Role"
-                                                >
-                                                    <Trash2 size={18} className="transition-transform group-hover/trash:scale-110" />
-                                                </button>
+                                                role.isSystem ? (
+                                                    <span className="text-[10px] text-primary/60 italic font-bold">System Role</span>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleDeleteRole(role._id)}
+                                                        className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors group/trash" title="Delete Role"
+                                                    >
+                                                        <Trash2 size={18} className="transition-transform group-hover/trash:scale-110" />
+                                                    </button>
+                                                )
                                             ) : (
                                                 <span className="text-[10px] text-text-muted italic">ReadOnly</span>
                                             )}
@@ -351,30 +355,36 @@ export default function AdminRolesPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <select
-                                            className="bg-transparent border-none outline-none font-bold text-primary cursor-pointer hover:underline"
-                                            value={admin.roleId?._id || ""}
-                                            onChange={(e) => handleChangeAdminRole(admin._id, e.target.value)}
-                                            disabled={!canEditRoles}
-                                        >
-                                            {roles.map((role: any) => (
-                                                <option key={role._id} value={role._id} className="text-foreground">{role.name}</option>
-                                            ))}
-                                        </select>
+                                        {admin.roleId?.isSystem ? (
+                                            <span className="font-bold text-primary opacity-80 cursor-default">{admin.roleId?.name || "Administrator"}</span>
+                                        ) : (
+                                            <select
+                                                className="bg-transparent border-none outline-none font-bold text-primary cursor-pointer hover:underline"
+                                                value={admin.roleId?._id || ""}
+                                                onChange={(e) => handleChangeAdminRole(admin._id, e.target.value)}
+                                                disabled={!canEditRoles}
+                                            >
+                                                {roles.map((role: any) => (
+                                                    <option key={role._id} value={role._id} className="text-foreground">{role.name}</option>
+                                                ))}
+                                            </select>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className="px-2.5 py-1 bg-green-100 text-green-600 rounded-full text-[10px] uppercase font-black tracking-wider">Active</span>
                                     </td>
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex items-center justify-center gap-2">
-                                            <button
-                                                onClick={() => openPermissionModal(admin)}
-                                                className="p-2 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-text-muted"
-                                                title="Edit Detailed Permissions"
-                                            >
-                                                <Key size={16} />
-                                            </button>
-                                            {canEditRoles && (
+                                            {!admin.roleId?.isSystem && (
+                                                <button
+                                                    onClick={() => openPermissionModal(admin)}
+                                                    className="p-2 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-text-muted"
+                                                    title="Edit Detailed Permissions"
+                                                >
+                                                    <Key size={16} />
+                                                </button>
+                                            )}
+                                            {canEditRoles && !admin.roleId?.isSystem && (
                                                 <button
                                                     onClick={() => handleDeleteAdmin(admin._id)}
                                                     className="p-2 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors text-text-muted"

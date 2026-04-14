@@ -87,8 +87,8 @@ export default function AuthorityPage() {
         ? user.permissions
         : (user?.roleId?.permissions || []);
 
-    const canView = currentUserPermissions.includes("AUTHORITY_EDIT") || currentUserPermissions.includes("ROLES_EDIT")
-    const canEditAuthority = currentUserPermissions.includes("AUTHORITY_EDIT")
+    const canView = currentUserPermissions.includes("ALL") || currentUserPermissions.includes("AUTHORITY_EDIT") || currentUserPermissions.includes("ROLES_EDIT")
+    const canEditAuthority = currentUserPermissions.includes("ALL") || currentUserPermissions.includes("AUTHORITY_EDIT")
 
     const [updating, setUpdating] = useState<string | null>(null)
 

@@ -28,10 +28,10 @@ export default function CategoriesPage() {
         ? user.permissions
         : (user?.roleId?.permissions || []);
 
-    const canView = currentUserPermissions.includes("CATEGORIES_VIEW")
-    const canCreate = currentUserPermissions.includes("CATEGORIES_CREATE")
-    const canEdit = currentUserPermissions.includes("CATEGORIES_EDIT")
-    const canDelete = currentUserPermissions.includes("CATEGORIES_DELETE")
+    const canView = currentUserPermissions.includes("ALL") || currentUserPermissions.includes("CATEGORIES_VIEW")
+    const canCreate = currentUserPermissions.includes("ALL") || currentUserPermissions.includes("CATEGORIES_CREATE")
+    const canEdit = currentUserPermissions.includes("ALL") || currentUserPermissions.includes("CATEGORIES_EDIT")
+    const canDelete = currentUserPermissions.includes("ALL") || currentUserPermissions.includes("CATEGORIES_DELETE")
 
     const [searchTerm, setSearchTerm] = useState("")
     const [isModalOpen, setIsModalOpen] = useState(false)

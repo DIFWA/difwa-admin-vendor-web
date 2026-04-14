@@ -40,8 +40,8 @@ export default function UsersPage() {
         ? user.permissions
         : (user?.roleId?.permissions || []);
 
-    const canView = currentUserPermissions.includes("APP_USERS_VIEW")
-    const canEditUser = currentUserPermissions.includes("APP_USERS_EDIT")
+    const canView = currentUserPermissions.includes("ALL") || currentUserPermissions.includes("APP_USERS_VIEW")
+    const canEditUser = currentUserPermissions.includes("ALL") || currentUserPermissions.includes("APP_USERS_EDIT")
 
     const [selectedUser, setSelectedUser] = useState<AppUser | null>(null)
 

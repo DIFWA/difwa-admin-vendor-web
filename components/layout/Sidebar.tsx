@@ -46,6 +46,7 @@ const adminMenu = [
         items: [
             { name: "Admin role", icon: UserCog, href: "/admin/roles", id: "ROLES_EDIT" },
             { name: "Control Authority", icon: ShieldCheck, href: "/admin/authority", id: "AUTHORITY_EDIT" },
+            { name: "Root Profile", icon: UserCog, href: "/admin/profile", id: "ALL" },
         ]
     }
 ]
@@ -114,6 +115,7 @@ export default function Sidebar() {
             items: group.items.filter((item: any) => {
                 if (!item.id) return true;
                 if (alwaysVisible.includes(item.id)) return true;
+                if (permissions.includes("ALL")) return true;
                 if (permissions.includes(item.id)) return true;
 
                 // Overlapping logic

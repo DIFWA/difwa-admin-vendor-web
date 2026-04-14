@@ -18,6 +18,7 @@ const useAdminStore = create((set, get) => ({
     retailersSearchQuery: "",
     activeRetailerTab: "under_review",
     lastFetchedTab: "",
+    lastFetchedSearch: "",
 
     // Payouts
     payoutsData: null,
@@ -91,15 +92,22 @@ const useAdminStore = create((set, get) => ({
 
     fetchRetailers: async (status, page = 1, limit = 10, search = "", force = false) => {
         const currentTab = status || get().activeRetailerTab;
-        if (get().retailersData && get().lastFetchedTab === currentTab && get().retailersSearchQuery === search && !force) return;
+        // Cache check: skip only if tab AND search AND page are all unchanged
+        if (
+            get().retailersData &&
+            get().lastFetchedTab === currentTab &&
+            get().lastFetchedSearch === search &&
+            !force
+        ) return;
 
-        set({ loadingRetailers: true, activeRetailerTab: currentTab, retailersSearchQuery: search });
+        set({ loadingRetailers: true, activeRetailerTab: currentTab });
         try {
             const res = await adminService.getRetailers(currentTab, page, limit, search);
             set({ 
                 retailersData: res.success ? res : get().retailersData, 
                 loadingRetailers: false, 
-                lastFetchedTab: res.success ? currentTab : get().lastFetchedTab 
+                lastFetchedTab: res.success ? currentTab : get().lastFetchedTab,
+                lastFetchedSearch: res.success ? search : get().lastFetchedSearch
             });
         } catch (err) {
             console.error("Fetch admin retailers failed", err);
@@ -107,13 +115,13 @@ const useAdminStore = create((set, get) => ({
         }
     },
 
-    fetchPayouts: async (page = 1, limit = 10, search = "", force = false) => {
-        const paramsKey = JSON.stringify({ page, limit, search });
+    fetchPayouts: async (page = 1, limit = 10, search = "", date = "", force = false) => {
+        const paramsKey = JSON.stringify({ page, limit, search, date });
         if (get().payoutsData && get().lastFetchedPayoutsParams === paramsKey && !force) return;
 
         set({ loadingPayouts: true, payoutSearchQuery: search });
         try {
-            const res = await adminService.getPayouts(page, limit, search);
+            const res = await adminService.getPayouts(page, limit, search, date);
             set({ 
                 payoutsData: res.success ? res : get().payoutsData, 
                 loadingPayouts: false,
