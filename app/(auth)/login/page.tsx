@@ -143,7 +143,7 @@ export default function LoginPage() {
                                         className="w-12 h-12 object-contain rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.3)]"
                                     />
                                 </div>
-                                <h2 className="text-4xl font-bold text-white mb-2">Login Portals</h2>
+                                <h2 className="text-4xl font-bold text-white mb-2">Login Portal</h2>
                                 <p className="text-sm text-white/60 mb-8">Sign in to access dashboard</p>
                             </div>
 

@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Calendar, Plus, Minus, Search, Loader2, Package, Check } from "lucide-react"
+import { X, Calendar, Plus, Minus, Search, Loader2, Package, Check, Clock } from "lucide-react"
 import retailerService from "@/data/services/retailerService"
 import { cn } from "@/lib/utils"
+import useAuthStore from "@/data/store/useAuthStore"
 
 interface ManualSubscriptionModalProps {
     isOpen: boolean
@@ -28,6 +29,7 @@ const FREQUENCIES = ["Daily", "Alternate Days", "Weekly"]
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 export default function ManualSubscriptionModal({ isOpen, onClose, customer, onSuccess }: ManualSubscriptionModalProps) {
+    const { user: authUser } = useAuthStore()
     const [loading, setLoading] = useState(false)
     const [products, setProducts] = useState<Product[]>([])
     const [productsLoading, setProductsLoading] = useState(true)
@@ -39,9 +41,12 @@ export default function ManualSubscriptionModal({ isOpen, onClose, customer, onS
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
     const [endDate, setEndDate] = useState("")
     const [deliveryAddress, setDeliveryAddress] = useState("")
+    const [deliverySlot, setDeliverySlot] = useState("")
     const [selectedAddressId, setSelectedAddressId] = useState<string>("")
     const [isAddingNew, setIsAddingNew] = useState(false)
     const [error, setError] = useState("")
+
+    const deliverySlots = authUser?.businessDetails?.deliverySlots || []
 
     useEffect(() => {
         if (isOpen && customer) {
@@ -54,6 +59,11 @@ export default function ManualSubscriptionModal({ isOpen, onClose, customer, onS
             } else {
                 setIsAddingNew(true)
                 setSelectedAddressId("new")
+            }
+
+            // Set default delivery slot if available
+            if (deliverySlots.length > 0) {
+                setDeliverySlot(deliverySlots[0])
             }
         }
     }, [isOpen, customer])
@@ -86,18 +96,23 @@ export default function ManualSubscriptionModal({ isOpen, onClose, customer, onS
             setError("Please select at least one day for weekly subscription")
             return
         }
+        if (deliverySlots.length > 0 && !deliverySlot) {
+            setError("Please select a delivery slot")
+            return
+        }
 
         setLoading(true)
         setError("")
 
         try {
             const res = await retailerService.createManualSubscription({
-                customerId: customer.id,
-                productId: selectedProduct._id,
+                user: customer.id,
+                product: selectedProduct._id,
                 frequency,
                 customDays: frequency === "Weekly" ? customDays : [],
                 quantity,
                 startDate,
+                deliverySlot,
                 endDate: endDate || undefined,
                 deliveryAddress: isAddingNew ? deliveryAddress : (customer.addresses?.find(a => a._id === selectedAddressId)?.fullAddress || deliveryAddress || "Manual Entry")
             })
@@ -121,6 +136,7 @@ export default function ManualSubscriptionModal({ isOpen, onClose, customer, onS
         setFrequency("Daily")
         setCustomDays([])
         setQuantity(1)
+        setDeliverySlot(deliverySlots[0] || "")
         setError("")
     }
 
@@ -248,6 +264,31 @@ export default function ManualSubscriptionModal({ isOpen, onClose, customer, onS
                                 </div>
                             )}
 
+                            {/* Delivery Slot */}
+                            {deliverySlots.length > 0 && (
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest flex items-center gap-1.5">
+                                        <Clock size={12} className="text-primary" />
+                                        Delivery Slot
+                                    </label>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {deliverySlots.map((slot: string) => (
+                                            <button
+                                                key={slot}
+                                                onClick={() => setDeliverySlot(slot)}
+                                                className={cn(
+                                                    "py-2 px-4 rounded-xl text-xs font-bold border transition-all text-left flex items-center justify-between",
+                                                    deliverySlot === slot ? "bg-primary/10 border-primary text-primary" : "bg-white text-text border-border-custom hover:border-primary/50 text-text-muted"
+                                                )}
+                                            >
+                                                {slot}
+                                                {deliverySlot === slot && <Check size={14} strokeWidth={3} />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Quantity */}
                             <div className="space-y-3 text-center">
                                 <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Daily Quantity</label>
@@ -345,7 +386,7 @@ export default function ManualSubscriptionModal({ isOpen, onClose, customer, onS
                             >
                                 {loading ? <Loader2 className="animate-spin" size={20} /> : (
                                     <>
-                                        Create Monthly Subscription
+                                        Create {frequency} Subscription
                                         <Calendar size={18} />
                                     </>
                                 )}

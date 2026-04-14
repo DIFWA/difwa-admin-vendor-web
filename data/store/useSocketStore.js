@@ -154,6 +154,8 @@ const useSocketStore = create((set, get) => ({
                             deliverySlot: orderData.deliverySlot,
                             rider: orderData.rider,
                             statusHistory: orderData.statusHistory,
+                            user: orderData.user, // Added for Invoice/Modal
+                            items: orderData.items, // Added for Invoice/Modal
                         };
                         return { orders: [newOrder, ...state.orders] };
                     }
