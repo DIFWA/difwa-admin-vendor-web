@@ -236,7 +236,7 @@ export default function DeliveryChargesPage() {
                             <h3 className="font-black text-primary uppercase tracking-tight">Change History</h3>
                         </div>
                         <div className="space-y-3 max-h-[400px] overflow-y-auto scrollbar-thin pr-1">
-                            {setting?.history?.length > 0 ? (
+                            {setting?.history && setting.history.length > 0 ? (
                                 [...setting.history].reverse().map((h: any, i: number) => (
                                     <div key={i} className="p-3 rounded-2xl bg-background-soft border border-border-custom/50 space-y-1">
                                         <div className="flex justify-between items-center">

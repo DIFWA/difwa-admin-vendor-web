@@ -22,7 +22,8 @@ import {
     Percent,
     Droplets,
     Truck,
-    BarChart3
+    BarChart3,
+    MessageSquare
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
@@ -43,6 +44,7 @@ const adminMenu = [
             { name: "Platform Income", icon: BarChart3, href: "/admin/platform-income", id: "COMMISSION_EDIT" },
             { name: "Communication Hub", icon: BellRing, href: "/admin/communication", id: "COMMUNICATION_SEND" }, // Use specific permission
             { name: "Transaction", icon: ArrowLeftRight, href: "/admin/transactions", id: "PAYOUTS_VIEW" }, // Use Payouts view as base
+            { name: "Help Requests", icon: MessageSquare, href: "/admin/support-requests", id: "COMMUNICATION_SEND" },
         ]
     },
     {
