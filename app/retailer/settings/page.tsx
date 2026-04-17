@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Store, MapPin, Upload, Save, Loader2, X, Phone, Mail, Clock, Plus, AlertTriangle } from "lucide-react"
+import { Store, MapPin, Upload, Save, Loader2, X, Phone, Mail, Clock, Plus, AlertTriangle, MapPin as MapPinIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import retailerService from "@/data/services/retailerService"
 import useAuthStore from "@/data/store/useAuthStore"
@@ -26,7 +26,8 @@ export default function StoreSettingsPage() {
             city: "",
             state: "",
             pincode: "",
-            landmark: ""
+            landmark: "",
+            coordinates: null as { lat: number, lng: number } | null | undefined
         },
         deliverySlots: [] as string[]
     })
@@ -123,7 +124,8 @@ export default function StoreSettingsPage() {
                     city: data.businessDetails?.location?.city || "",
                     state: data.businessDetails?.location?.state || "",
                     pincode: data.businessDetails?.location?.pincode || "",
-                    landmark: data.businessDetails?.location?.landmark || ""
+                    landmark: data.businessDetails?.location?.landmark || "",
+                    coordinates: data.businessDetails?.location?.coordinates || null
                 },
                 deliverySlots: data.businessDetails?.deliverySlots || []
             }
@@ -150,6 +152,34 @@ export default function StoreSettingsPage() {
         } finally {
             setUploading(false)
         }
+    }
+
+    const handleGetLocation = () => {
+        if (!navigator.geolocation) {
+            toast.error("Geolocation is not supported by your browser")
+            return
+        }
+        
+        toast.info("Fetching your location...")
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setFormData(prev => ({
+                    ...prev,
+                    location: {
+                        ...prev.location,
+                        coordinates: {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        }
+                    }
+                }))
+                toast.success("Location captured successfully!")
+            },
+            (error) => {
+                console.error("Error getting location:", error)
+                toast.error("Failed to get location. Please allow location access.")
+            }
+        )
     }
 
     const handleSave = async () => {
@@ -298,6 +328,25 @@ export default function StoreSettingsPage() {
                                         onChange={e => setFormData({ ...formData, location: { ...formData.location, pincode: e.target.value } })}
                                         className="w-full px-4 py-2.5 rounded-lg bg-background-soft border-transparent outline-none text-sm"
                                     />
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold">Store Location (GPS)</label>
+                                <div className="flex items-center gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={handleGetLocation}
+                                        className="flex items-center gap-2 px-5 py-3 rounded-xl bg-blue-50 text-blue-600 font-bold hover:bg-blue-100 transition-all border border-blue-200"
+                                    >
+                                        <MapPinIcon size={18} />
+                                        {formData.location.coordinates ? "Location Captured ✓" : "Get Current Location"}
+                                    </button>
+                                    {formData.location.coordinates && (
+                                        <span className="text-xs text-gray-500">
+                                            {formData.location.coordinates.lat.toFixed(4)}, {formData.location.coordinates.lng.toFixed(4)}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>

@@ -206,6 +206,22 @@ const adminService = {
     deleteAdmin: async (id) => {
         const response = await apiClient.delete(`/admin/admins/${id}`);
         return response.data;
+    },
+
+    // ── Delivery Charge Management ───────────────────────────────────────────
+    getDeliveryChargeSettings: async () => {
+        const response = await apiClient.get("/delivery-charge/settings");
+        return response.data;
+    },
+
+    updateDeliveryChargeSettings: async (slabs, maxDeliveryKm, note = "") => {
+        const response = await apiClient.put("/delivery-charge/settings", { slabs, maxDeliveryKm, note });
+        return response.data;
+    },
+
+    getDeliveryIncomeReport: async (params = {}) => {
+        const response = await apiClient.get("/delivery-charge/income", { params });
+        return response.data;
     }
 };
 

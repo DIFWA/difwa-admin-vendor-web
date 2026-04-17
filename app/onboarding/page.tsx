@@ -10,7 +10,8 @@ import {
     ArrowRight,
     ArrowLeft,
     Upload,
-    ChevronDown
+    ChevronDown,
+    MapPin as MapPinIcon
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import fileService from "@/data/services/fileService"
@@ -70,6 +71,8 @@ export default function OnboardingPage() {
         state: "",
         pincode: "",
         landmark: "",
+        lat: null as number | null,
+        lng: null as number | null,
         // Business Info
         yearsInBusiness: "",
         monthlyPurchaseVolume: "",
@@ -109,6 +112,7 @@ export default function OnboardingPage() {
             if (!formData.city) newErrors.city = "City is required"
             if (!formData.pincode) newErrors.pincode = "Pincode is required"
             else if (formData.pincode.length !== 6) newErrors.pincode = "Must be exactly 6 digits"
+            if (!formData.lat || !formData.lng) newErrors.location = "Please capture your store location"
         }
 
         if (currentStep === 3) {
@@ -181,6 +185,36 @@ export default function OnboardingPage() {
         }
     }
 
+    const handleGetLocation = () => {
+        if (!navigator.geolocation) {
+            toast.error("Geolocation is not supported by your browser")
+            return
+        }
+        
+        toast.info("Fetching your location...")
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setFormData(prev => ({
+                    ...prev,
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                }))
+                toast.success("Location captured successfully!")
+                if (errors.location) {
+                    setErrors(prev => {
+                        const newErrs = { ...prev }
+                        delete newErrs.location
+                        return newErrs
+                    })
+                }
+            },
+            (error) => {
+                console.error("Error getting location:", error)
+                toast.error("Failed to get location. Please allow location access.")
+            }
+        )
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!validateStep()) return
@@ -202,7 +236,11 @@ export default function OnboardingPage() {
                         city: formData.city,
                         state: formData.state,
                         pincode: formData.pincode,
-                        landmark: formData.landmark
+                        landmark: formData.landmark,
+                        coordinates: formData.lat && formData.lng ? {
+                            lat: formData.lat,
+                            lng: formData.lng
+                        } : undefined
                     },
                     legal: {
                         gst: formData.gst,
@@ -227,7 +265,11 @@ export default function OnboardingPage() {
                             city: formData.city,
                             state: formData.state,
                             pincode: formData.pincode,
-                            landmark: formData.landmark
+                            landmark: formData.landmark,
+                            coordinates: formData.lat && formData.lng ? {
+                                lat: formData.lat,
+                                lng: formData.lng
+                            } : undefined
                         }
                     }
                 })
@@ -389,6 +431,26 @@ export default function OnboardingPage() {
                                         placeholder="Full shop address"
                                     />
                                     {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-[#495057]">Store Location (GPS) *</label>
+                                    <div className="flex items-center gap-4">
+                                        <button
+                                            type="button"
+                                            onClick={handleGetLocation}
+                                            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-blue-50 text-blue-600 font-bold hover:bg-blue-100 transition-all border border-blue-200"
+                                        >
+                                            <MapPinIcon size={18} />
+                                            {formData.lat && formData.lng ? "Location Captured ✓" : "Get Current Location"}
+                                        </button>
+                                        {formData.lat && formData.lng && (
+                                            <span className="text-xs text-gray-500">
+                                                {formData.lat.toFixed(4)}, {formData.lng.toFixed(4)}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location}</p>}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-6">

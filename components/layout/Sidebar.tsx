@@ -20,7 +20,9 @@ import {
     BellRing,
     CalendarCheck,
     Percent,
-    Droplets
+    Droplets,
+    Truck,
+    BarChart3
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
@@ -37,6 +39,8 @@ const adminMenu = [
             { name: "Categories", icon: Layers, href: "/admin/categories", id: "CATEGORIES_VIEW" },
             { name: "Payout Settlements", icon: Wallet, href: "/admin/payouts", id: "PAYOUTS_VIEW" },
             { name: "Commission System", icon: Percent, href: "/admin/commission", id: "COMMISSION_EDIT" },
+            { name: "Delivery Charges", icon: Truck, href: "/admin/delivery-charges", id: "COMMISSION_EDIT" },
+            { name: "Platform Income", icon: BarChart3, href: "/admin/platform-income", id: "COMMISSION_EDIT" },
             { name: "Communication Hub", icon: BellRing, href: "/admin/communication", id: "COMMUNICATION_SEND" }, // Use specific permission
             { name: "Transaction", icon: ArrowLeftRight, href: "/admin/transactions", id: "PAYOUTS_VIEW" }, // Use Payouts view as base
         ]
