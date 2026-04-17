@@ -1,16 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Mail, Save, Clock, HelpCircle, X, Plus, Trash2 } from "lucide-react"
+import { Search, Mail, Clock, HelpCircle, X, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { motion, AnimatePresence } from "framer-motion"
 
 interface SupportRequest {
     _id: string;
     user?: {
-        name?: string;
+        fullName?: string;
         email?: string;
-        phone?: string;
+        phoneNumber?: string;
     };
     type: string;
     subject: string;
@@ -23,7 +23,7 @@ export default function SupportRequestsPage() {
     const [requests, setRequests] = useState<SupportRequest[]>([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState("")
-    
+
     // Settings state
     const [emails, setEmails] = useState<string[]>([])
     const [newEmail, setNewEmail] = useState("")
@@ -121,11 +121,11 @@ export default function SupportRequestsPage() {
         saveEmails(updated)
     }
 
-    const filteredRequests = requests.filter(req => 
+    const filteredRequests = requests.filter(req =>
         req.subject.toLowerCase().includes(search.toLowerCase()) ||
-        req.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        req.user?.fullName?.toLowerCase().includes(search.toLowerCase()) ||
         req.user?.email?.toLowerCase().includes(search.toLowerCase()) ||
-        req.user?.phone?.includes(search)
+        req.user?.phoneNumber?.includes(search)
     )
 
     return (
@@ -135,7 +135,7 @@ export default function SupportRequestsPage() {
                     <h1 className="text-2xl font-bold text-gray-800">Help Requests</h1>
                     <p className="text-sm text-gray-500 mt-1">Manage and view user support tickets</p>
                 </div>
-                
+
                 <div className="flex items-center gap-3 w-full sm:w-auto">
                     <div className="relative flex-1 sm:w-64">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -147,12 +147,14 @@ export default function SupportRequestsPage() {
                             className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                         />
                     </div>
-                    <button 
+                    <button
                         onClick={() => setShowSettings(!showSettings)}
-                        className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors"
-                        title="Notification Settings"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors text-sm font-semibold"
+                        title="Add support mails"
                     >
-                        <Mail size={20} />
+                        <Mail size={18} />
+                        <span>Support Mails</span>
+                        <Plus size={16} />
                     </button>
                 </div>
             </div>
@@ -185,7 +187,7 @@ export default function SupportRequestsPage() {
                                                 <Mail size={16} className="text-gray-400" />
                                                 <span className="text-sm font-medium text-gray-700">{email}</span>
                                             </div>
-                                            <button 
+                                            <button
                                                 onClick={() => handleRemoveEmail(email)}
                                                 className="text-red-400 hover:text-red-600 transition-colors"
                                                 disabled={savingEmails}
@@ -195,7 +197,7 @@ export default function SupportRequestsPage() {
                                         </div>
                                     ))}
                                 </div>
-                                
+
                                 <div className="flex-1">
                                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                                         <h4 className="text-sm font-medium text-gray-700 mb-3">Add New Email</h4>
@@ -208,7 +210,7 @@ export default function SupportRequestsPage() {
                                                 className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                                 onKeyDown={(e) => e.key === 'Enter' && handleAddEmail()}
                                             />
-                                            <button 
+                                            <button
                                                 onClick={handleAddEmail}
                                                 disabled={savingEmails}
                                                 className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
@@ -249,7 +251,7 @@ export default function SupportRequestsPage() {
                     {filteredRequests.map((req) => (
                         <div key={req._id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
                             <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
-                            
+
                             <div className="flex justify-between items-start mb-3">
                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
                                     {req.type}
@@ -259,23 +261,23 @@ export default function SupportRequestsPage() {
                                     {new Date(req.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                 </div>
                             </div>
-                            
+
                             <h3 className="font-semibold text-gray-800 mb-2 line-clamp-1" title={req.subject}>
                                 {req.subject}
                             </h3>
-                            
+
                             <p className="text-gray-600 text-sm mb-4 line-clamp-3 h-16">
                                 {req.message}
                             </p>
-                            
+
                             <div className="pt-4 border-t border-gray-100 mt-auto">
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-100 to-blue-50 flex items-center justify-center flex-shrink-0 text-blue-600 font-bold text-xs">
-                                        {req.user?.name?.charAt(0).toUpperCase() || 'U'}
+                                        {req.user?.fullName?.charAt(0).toUpperCase() || 'U'}
                                     </div>
                                     <div className="overflow-hidden">
-                                        <p className="text-sm font-medium text-gray-800 truncate">{req.user?.name || 'Unknown User'}</p>
-                                        <p className="text-xs text-gray-500 truncate">{req.user?.email || req.user?.phone || 'No contact info'}</p>
+                                        <p className="text-sm font-medium text-gray-800 truncate">{req.user?.fullName || 'Unknown User'}</p>
+                                        <p className="text-xs text-gray-500 truncate">{req.user?.email || req.user?.phoneNumber || 'No contact info'}</p>
                                     </div>
                                 </div>
                             </div>

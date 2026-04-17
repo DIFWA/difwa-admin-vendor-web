@@ -12,6 +12,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [hydrated, setHydrated] = useState(false)
     const { user, checkAuth, loading } = useAuthStore()
     const connect = useSocketStore((state: any) => state.connect)
+    const socket = useSocketStore((state: any) => state.socket)
 
     useEffect(() => {
         if (user?._id || user?.id) {
@@ -22,6 +23,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     useEffect(() => {
         setHydrated(true)
     }, [])
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleNewSupportRequest = (payload: any) => {
+            import("sonner").then(({ toast }) => {
+                toast.info(`New Support Request: ${payload.subject}`, {
+                    description: `From: ${payload.user?.name || "User"} (${payload.type})`,
+                    action: {
+                        label: "View",
+                        onClick: () => router.push("/admin/support-requests")
+                    }
+                });
+            });
+        };
+
+        socket.on("NEW_SUPPORT_REQUEST", handleNewSupportRequest);
+
+        return () => {
+            socket.off("NEW_SUPPORT_REQUEST", handleNewSupportRequest);
+        };
+    }, [socket, router]);
 
     useEffect(() => {
         const verifyAdmin = async () => {
