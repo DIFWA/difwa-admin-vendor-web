@@ -39,7 +39,7 @@ export default function SupportRequestsPage() {
         try {
             setLoading(true)
             const token = localStorage.getItem("token")
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/support/requests`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/support/requests`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -58,7 +58,7 @@ export default function SupportRequestsPage() {
     const fetchEmails = async () => {
         try {
             const token = localStorage.getItem("token")
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/support/emails`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/support/emails`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -76,7 +76,7 @@ export default function SupportRequestsPage() {
         try {
             setSavingEmails(true)
             const token = localStorage.getItem("token")
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/support/emails`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/support/emails`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
