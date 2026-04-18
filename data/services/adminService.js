@@ -232,6 +232,32 @@ const adminService = {
     getDeliveryIncomeReport: async (params = {}) => {
         const response = await apiClient.get("/delivery-charge/income", { params });
         return response.data;
+    },
+
+    // ── Banners Management ───────────────────────────────────────────
+    getBanners: async () => {
+        const response = await apiClient.get("/banners/admin");
+        return response.data;
+    },
+
+    createBanner: async (data) => {
+        const response = await apiClient.post("/banners/admin", data);
+        return response.data;
+    },
+
+    updateBanner: async (id, data) => {
+        const response = await apiClient.put(`/banners/admin/${id}`, data);
+        return response.data;
+    },
+
+    deleteBanner: async (id) => {
+        const response = await apiClient.delete(`/banners/admin/${id}`);
+        return response.data;
+    },
+
+    reorderBanners: async (banners) => {
+        const response = await apiClient.put("/banners/admin/reorder", { banners });
+        return response.data;
     }
 };
 

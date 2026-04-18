@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Wallet, ArrowUpRight, Clock, CheckCircle2, DollarSign, Download, Filter, Plus, X, Percent, Building2, ChevronRight, AlertCircle } from "lucide-react"
+import { Wallet, ArrowUpRight, Clock, CheckCircle2, DollarSign, Download, Filter, Plus, X, Percent, Building2, ChevronRight, AlertCircle, Truck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import retailerService from "@/data/services/retailerService"
@@ -16,8 +16,10 @@ interface Payout {
 }
 
 import useRetailerStore from "@/data/store/useRetailerStore"
+import useAuthStore from "@/data/store/useAuthStore"
 
 export default function RetailerRevenuePage() {
+    const { user } = useAuthStore()
     const [mounted, setMounted] = useState(false)
     const {
         revenueData,
@@ -46,11 +48,15 @@ export default function RetailerRevenuePage() {
     const [payoutAmount, setPayoutAmount] = useState("")
     const [selectedBankId, setSelectedBankId] = useState("")
     const [submitting, setSubmitting] = useState(false)
+    const [deliveryIncome, setDeliveryIncome] = useState<number | null>(null)
 
     useEffect(() => {
         setMounted(true)
         fetchPayoutHistory(payoutPage)
         fetchBanks()
+        retailerService.getDeliveryIncome()
+            .then(res => { if (res.success) setDeliveryIncome(res.data.totalDeliveryIncome) })
+            .catch(() => {})
     }, [fetchPayoutHistory, fetchBanks, payoutPage])
 
     useEffect(() => {
@@ -164,7 +170,7 @@ export default function RetailerRevenuePage() {
             </div>
 
             {/* Top Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-6", user?.deliveryChargePermission ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
                 <div
                     onClick={() => {
                         setBreakdownTitle("Available for Payout - Detailed Breakdown")
@@ -217,6 +223,21 @@ export default function RetailerRevenuePage() {
                     )}
                     <p className="mt-2 text-xs font-bold text-text-muted uppercase">Net Lifetime: ₹{(revenueStats.totalEarnings || 0).toLocaleString()}</p>
                 </div>
+
+                {user?.deliveryChargePermission && deliveryIncome !== null && (
+                    <div className="bg-orange-50 rounded-[32px] p-8 border border-orange-200 shadow-sm flex flex-col justify-center">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Truck size={16} className="text-orange-500" />
+                            <p className="text-xs font-black text-orange-600 uppercase tracking-widest">Delivery Income</p>
+                        </div>
+                        {loadingStats ? (
+                            <div className="h-9 bg-orange-200/50 rounded animate-pulse w-32" />
+                        ) : (
+                            <h2 className="text-2xl md:text-3xl font-black text-orange-600 break-words">₹{deliveryIncome.toLocaleString()}</h2>
+                        )}
+                        <p className="mt-2 text-[10px] font-bold text-orange-500/80 uppercase">From Custom Slabs</p>
+                    </div>
+                )}
             </div>
 
             {/* Commission & Details Card */}
