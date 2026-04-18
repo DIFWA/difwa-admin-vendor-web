@@ -37,6 +37,7 @@ export default function StoreSettingsPage() {
     const [showExitModal, setShowExitModal] = useState(false)
 
     const [customSlot, setCustomSlot] = useState("")
+    const [hasDeliveryPermission, setHasDeliveryPermission] = useState(false)
     const defaultSlots = ["8-9 AM", "9-10 AM", "10-11 AM", "11 AM-12 PM", "4-5 PM", "5-6 PM", "6-7 PM"]
 
     // Delivery Charges state (only used if deliveryChargePermission is true)
@@ -50,7 +51,10 @@ export default function StoreSettingsPage() {
 
     useEffect(() => {
         if (user?._id) fetchProfile()
-        if (user?.deliveryChargePermission) {
+    }, [user])
+
+    useEffect(() => {
+        if (hasDeliveryPermission) {
             retailerService.getDeliveryCharges()
                 .then(res => {
                     if (res.success) {
@@ -61,7 +65,7 @@ export default function StoreSettingsPage() {
                 })
                 .catch(() => {})
         }
-    }, [user])
+    }, [hasDeliveryPermission])
 
     // Track Dirty State
     useEffect(() => {
@@ -150,6 +154,7 @@ export default function StoreSettingsPage() {
 
             setFormData(initialData)
             setOriginalData(initialData)
+            setHasDeliveryPermission(!!data.deliveryChargePermission)
         } catch (error) {
             console.error("Error fetching profile:", error)
         } finally {
@@ -478,7 +483,7 @@ export default function StoreSettingsPage() {
             </div>
 
             {/* ── Delivery Charges Section (only shown if admin granted permission) ── */}
-            {user?.deliveryChargePermission && (
+            {hasDeliveryPermission && (
                 <div className="bg-white rounded-[32px] border border-orange-100 shadow-xl p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="flex items-center gap-3 pb-4 border-b border-orange-100">
                         <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500">
