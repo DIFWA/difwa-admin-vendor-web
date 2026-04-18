@@ -328,12 +328,6 @@ export default function Topbar() {
                                     </div>
                                 )}
                             </div>
-
-                            <div className="p-3 border-t border-border-custom text-center bg-background-soft/20">
-                                <button className="text-[10px] font-black underline uppercase text-text-muted hover:text-primary transition-colors">
-                                    View All Activity
-                                </button>
-                            </div>
                         </div>
                     )}
                 </div>

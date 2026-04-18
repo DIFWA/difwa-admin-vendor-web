@@ -268,7 +268,18 @@ export default function AddProductPage() {
                                 <input
                                     type="number"
                                     value={formData.stock}
-                                    onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })}
+                                    onChange={e => {
+                                        const newStock = Number(e.target.value);
+                                        let newStatus: "In Stock" | "Out of Stock" | "Low Stock" = "In Stock";
+                                        if (newStock <= 0) newStatus = "Out of Stock";
+                                        else if (newStock < 10) newStatus = "Low Stock";
+                                        
+                                        setFormData({ 
+                                            ...formData, 
+                                            stock: newStock,
+                                            stockStatus: newStatus
+                                        });
+                                    }}
                                     placeholder="Enter quantity"
                                     className="w-full px-4 py-2.5 rounded-lg bg-background-soft border-transparent text-sm"
                                 />

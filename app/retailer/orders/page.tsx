@@ -75,11 +75,11 @@ function OrdersContent() {
     }, [fetchOrders, currentPage, statusFilter])
 
     useEffect(() => {
-        // ONLY capture stats when we are in the "All" view to get the true shop totals
-        if (storeStats && statusFilter === "All") {
+        // Capture stats whenever they update to keep the top cards accurate
+        if (storeStats) {
             setPersistedStats({ ...storeStats })
         }
-    }, [storeStats, statusFilter])
+    }, [storeStats])
 
     const fetchRiders = useCallback(async () => {
         try {
@@ -182,7 +182,6 @@ function OrdersContent() {
             const res = await retailerService.updateOrderStatus(orderId, nextStatus)
             if (res.success) {
                 toast.success(`Order marked as ${nextStatus}`)
-                fetchOrders(currentPage, null, true)
             }
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Failed to update status")
@@ -194,7 +193,6 @@ function OrdersContent() {
             const res = await retailerService.assignRider(orderId, riderId)
             if (res.success) {
                 toast.success("Rider assigned successfully")
-                fetchOrders(currentPage, null, true)
             }
         } catch (error) {
             console.error("Failed to assign rider", error)
