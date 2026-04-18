@@ -71,7 +71,7 @@ function RetailerProductsContent() {
         }
     }
 
-    if (loading || (products.length === 0 && mounted)) {
+    if (!mounted || loading) {
         return <div className="space-y-6 animate-pulse p-4">
             <div className="h-12 bg-background-soft rounded-xl w-1/4" />
             <div className="grid grid-cols-3 gap-6">
@@ -165,7 +165,7 @@ function RetailerProductsContent() {
                     </div>
                     <div>
                         <p className="text-sm font-semibold text-text-muted mt-1 uppercase tracking-tighter">Low Stock</p>
-                        <h3 className="text-2xl font-bold">{products.filter((p: any) => (p.stockStatus === "Low Stock" || p.stock < 10)).length}</h3>
+                        <h3 className="text-2xl font-bold">{products.filter((p: any) => p.stock < 10).length}</h3>
                     </div>
                 </div>
             </div>
@@ -245,8 +245,10 @@ function RetailerProductsContent() {
                                             <p className={cn(
                                                 "text-[9px] font-black uppercase",
                                                 p.stock <= 0 ? "text-red-600" :
-                                                (p.stockStatus === "In Stock" || p.stock >= 10) ? "text-emerald-500" : "text-orange-500"
-                                            )}>{p.stock <= 0 ? 'Out of Stock' : (p.stockStatus || (p.stock >= 10 ? 'In Stock' : 'Low Stock'))}</p>
+                                                p.stock < 10 ? "text-orange-500" : "text-emerald-500"
+                                            )}>
+                                                {p.stock <= 0 ? 'Out of Stock' : (p.stock < 10 ? 'Low Stock' : 'In Stock')}
+                                            </p>
                                         </td>
                                         <td className="px-6 py-4">
                                             <p className="font-black text-primary">₹{p.price}</p>

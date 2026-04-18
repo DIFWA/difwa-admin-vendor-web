@@ -185,18 +185,44 @@ export default function StoreSettingsPage() {
 
         toast.info("Fetching your location...")
         navigator.geolocation.getCurrentPosition(
-            (position) => {
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                
+                // Update coordinates immediately
                 setFormData(prev => ({
                     ...prev,
                     location: {
                         ...prev.location,
                         coordinates: {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude
+                            lat: latitude,
+                            lng: longitude
                         }
                     }
                 }))
-                toast.success("Location captured successfully!")
+
+                try {
+                    // Fetch address details
+                    const response = await retailerService.reverseGeocode(latitude, longitude);
+                    if (response.success && response.data) {
+                        const { address, city, pincode, state } = response.data;
+                        setFormData(prev => ({
+                            ...prev,
+                            location: {
+                                ...prev.location,
+                                address: address || prev.location.address,
+                                city: city || prev.location.city,
+                                pincode: pincode || prev.location.pincode,
+                                state: state || prev.location.state
+                            }
+                        }));
+                        toast.success("Location and address captured successfully!");
+                    } else {
+                        toast.success("Location captured, but address could not be fetched.");
+                    }
+                } catch (error) {
+                    console.error("Error reverse geocoding:", error);
+                    toast.success("Location captured! (Address autofill failed)");
+                }
             },
             (error) => {
                 console.error("Error getting location:", error)

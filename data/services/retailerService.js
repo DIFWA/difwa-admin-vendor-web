@@ -248,6 +248,11 @@ const retailerService = {
     getDeliveryIncome: async () => {
         const response = await apiClient.get("/delivery-charge/retailer-income");
         return response.data;
+    },
+
+    reverseGeocode: async (lat, lng) => {
+        const response = await apiClient.get("/retailer/reverse-geocode", { params: { lat, lng } });
+        return response.data;
     }
 };
 
