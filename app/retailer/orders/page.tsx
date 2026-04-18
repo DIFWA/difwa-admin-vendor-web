@@ -62,11 +62,24 @@ function OrdersContent() {
 
     const moreMenuRef = useRef<HTMLDivElement>(null)
     const [showMoreMenu, setShowMoreMenu] = useState(false)
+    const [persistedStats, setPersistedStats] = useState<any>({
+        totalOrders: 0,
+        pendingOrders: 0,
+        completedOrders: 0,
+        avgOrderValue: "0"
+    })
 
     useEffect(() => {
         setMounted(true)
-        fetchOrders(currentPage)
-    }, [fetchOrders, currentPage])
+        fetchOrders(currentPage, null, false, statusFilter)
+    }, [fetchOrders, currentPage, statusFilter])
+
+    useEffect(() => {
+        // ONLY capture stats when we are in the "All" view to get the true shop totals
+        if (storeStats && statusFilter === "All") {
+            setPersistedStats({ ...storeStats })
+        }
+    }, [storeStats, statusFilter])
 
     const fetchRiders = useCallback(async () => {
         try {
@@ -125,7 +138,7 @@ function OrdersContent() {
 
 
 
-    if (!mounted || (loading && orders.length === 0)) {
+    if (!mounted) {
         return <div className="space-y-6 animate-pulse p-4">
             <div className="h-12 bg-background-soft rounded-xl w-1/4" />
             <div className="grid grid-cols-4 gap-6">
@@ -135,18 +148,18 @@ function OrdersContent() {
         </div>
     }
 
-    const orderStats = storeStats || {
-        totalOrders: orders.length,
-        pendingOrders: orders.filter((o: any) => ['Pending', 'Accepted', 'Processing', 'Preparing', 'Shipped', 'Out for Delivery', 'Rider Assigned', 'Rider Accepted'].includes(o.status)).length,
-        completedOrders: orders.filter((o: any) => ['Delivered', 'Completed'].includes(o.status)).length,
+    const orderStats = persistedStats || storeStats || {
+        totalOrders: 0,
+        pendingOrders: 0,
+        completedOrders: 0,
         avgOrderValue: "0"
     }
 
     const statCards = [
-        { title: "Total Shop Orders", value: (orderStats.totalOrders || 0).toLocaleString(), color: "bg-primary-light text-primary", filterValue: "All" },
-        { title: "Pending Orders", value: (orderStats.pendingOrders || 0).toLocaleString(), color: "bg-warning-50 text-warning", filterValue: "Pending" },
-        { title: "Completed", value: (orderStats.completedOrders || 0).toLocaleString(), color: "bg-blue-50 text-blue-600", filterValue: "Completed" },
-        { title: "Avg. Order Value", value: `₹${orderStats.avgOrderValue || 0}`, color: "bg-blue-50 text-blue-600", filterValue: null },
+        { title: "Total Shop Orders", value: (persistedStats?.totalOrders || storeStats?.totalOrders || 0).toLocaleString(), color: "bg-primary-light text-primary", filterValue: "All" },
+        { title: "Pending Orders", value: (persistedStats?.pendingOrders || storeStats?.pendingOrders || 0).toLocaleString(), color: "bg-warning-50 text-warning", filterValue: "Pending" },
+        { title: "Completed", value: (persistedStats?.completedOrders || storeStats?.completedOrders || 0).toLocaleString(), color: "bg-blue-50 text-blue-600", filterValue: "Completed" },
+        { title: "Avg. Order Value", value: `₹${persistedStats?.avgOrderValue || storeStats?.avgOrderValue || 0}`, color: "bg-blue-50 text-blue-600", filterValue: null },
     ]
 
     const filteredOrders = orders.filter((order: any) => {
@@ -238,7 +251,15 @@ function OrdersContent() {
                 {statCards.map((stat, index) => (
                     <div
                         key={index}
-                        onClick={() => stat.filterValue && setStatusFilter(stat.filterValue as any)}
+                        onClick={() => {
+                            if (stat.filterValue) {
+                                setStatusFilter(stat.filterValue as any);
+                                // Only force fetch if we don't have the data or it's a specific status
+                                if (stat.filterValue !== "All" || !persistedStats) {
+                                    fetchOrders(1, null, true, stat.filterValue as any);
+                                }
+                            }
+                        }}
                         className={cn(
                             "bg-white p-6 rounded-2xl border transition-all duration-200 cursor-pointer hover:shadow-md",
                             statusFilter === stat.filterValue ? "border-primary ring-1 ring-primary" : "border-border-custom"
@@ -295,8 +316,14 @@ function OrdersContent() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border-custom text-sm">
-                            {filteredOrders.length === 0 ? (
-                                <tr><td colSpan={9} className="px-6 py-12 text-center text-text-muted">No orders found</td></tr>
+                            {loading ? (
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <tr key={`skeleton-${i}`} className="animate-pulse">
+                                        <td colSpan={10} className="px-6 py-6"><div className="h-4 bg-background-soft rounded w-full" /></td>
+                                    </tr>
+                                ))
+                            ) : filteredOrders.length === 0 ? (
+                                <tr><td colSpan={10} className="px-6 py-12 text-center text-text-muted">No orders found</td></tr>
                             ) : (
                                 filteredOrders.map((order: any) => (
                                     <tr key={order.id} className="hover:bg-background-soft/50 transition-colors cursor-pointer group" onClick={() => setViewingOrder(order)}>
@@ -396,28 +423,57 @@ function OrdersContent() {
                         </p>
                         <div className="flex items-center gap-2">
                             <button
-                                onClick={() => fetchOrders(currentPage - 1)}
+                                onClick={() => fetchOrders(currentPage - 1, null, true, statusFilter)}
                                 disabled={currentPage <= 1}
                                 className="p-2 rounded-xl border border-border-custom hover:bg-background-soft disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
                                 <ChevronRight className="w-5 h-5 rotate-180" />
                             </button>
-                            {[...Array(totalPages)].map((_, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => fetchOrders(i + 1)}
-                                    className={cn(
-                                        "w-9 h-9 rounded-xl text-xs font-black transition-all",
-                                        currentPage === i + 1
-                                            ? "bg-primary text-white shadow-lg shadow-primary/30"
-                                            : "hover:bg-background-soft text-text-muted"
-                                    )}
-                                >
-                                    {i + 1}
-                                </button>
-                            ))}
+                            
+                            {/* Smart Pagination */}
+                            {(() => {
+                                const pages = [];
+                                const maxVisible = 5;
+                                
+                                if (totalPages <= maxVisible) {
+                                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                                } else {
+                                    pages.push(1);
+                                    if (currentPage > 3) pages.push('...');
+                                    
+                                    const start = Math.max(2, currentPage - 1);
+                                    const end = Math.min(totalPages - 1, currentPage + 1);
+                                    
+                                    for (let i = start; i <= end; i++) {
+                                        if (!pages.includes(i)) pages.push(i);
+                                    }
+                                    
+                                    if (currentPage < totalPages - 2) pages.push('...');
+                                    if (!pages.includes(totalPages)) pages.push(totalPages);
+                                }
+                                
+                                return pages.map((p, i) => (
+                                    p === '...' ? (
+                                        <span key={`sep-${i}`} className="px-2 text-text-muted font-bold">...</span>
+                                    ) : (
+                                        <button
+                                            key={p}
+                                            onClick={() => fetchOrders(Number(p), null, true, statusFilter)}
+                                            className={cn(
+                                                "w-9 h-9 rounded-xl text-xs font-black transition-all",
+                                                currentPage === p
+                                                    ? "bg-primary text-white shadow-lg shadow-primary/30"
+                                                    : "hover:bg-background-soft text-text-muted"
+                                            )}
+                                        >
+                                            {p}
+                                        </button>
+                                    )
+                                ));
+                            })()}
+
                             <button
-                                onClick={() => fetchOrders(currentPage + 1)}
+                                onClick={() => fetchOrders(currentPage + 1, null, true, statusFilter)}
                                 disabled={currentPage >= totalPages}
                                 className="p-2 rounded-xl border border-border-custom hover:bg-background-soft disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >

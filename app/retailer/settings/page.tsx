@@ -63,7 +63,7 @@ export default function StoreSettingsPage() {
                         setRetailerMaxDeliveryKm(res.data.retailerMaxDeliveryKm || res.data.maxDeliveryKm || 30)
                     }
                 })
-                .catch(() => {})
+                .catch(() => { })
         }
     }, [hasDeliveryPermission])
 
@@ -182,7 +182,7 @@ export default function StoreSettingsPage() {
             toast.error("Geolocation is not supported by your browser")
             return
         }
-        
+
         toast.info("Fetching your location...")
         navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -353,7 +353,7 @@ export default function StoreSettingsPage() {
                                     />
                                 </div>
                             </div>
-                            
+
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold">Store Location (GPS)</label>
                                 <div className="flex items-center gap-4">
@@ -676,7 +676,7 @@ export default function StoreSettingsPage() {
                         </div>
                     </div>
                 </div>
-                )}  
+            )}
         </div>
     )
 }
