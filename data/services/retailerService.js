@@ -232,6 +232,22 @@ const retailerService = {
     setDefaultBank: async (id) => {
         const response = await apiClient.patch(`${API_ENDPOINTS.RETAILER.BANKS}/${id}/default`);
         return response.data;
+    },
+
+    // Delivery Charges (only for permitted retailers)
+    getDeliveryCharges: async () => {
+        const response = await apiClient.get("/delivery-charge/retailer-charges");
+        return response.data;
+    },
+
+    updateDeliveryCharges: async (slabs, retailerMaxDeliveryKm) => {
+        const response = await apiClient.put("/delivery-charge/retailer-charges", { slabs, retailerMaxDeliveryKm });
+        return response.data;
+    },
+
+    getDeliveryIncome: async () => {
+        const response = await apiClient.get("/delivery-charge/retailer-income");
+        return response.data;
     }
 };
 

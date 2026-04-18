@@ -15,7 +15,8 @@ import {
     X,
     Clock,
     UserPlus,
-    CheckCircle
+    CheckCircle,
+    Truck
 } from "lucide-react"
 import {
     AreaChart,
@@ -30,11 +31,15 @@ import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import useRetailerStore from "@/data/store/useRetailerStore"
+import useAuthStore from "@/data/store/useAuthStore"
+import retailerService from "@/data/services/retailerService"
 import { toast } from "sonner"
 
 export default function RetailerDashboard() {
     const [mounted, setMounted] = useState(false)
     const [portalRoot, setPortalRoot] = useState<Element | null>(null)
+    const [deliveryIncome, setDeliveryIncome] = useState<number | null>(null)
+    const { user } = useAuthStore()
 
     useEffect(() => {
         setPortalRoot(document.body)
@@ -54,6 +59,10 @@ export default function RetailerDashboard() {
     useEffect(() => {
         setMounted(true)
         fetchDashboardStats()
+        // Fetch delivery income
+        retailerService.getDeliveryIncome()
+            .then(res => { if (res.success) setDeliveryIncome(res.data.totalDeliveryIncome) })
+            .catch(() => {})
     }, [fetchDashboardStats])
 
     const handleToggle = async () => {
@@ -103,6 +112,9 @@ export default function RetailerDashboard() {
         { title: "My Orders", value: statsData?.stats?.totalOrders?.toLocaleString() || 0, change: "", trend: "up", icon: ShoppingCart, color: "bg-blue-50 text-blue-600", href: "/retailer/orders" },
         { title: "Active Products", value: statsData?.stats?.activeProducts?.toLocaleString() || 0, change: "", trend: "neutral", icon: Package, color: "bg-blue-50 text-blue-600", href: "/retailer/products" },
         { title: "My Customers", value: statsData?.stats?.totalCustomers?.toLocaleString() || 0, change: "", trend: "up", icon: Users, color: "bg-purple-50 text-purple-600", href: "/retailer/customers" },
+        ...(deliveryIncome !== null
+            ? [{ title: "Delivery Income", value: `₹${deliveryIncome.toLocaleString()}`, change: "", trend: "up", icon: Truck, color: "bg-orange-50 text-orange-600", href: "/retailer/settings" }]
+            : [])
     ]
 
     // Time Formatter for Activity Feed

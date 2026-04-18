@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, User, UserCheck, UserX, Clock, X, CheckSquare, AlertCircle, Building, FileText, Shield } from "lucide-react"
+import { Search, User, UserCheck, UserX, Clock, X, CheckSquare, AlertCircle, Building, FileText, Shield, Truck, ToggleLeft, ToggleRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import adminService from "@/data/services/adminService"
 import useAuthStore from "@/data/store/useAuthStore"
@@ -14,6 +14,7 @@ interface Retailer {
     whatsappNumber?: string;
     status: string;
     rejectionReason?: string;
+    deliveryChargePermission?: boolean;
     businessDetails?: {
         businessName?: string;
         businessType?: string;
@@ -39,9 +40,9 @@ import useAdminStore from "@/data/store/useAdminStore"
 export default function RetailersPage() {
     const [mounted, setMounted] = useState(false)
     const { user } = useAuthStore()
-    const { 
-        retailersData, 
-        loadingRetailers: loading, 
+    const {
+        retailersData,
+        loadingRetailers: loading,
         fetchRetailers,
         retailersSearchQuery: searchTerm,
         setRetailersSearchQuery: setSearchTerm,
@@ -60,6 +61,7 @@ export default function RetailersPage() {
     const [selectedRetailer, setSelectedRetailer] = useState<Retailer | null>(null)
     const [rejectionReason, setRejectionReason] = useState("")
     const [actionLoading, setActionLoading] = useState(false)
+    const [permissionLoading, setPermissionLoading] = useState(false)
     const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null)
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
 
@@ -108,6 +110,24 @@ export default function RetailersPage() {
             showToast(msg || "Action failed")
         } finally {
             setActionLoading(false)
+        }
+    }
+
+    const handleToggleDeliveryPermission = async () => {
+        if (!selectedRetailer) return
+        setPermissionLoading(true)
+        try {
+            const res = await adminService.toggleRetailerDeliveryPermission(selectedRetailer._id)
+            setSelectedRetailer(prev => prev ? { ...prev, deliveryChargePermission: res.deliveryChargePermission } : null)
+            showToast(res.message, "success")
+            fetchRetailers(filter, currentPage, limit, searchTerm, true)
+        } catch (error: unknown) {
+            const msg = error && typeof error === 'object' && 'response' in error
+                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+                : undefined
+            showToast(msg || "Failed to update permission")
+        } finally {
+            setPermissionLoading(false)
         }
     }
 
@@ -459,6 +479,35 @@ export default function RetailersPage() {
                                 <div className="p-6 rounded-2xl bg-blue-50 border border-blue-100 italic text-xs text-blue-800 leading-relaxed">
                                     &quot;Approving will grant the retailer immediate access to their dashboard and all selling features. They will receive an automated email notification.&quot;
                                 </div>
+
+                                {/* Delivery Charge Permission — only for approved retailers */}
+                                {selectedRetailer.status === "approved" && (
+                                    <section>
+                                        <h3 className="font-bold text-[#FF6B00] text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+                                            <Truck size={14} /> Delivery Charge Permission
+                                        </h3>
+                                        <div className="bg-gray-50 rounded-2xl p-5 flex items-center justify-between gap-4">
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-bold">Allow Custom Pricing</p>
+                                                <p className="text-xs text-gray-400 max-w-[200px]">
+                                                    {selectedRetailer.deliveryChargePermission
+                                                        ? "Retailer sets their own delivery charges. Income goes to them."
+                                                        : "Platform controls delivery charges. Income goes to Difwa-Vendor."}
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={handleToggleDeliveryPermission}
+                                                disabled={permissionLoading}
+                                                className="flex items-center gap-2 disabled:opacity-60 transition-all"
+                                                title={selectedRetailer.deliveryChargePermission ? "Revoke permission" : "Grant permission"}
+                                            >
+                                                {selectedRetailer.deliveryChargePermission
+                                                    ? <ToggleRight size={44} className="text-blue-600" />
+                                                    : <ToggleLeft size={44} className="text-gray-400" />}
+                                            </button>
+                                        </div>
+                                    </section>
+                                )}
 
                                 {canApprove && (
                                     <div className="pt-4 flex justify-end">

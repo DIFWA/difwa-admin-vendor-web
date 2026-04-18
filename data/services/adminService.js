@@ -214,8 +214,18 @@ const adminService = {
         return response.data;
     },
 
-    updateDeliveryChargeSettings: async (slabs, maxDeliveryKm, note = "") => {
-        const response = await apiClient.put("/delivery-charge/settings", { slabs, maxDeliveryKm, note });
+    updateDeliveryChargeSettings: async (slabs, maxDeliveryKm, note = "", retailerSlabOptions) => {
+        const response = await apiClient.put("/delivery-charge/settings", { slabs, maxDeliveryKm, note, retailerSlabOptions });
+        return response.data;
+    },
+
+    updateRetailerSlabOptions: async (retailerSlabOptions) => {
+        const response = await apiClient.put("/delivery-charge/retailer-slab-options", { retailerSlabOptions });
+        return response.data;
+    },
+
+    toggleRetailerDeliveryPermission: async (retailerId) => {
+        const response = await apiClient.patch(`/delivery-charge/retailer-permission/${retailerId}`);
         return response.data;
     },
 
