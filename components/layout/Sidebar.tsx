@@ -145,7 +145,7 @@ export default function Sidebar() {
                     <img
                         src="/waterlogo.png"
                         alt="Difwa Logo"
-                        className="w-10 h-10 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.3)] shrink-0"
+                        className="w-10 h-10 object-contain shrink-0 rounded-2xl"
                     />
                     <span className={cn(
                         "font-bold text-xl text-blue-500 tracking-tight transition-all duration-300 overflow-hidden",

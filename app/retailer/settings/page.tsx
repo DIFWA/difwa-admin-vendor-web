@@ -187,7 +187,7 @@ export default function StoreSettingsPage() {
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 const { latitude, longitude } = position.coords;
-                
+
                 // Update coordinates immediately
                 setFormData(prev => ({
                     ...prev,
@@ -404,7 +404,7 @@ export default function StoreSettingsPage() {
                     {/* Delivery Time Slots */}
                     <section className="bg-white p-6 rounded-2xl space-y-6">
                         <div className="flex items-center gap-2 mb-2">
-                            <div className="p-2 rounded-lg bg-orange-50 text-orange-600">
+                            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
                                 <Clock size={20} />
                             </div>
                             <h3 className="text-lg font-bold">Delivery Time Slots</h3>
@@ -427,7 +427,7 @@ export default function StoreSettingsPage() {
                                 </div>
                             ))}
                             {formData.deliverySlots.length === 0 && (
-                                <p className="text-xs text-orange-600 font-medium italic">Please add at least one slot for customers to order.</p>
+                                <p className="text-xs text-blue-600 font-medium italic">Please add at least one slot for customers to order.</p>
                             )}
                         </div>
 
@@ -510,37 +510,37 @@ export default function StoreSettingsPage() {
 
             {/* ── Delivery Charges Section (only shown if admin granted permission) ── */}
             {hasDeliveryPermission && (
-                <div className="bg-white rounded-[32px] border border-orange-100 shadow-xl p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="flex items-center gap-3 pb-4 border-b border-orange-100">
-                        <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500">
+                <div className="bg-white rounded-[32px] border border-blue-100 shadow-xl p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex items-center gap-3 pb-4 border-b border-blue-100">
+                        <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500">
                             <Truck size={24} />
                         </div>
                         <div>
-                            <h3 className="font-black text-orange-500 uppercase tracking-tight text-lg">My Delivery Charges</h3>
+                            <h3 className="font-black text-blue-500 uppercase tracking-tight text-lg">My Delivery Charges</h3>
                             <p className="text-xs font-bold text-text-muted uppercase tracking-widest">Set your own distance-based pricing. You keep the delivery income.</p>
                         </div>
                     </div>
 
                     {/* Max Delivery Distance Setup */}
-                    <div className="bg-orange-50/50 border border-orange-100 rounded-2xl p-5 flex items-center justify-between">
+                    <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-5 flex items-center justify-between">
                         <div>
-                            <h4 className="text-sm font-black text-orange-600 uppercase tracking-widest">Maximum Delivery Distance</h4>
+                            <h4 className="text-sm font-black text-blue-600 uppercase tracking-widest">Maximum Delivery Distance</h4>
                             <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Orders beyond this distance will not be accepted.</p>
                         </div>
                         <div className="flex items-center gap-2">
                             <input
                                 type="number" min="0" step="0.5" value={retailerMaxDeliveryKm}
                                 onChange={e => setRetailerMaxDeliveryKm(parseFloat(e.target.value) || 0)}
-                                className="w-24 px-3 py-2 rounded-xl bg-white border border-orange-200 outline-none text-sm font-bold focus:border-orange-400 transition-colors text-center"
+                                className="w-24 px-3 py-2 rounded-xl bg-white border border-blue-200 outline-none text-sm font-bold focus:border-blue-400 transition-colors text-center"
                             />
-                            <span className="text-xs font-bold text-orange-500 uppercase">km</span>
+                            <span className="text-xs font-bold text-blue-500 uppercase">km</span>
                         </div>
                     </div>
 
                     {/* Slabs editor */}
                     <div className="space-y-3">
                         {deliverySlabs.length === 0 && (
-                            <div className="text-center py-6 text-text-muted text-sm font-bold bg-orange-50/50 rounded-2xl border border-orange-100">
+                            <div className="text-center py-6 text-text-muted text-sm font-bold bg-blue-50/50 rounded-2xl border border-blue-100">
                                 No delivery slabs set. Add a slab below.
                             </div>
                         )}
@@ -549,7 +549,7 @@ export default function StoreSettingsPage() {
                             const selectValue = isPreset ? `${slab.minKm}-${slab.maxKm}` : "custom";
 
                             return (
-                                <div key={index} className="grid gap-3 p-4 rounded-2xl bg-orange-50/50 border border-orange-100 relative">
+                                <div key={index} className="grid gap-3 p-4 rounded-2xl bg-blue-50/50 border border-blue-100 relative">
                                     <button
                                         onClick={() => setDeliverySlabs(prev => prev.filter((_, i) => i !== index))}
                                         className="absolute right-3 top-3 p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
@@ -572,7 +572,7 @@ export default function StoreSettingsPage() {
                                                         setDeliverySlabs(prev => prev.map((s, i) => i === index ? { ...s, maxKm: s.maxKm + 0.1 } : s));
                                                     }
                                                 }}
-                                                className="w-full px-3 py-2 rounded-xl bg-white border border-orange-100 outline-none text-sm font-bold focus:border-orange-400 transition-colors appearance-none"
+                                                className="w-full px-3 py-2 rounded-xl bg-white border border-blue-100 outline-none text-sm font-bold focus:border-blue-400 transition-colors appearance-none"
                                             >
                                                 <option value="" disabled>Select a distance range</option>
                                                 {availableSlabOptions.map((opt, i) => (
@@ -589,20 +589,20 @@ export default function StoreSettingsPage() {
                                             <input
                                                 type="number" min="0" step="1" value={slab.charge}
                                                 onChange={e => setDeliverySlabs(prev => prev.map((s, i) => i === index ? { ...s, charge: parseFloat(e.target.value) || 0 } : s))}
-                                                className="w-full px-3 py-2 rounded-xl bg-white border border-orange-100 outline-none text-sm font-bold focus:border-orange-400 transition-colors"
+                                                className="w-full px-3 py-2 rounded-xl bg-white border border-blue-100 outline-none text-sm font-bold focus:border-blue-400 transition-colors"
                                                 placeholder="e.g. 50"
                                             />
                                         </div>
                                     </div>
 
                                     {!isPreset && (
-                                        <div className="grid grid-cols-2 gap-4 mt-1 border-t border-orange-100/50 pt-3">
+                                        <div className="grid grid-cols-2 gap-4 mt-1 border-t border-blue-100/50 pt-3">
                                             <div className="space-y-1">
                                                 <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">From (km)</label>
                                                 <input
                                                     type="number" min="0" step="0.5" value={slab.minKm}
                                                     onChange={e => setDeliverySlabs(prev => prev.map((s, i) => i === index ? { ...s, minKm: parseFloat(e.target.value) || 0 } : s))}
-                                                    className="w-full px-3 py-2 rounded-xl bg-white border border-orange-100 outline-none text-sm font-bold focus:border-orange-400 transition-colors"
+                                                    className="w-full px-3 py-2 rounded-xl bg-white border border-blue-100 outline-none text-sm font-bold focus:border-blue-400 transition-colors"
                                                 />
                                             </div>
                                             <div className="space-y-1">
@@ -610,7 +610,7 @@ export default function StoreSettingsPage() {
                                                 <input
                                                     type="number" min="0" step="0.5" value={slab.maxKm}
                                                     onChange={e => setDeliverySlabs(prev => prev.map((s, i) => i === index ? { ...s, maxKm: parseFloat(e.target.value) || 0 } : s))}
-                                                    className="w-full px-3 py-2 rounded-xl bg-white border border-orange-100 outline-none text-sm font-bold focus:border-orange-400 transition-colors"
+                                                    className="w-full px-3 py-2 rounded-xl bg-white border border-blue-100 outline-none text-sm font-bold focus:border-blue-400 transition-colors"
                                                 />
                                             </div>
                                         </div>
@@ -625,7 +625,7 @@ export default function StoreSettingsPage() {
                             const last = deliverySlabs[deliverySlabs.length - 1]
                             setDeliverySlabs(prev => [...prev, { minKm: last?.maxKm || 0, maxKm: (last?.maxKm || 0) + 5, charge: 0 }])
                         }}
-                        className="w-full py-3 border-2 border-dashed border-orange-300 rounded-2xl text-orange-500 font-bold text-sm hover:border-orange-400 hover:bg-orange-50 transition-all flex items-center justify-center gap-2"
+                        className="w-full py-3 border-2 border-dashed border-blue-300 rounded-2xl text-blue-500 font-bold text-sm hover:border-blue-400 hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
                     >
                         <Plus size={16} /> Add Another Slab
                     </button>
@@ -654,7 +654,7 @@ export default function StoreSettingsPage() {
                             }
                         }}
                         disabled={savingDelivery}
-                        className="w-full py-4 bg-orange-500 text-white rounded-3xl font-black uppercase tracking-widest text-sm hover:bg-orange-600 transition-all shadow-lg shadow-orange-200 flex items-center justify-center gap-3 disabled:opacity-50"
+                        className="w-full py-4 bg-blue-500 text-white rounded-3xl font-black uppercase tracking-widest text-sm hover:bg-blue-600 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-3 disabled:opacity-50"
                     >
                         <Save size={18} />
                         {savingDelivery ? "Saving..." : "Save My Delivery Charges"}

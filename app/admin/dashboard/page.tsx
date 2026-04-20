@@ -216,7 +216,7 @@ export default function Dashboard() {
                                 <Area
                                     type="monotone"
                                     dataKey="orders"
-                                    stroke="#0096FF"
+                                    stroke="#2B7FFF"
                                     strokeWidth={3}
                                     fillOpacity={1}
                                     fill="url(#colorOrders)"

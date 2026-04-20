@@ -67,9 +67,8 @@ export default function RegisterPage() {
                                 <img
                                     src="/waterlogo.png"
                                     alt="Difwa Logo"
-                                    className="w-12 h-12 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.3)]"
+                                    className="w-12 h-12 object-contain rounded-2xl"
                                 />
-                                <div className="absolute top-1 right-0 w-2 h-2 rounded-full bg-[#FF6B00]"></div>
                             </div>
                             <span className="text-3xl font-extrabold text-white tracking-tighter">Difwa</span>
                         </div>
@@ -83,8 +82,8 @@ export default function RegisterPage() {
                             <div className="space-y-1">
                                 <h1 className="text-[72px] font-extrabold text-[#FDFCFB] leading-[1.05] tracking-tight">
                                     Thrive Your <br />
-                                    Business <span className="text-[#0096FF]"> with </span> <br />
-                                    <span className="text-[#0096FF]">Difwa</span>
+                                    Business <span className="text-[#3B82F6]"> with </span> <br />
+                                    <span className="text-[#3B82F6]">Difwa</span>
                                 </h1>
                             </div>
 
@@ -97,14 +96,14 @@ export default function RegisterPage() {
 
                 {/* Right Side - Registration Card */}
                 <div className="flex w-full lg:w-1/2 items-center justify-center p-6">
-                    <div className="w-full max-w-md bg-[#c8b8a6]/40 backdrop-blur-xl rounded-[40px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.45)] border border-white/10 p-10 relative">
+                    <div className="w-full max-w-md backdrop-blur-xl rounded-[40px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.45)] border border-white/10 p-10 relative">
                         <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/30 blur-[60px] rounded-full pointer-events-none" />
                         <div className="absolute inset-0 shadow-[inset_0_0_40px_rgba(0,0,0,0.05)] rounded-[40px] pointer-events-none" />
 
                         <div className="w-full max-w-sm space-y-10 relative z-10">
                             <div className="text-center">
-                                <h2 className="text-4xl font-bold text-[#1f2a1f] mb-2">Join Difwa</h2>
-                                <p className="text-sm text-gray-800">Create your owner account to get started</p>
+                                <h2 className="text-4xl font-bold text-[#0E134C] mb-2">Join Difwa</h2>
+                                <p className="text-sm text[#1D1E26] font-semibold">Create your owner account to get started</p>
                             </div>
 
                             {error && (
@@ -117,22 +116,22 @@ export default function RegisterPage() {
                                 <div className="space-y-4">
                                     {/* Name Input */}
                                     <div className="space-y-2">
-                                        <label className="text-sm font-black text-[#1A1A1A] ml-1">Full Name</label>
+                                        <label className="text-sm font-black text-[#0E134C] ml-1">Full Name</label>
                                         <input
                                             name="name"
                                             required
                                             value={formData.name}
                                             onChange={handleChange}
                                             placeholder="John Doe"
-                                            className="w-full pl-6 pr-5 py-[16px] rounded-2xl bg-[#F0F2F4] border-transparent focus:bg-white focus:ring-2 focus:ring-[#FF6B00]/10 transition-all outline-none text-sm font-bold text-[#1A1A1A]"
+                                            className="w-full pl-6 pr-5 py-[16px] rounded-2xl bg-[#F0F2F4] border-transparent focus:bg-white focus:ring-2 focus:ring-[#D5D6D8]/10 transition-all outline-none text-sm font-bold text-[#1A1A1A]"
                                         />
                                     </div>
 
                                     {/* Email Input */}
                                     <div className="space-y-2">
-                                        <label className="text-sm font-black text-[#1A1A1A] ml-1">Email address</label>
+                                        <label className="text-sm font-black text-[#0E134C] ml-1">Email address</label>
                                         <div className="relative group">
-                                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[#A0A0A0] group-focus-within:text-[#FF6B00] transition-colors">
+                                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[#A0A0A0] group-focus-within:text-[#D5D6D8] transition-colors">
                                                 <Mail size={18} className="stroke-[2.5]" />
                                             </div>
                                             <input
@@ -149,9 +148,9 @@ export default function RegisterPage() {
 
                                     {/* Phone Input */}
                                     <div className="space-y-2">
-                                        <label className="text-sm font-black text-[#1A1A1A] ml-1">Phone Number</label>
+                                        <label className="text-sm font-black text-[#0E134C] ml-1">Phone Number</label>
                                         <div className="relative group">
-                                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[#A0A0A0] group-focus-within:text-[#FF6B00] transition-colors">
+                                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[#A0A0A0] group-focus-within:text-[#D5D6D8] transition-colors">
                                                 <Phone size={18} className="stroke-[2.5]" />
                                             </div>
                                             <input
@@ -168,9 +167,9 @@ export default function RegisterPage() {
 
                                     {/* Password Input */}
                                     <div className="space-y-2">
-                                        <label className="text-sm font-black text-[#1A1A1A] ml-1">Password</label>
+                                        <label className="text-sm font-black text-[#0E134C] ml-1">Password</label>
                                         <div className="relative group">
-                                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[#A0A0A0] group-focus-within:text-[#FF6B00] transition-colors">
+                                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[#A0A0A0] group-focus-within:text-[#D5D6D8] transition-colors">
                                                 <Lock size={18} className="stroke-[2.5]" />
                                             </div>
                                             <input
@@ -197,7 +196,7 @@ export default function RegisterPage() {
                                     type="submit"
                                     disabled={loading}
                                     className={cn(
-                                        "w-full mt-4 py-4 rounded-2xl font-bold text-white text-lg bg-gradient-to-br from-[#007BFF] via-[#339CFF] to-[#0056D2] shadow-[0_12px_24px_-8px_rgba(255,107,0,0.5)] hover:shadow-[0_15px_30px_-5px_rgba(255,107,0,0.6)] hover:scale-[1.01] transition-all duration-300 flex items-center justify-center gap-2 group",
+                                        "w-full mt-4 py-4 rounded-2xl font-bold text-white text-lg bg-gradient-to-br from-[#007BFF] via-[#3B82F6] to-[#1D49C9] transition-all duration-300 flex items-center justify-center gap-2 group",
                                         loading && "opacity-70 cursor-not-allowed"
                                     )}
                                 >
@@ -212,8 +211,8 @@ export default function RegisterPage() {
                                 </button>
                             </form>
 
-                            <p className="text-center text-sm text-[#868889] font-bold pt-4 tracking-tight">
-                                Already have an account? <Link href="/login" className="text-[#0096FF] font-black hover:text-[#5BA819] transition-colors">Login here</Link>
+                            <p className="text-center text-sm text-[#1A1A1A] font-bold pt-4 tracking-tight">
+                                Already have an account? <Link href="/login" className="text-[#0560D8] font-black hover:text-[#183866] transition-colors">Login here</Link>
                             </p>
 
                         </div>

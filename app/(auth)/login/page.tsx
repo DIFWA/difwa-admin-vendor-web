@@ -79,7 +79,6 @@ export default function LoginPage() {
                                     alt="Difwa Logo"
                                     className="w-10 h-10 object-contain rounded-2xl"
                                 />
-                                <div className="absolute top-1 right-0 w-2 h-2 rounded-full bg-[#FF6B00]"></div>
                             </div>
                             <span className="text-3xl font-extrabold text-white tracking-tighter">Difwa</span>
                         </div>
@@ -131,7 +130,6 @@ export default function LoginPage() {
                         <div className="w-full max-w-sm space-y-4 relative z-10">
                             {/* Mobile Logo Visibility */}
                             <div className="lg:hidden flex items-center justify-center gap-2 mb-8">
-                                <span className="text-4xl font-black text-[#0096FF]">S</span>
                                 <span className="text-2xl font-bold text-[#1A1A1A] tracking-tight">Difwa</span>
                             </div>
 
@@ -140,11 +138,11 @@ export default function LoginPage() {
                                     <img
                                         src="/waterlogo.png"
                                         alt="Difwa Logo"
-                                        className="w-12 h-12 object-contain rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.3)]"
+                                        className="w-12 h-12 object-contain rounded-[16px] "
                                     />
                                 </div>
-                                <h2 className="text-4xl font-bold text-white mb-2">Login Portal</h2>
-                                <p className="text-sm text-white/60 mb-8">Sign in to access dashboard</p>
+                                <h2 className="text-4xl font-bold text-[#0E134C] mb-2">Login Portal</h2>
+                                <br />
                             </div>
 
                             {error && (
@@ -157,10 +155,10 @@ export default function LoginPage() {
                                 <div className="space-y-6">
                                     <div className="space-y-2.5">
                                         <div className="flex items-center justify-between">
-                                            <label className="text-sm font-black text-[#1A1A1A] ml-1">Email address</label>
+                                            <label className="text-sm font-black text-[#0E134C] ml-1">Email address</label>
                                         </div>
                                         <div className="relative group">
-                                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[#A0A0A0] group-focus-within:text-[#FF6B00] transition-colors">
+                                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[#A0A0A0] group-focus-within:text-[#D5D6D8] transition-colors">
                                                 <Mail size={18} className="stroke-[2.5]" />
                                             </div>
                                             <input
@@ -177,11 +175,11 @@ export default function LoginPage() {
 
                                     <div className="space-y-2.5">
                                         <div className="flex items-center justify-between ml-1">
-                                            <label className="text-sm font-black text-[#1A1A1A] ml-1">Password</label>
-                                            <Link href="/forgot-password" className="text-xs font-black text-[#9BE15D] hover:text-[#7ED957] transition-colors">Forgot password?</Link>
+                                            <label className="text-sm font-black text-[#0E134C] ml-1">Password</label>
+                                            <Link href="/forgot-password" className="text-xs font-black text-[#1F416F] hover:text-[#1F419F] transition-colors">Forgot password?</Link>
                                         </div>
                                         <div className="relative group">
-                                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[#A0A0A0] group-focus-within:text-[#FF6B00] transition-colors">
+                                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[#A0A0A0] group-focus-within:text-[#D5D6D8] transition-colors">
                                                 <Lock size={18} className="stroke-[2.5]" />
                                             </div>
                                             <input
@@ -206,7 +204,7 @@ export default function LoginPage() {
                                 </div>
 
                                 <div className="flex items-center gap-3 ml-1 select-none">
-                                    <input id="rem" type="checkbox" className="w-5 h-5 rounded border-[#D1D1D1] accent-[#FF6B00] cursor-pointer" suppressHydrationWarning={true} />
+                                    <input id="rem" type="checkbox" className="w-5 h-5 rounded border-[#D1D1D1] accent-[#6E7C88] cursor-pointer" suppressHydrationWarning={true} />
                                     <label htmlFor="rem" className="text-[15px] font-bold text-white/70 cursor-pointer">Stay logged in</label>
                                 </div>
 
@@ -231,7 +229,7 @@ export default function LoginPage() {
                             </form>
 
                             <p className="text-center text-sm text-[#868889] font-bold pt-6 tracking-tight">
-                                Looking to start business with us? <Link href="/register" className="text-[#9BE15D] font-black hover:text-[#7ED957] transition-colors">Request access</Link>
+                                Looking to start business with us? <Link href="/register" className="text-[#1F416F] font-black hover:text-[#1F419F] transition-colors">Request access</Link>
                             </p>
                         </div>
                     </div>

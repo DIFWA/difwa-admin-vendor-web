@@ -44,14 +44,14 @@ export default function RetailerDashboard() {
     useEffect(() => {
         setPortalRoot(document.body)
     }, [])
-    const { 
-        stats: statsData, 
-        loading, 
+    const {
+        stats: statsData,
+        loading,
         isShopActive,
-        fetchDashboardStats, 
-        toggleShopStatus 
+        fetchDashboardStats,
+        toggleShopStatus
     } = useRetailerStore()
-    
+
     const [actionLoading, setActionLoading] = useState(false)
     const [showStatusModal, setShowStatusModal] = useState(false)
     const [showConfetti, setShowConfetti] = useState(false)
@@ -62,7 +62,7 @@ export default function RetailerDashboard() {
         // Fetch delivery income
         retailerService.getDeliveryIncome()
             .then(res => { if (res.success) setDeliveryIncome(res.data.totalDeliveryIncome) })
-            .catch(() => {})
+            .catch(() => { })
     }, [fetchDashboardStats])
 
     const handleToggle = async () => {
@@ -71,7 +71,7 @@ export default function RetailerDashboard() {
             setShowStatusModal(true)
             return
         }
-        
+
         // Closing the shop
         executeToggle()
     }
@@ -198,35 +198,35 @@ export default function RetailerDashboard() {
                     {/* True full-screen blur: rendered at body level */}
                     <div className="fixed inset-0 bg-black/50" style={{ zIndex: 99998, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }} onClick={() => setShowStatusModal(false)} />
                     <div className="fixed inset-0 flex items-center justify-center p-4 pointer-events-none" style={{ zIndex: 99999 }}>
-                    <div className="pointer-events-auto bg-white rounded-[40px] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 relative">
-                        {/* Decorative Background Blur */}
-                        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 blur-[50px] -mr-10 -mt-10 rounded-full" />
-                        
-                        <div className="p-8 text-center relative z-10">
-                            <div className="w-20 h-20 bg-blue-50 rounded-[28px] rotate-3 flex items-center justify-center mx-auto mb-6 shadow-sm border border-blue-100/50">
-                                <CheckCircle className="text-blue-600 -rotate-3" size={36} strokeWidth={2.5} />
+                        <div className="pointer-events-auto bg-white rounded-[40px] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 relative">
+                            {/* Decorative Background Blur */}
+                            <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 blur-[50px] -mr-10 -mt-10 rounded-full" />
+
+                            <div className="p-8 text-center relative z-10">
+                                <div className="w-20 h-20 bg-blue-50 rounded-[28px] rotate-3 flex items-center justify-center mx-auto mb-6 shadow-sm border border-blue-100/50">
+                                    <CheckCircle className="text-blue-600 -rotate-3" size={36} strokeWidth={2.5} />
+                                </div>
+                                <h3 className="text-2xl font-black uppercase text-foreground tracking-tight mb-2">Ready to Open?</h3>
+                                <p className="text-text-muted font-medium text-sm leading-relaxed px-4">
+                                    Once online, customers can see your products and place orders. Prepare for new orders to arrive.
+                                </p>
                             </div>
-                            <h3 className="text-2xl font-black uppercase text-foreground tracking-tight mb-2">Ready to Open?</h3>
-                            <p className="text-text-muted font-medium text-sm leading-relaxed px-4">
-                                Once online, customers can see your products and place orders. Prepare for new orders to arrive.
-                            </p>
+
+                            <div className="flex border-t border-border-custom px-6 py-6 gap-3">
+                                <button
+                                    onClick={() => setShowStatusModal(false)}
+                                    className="flex-1 px-6 py-4 rounded-[24px] font-black uppercase tracking-widest text-xs border border-border-custom hover:bg-gray-50 transition-all"
+                                >
+                                    Not Yet
+                                </button>
+                                <button
+                                    onClick={executeToggle}
+                                    className="flex-1 px-6 py-4 rounded-[24px] font-black uppercase tracking-widest text-xs bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all"
+                                >
+                                    Yes, Go Online
+                                </button>
+                            </div>
                         </div>
-                        
-                        <div className="flex border-t border-border-custom px-6 py-6 gap-3">
-                            <button 
-                                onClick={() => setShowStatusModal(false)}
-                                className="flex-1 px-6 py-4 rounded-[24px] font-black uppercase tracking-widest text-xs border border-border-custom hover:bg-gray-50 transition-all"
-                            >
-                                Not Yet
-                            </button>
-                            <button 
-                                onClick={executeToggle}
-                                className="flex-1 px-6 py-4 rounded-[24px] font-black uppercase tracking-widest text-xs bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all"
-                            >
-                                Yes, Go Online
-                            </button>
-                        </div>
-                    </div>
                     </div>
                 </>, portalRoot
             )}
@@ -243,10 +243,10 @@ export default function RetailerDashboard() {
                                 transition={{ duration: 2 + Math.random() * 2, ease: [0.4, 0, 0.2, 1], delay: Math.random() * 0.5 }}
                                 className={cn(
                                     "absolute w-3 h-3 rounded-sm",
-                                    i % 4 === 0 ? "bg-primary shadow-[0_0_12px_rgba(0,150,255,0.6)]" 
-                                    : i % 4 === 1 ? "bg-sky-400 shadow-[0_0_12px_rgba(56,189,248,0.5)]" 
-                                    : i % 4 === 2 ? "bg-blue-300 rounded-full" 
-                                    : "bg-cyan-500 shadow-[0_0_12px_rgba(6,182,212,0.5)]"
+                                    i % 4 === 0 ? "bg-primary shadow-[0_0_12px_rgba(0,150,255,0.6)]"
+                                        : i % 4 === 1 ? "bg-sky-400 shadow-[0_0_12px_rgba(56,189,248,0.5)]"
+                                            : i % 4 === 2 ? "bg-blue-300 rounded-full"
+                                                : "bg-cyan-500 shadow-[0_0_12px_rgba(6,182,212,0.5)]"
                                 )}
                             />
                         ))}
@@ -273,7 +273,7 @@ export default function RetailerDashboard() {
                         <h2 className="text-3xl font-black uppercase tracking-tight">Today&apos;s Prep List</h2>
                         <p className="mt-2 text-white/70 font-medium max-w-md">View the required items that need to be prepared for upcoming deliveries today.</p>
                     </div>
-                    <div className="flex items-center gap-2 bg-white text-primary px-8 py-4 rounded-[24px] font-black uppercase tracking-widest text-xs group-hover:bg-primary-light transition-colors">
+                    <div className="flex items-center gap-2 bg-white text-primary px-8 py-4 rounded-[24px] font-black uppercase tracking-widest text-xs ">
                         View Prep Details <ChevronRight size={18} />
                     </div>
                 </div>
@@ -286,7 +286,6 @@ export default function RetailerDashboard() {
                             <div className={cn("p-3 rounded-xl", stat.color)}>
                                 <stat.icon size={24} />
                             </div>
-                            <MoreVertical className="text-text-muted cursor-pointer group-hover:text-foreground" size={18} />
                         </div>
                         <p className="text-sm font-medium text-text-muted mb-1">{stat.title}</p>
                         <div className="flex items-end gap-2">
@@ -367,8 +366,8 @@ export default function RetailerDashboard() {
                         )}
                     </div>
 
-                    <Link 
-                        href="/retailer/orders" 
+                    <Link
+                        href="/retailer/orders"
                         className="mt-8 flex items-center justify-center gap-2 w-full py-4 rounded-[20px] bg-gray-50 hover:bg-primary-light hover:text-primary transition-all text-xs font-black uppercase tracking-widest text-text-muted"
                     >
                         View Full History <ChevronRight size={14} />
