@@ -401,13 +401,21 @@ export default function RetailerRevenuePage() {
                                     type="number"
                                     required
                                     min="500"
-                                    max={revenueStats.availableBalance}
-                                    placeholder="Enter amount to withdraw..."
+                                    max={Math.max(500, revenueStats.availableBalance)}
+                                    disabled={revenueStats.availableBalance < 500}
+                                    placeholder={revenueStats.availableBalance < 500 ? "Insufficient balance" : "Enter amount to withdraw..."}
                                     value={payoutAmount}
                                     onChange={e => setPayoutAmount(e.target.value)}
-                                    className="w-full px-6 py-4 rounded-2xl bg-background-soft border-2 border-transparent focus:border-primary/20 outline-none transition-all font-black text-2xl text-primary"
+                                    className="w-full px-6 py-4 rounded-2xl bg-background-soft border-2 border-transparent focus:border-primary/20 outline-none transition-all font-black text-2xl text-primary disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
-                                <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-1">Available: ₹{revenueStats.availableBalance.toLocaleString()}</p>
+                                <div className="flex flex-col gap-1 mt-1">
+                                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest">Available: ₹{revenueStats.availableBalance.toLocaleString()}</p>
+                                    {revenueStats.availableBalance < 500 && (
+                                        <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest flex items-center gap-1">
+                                            <AlertCircle size={10} /> Your balance is less than 500
+                                        </p>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="space-y-4">
@@ -462,10 +470,10 @@ export default function RetailerRevenuePage() {
 
                         <div className="p-8 pt-0">
                             <button
-                                disabled={submitting}
-                                className="w-full py-5 bg-primary text-white rounded-3xl font-black uppercase tracking-widest text-sm hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3 disabled:opacity-50"
+                                disabled={submitting || revenueStats.availableBalance < 500 || Number(payoutAmount) > revenueStats.availableBalance}
+                                className="w-full py-5 bg-primary text-white rounded-3xl font-black uppercase tracking-widest text-sm hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {submitting ? "Processing Request..." : "Submit Payout Request"}
+                                {submitting ? "Processing Request..." : (revenueStats.availableBalance < 500 ? "Insufficient Balance" : "Submit Payout Request")}
                             </button>
                         </div>
                     </form>
