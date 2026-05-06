@@ -6,7 +6,8 @@ import useNotificationStore from './useNotificationStore';
 import useRetailerStore from './useRetailerStore';
 import useAdminStore from './useAdminStore';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://api.difwa.com';
+// const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://api.difwa.com';
+const SOCKET_URL = 'https://nontragic-rodney-allogenically.ngrok-free.dev/api';
 
 const useSocketStore = create((set, get) => ({
     socket: null,
@@ -46,16 +47,16 @@ const useSocketStore = create((set, get) => ({
             if (userId) {
                 // Determine user role (can be passed or checked from storage)
                 const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
-                
+
                 socket.emit('join', `retailer_${userId}`);
                 socket.emit('join', `user_${userId}`);
                 socket.emit('join', `retailer_notifications_${userId}`);
-                
+
                 if (role === "admin") {
                     socket.emit('join', 'admin');
                     console.log(`📡 Joined admin room`);
                 }
-                
+
                 console.log(`📡 Joined rooms for user: ${userId}`);
             }
         });
@@ -68,7 +69,7 @@ const useSocketStore = create((set, get) => ({
             // Update Retailer Store
             if (useRetailerStore) {
                 useRetailerStore.setState(state => ({
-                    payouts: state.payouts.some(p => p._id === payoutId) 
+                    payouts: state.payouts.some(p => p._id === payoutId)
                         ? state.payouts.map(p => p._id === payoutId ? { ...p, status, ...data } : p)
                         : [data, ...state.payouts]
                 }));
@@ -174,9 +175,9 @@ const useSocketStore = create((set, get) => ({
                         return {
                             ordersData: {
                                 ...state.ordersData,
-                                data: orders.map(o => 
-                                    (o._id === orderId || o.orderId === orderId) 
-                                        ? { ...o, status, ...orderData } 
+                                data: orders.map(o =>
+                                    (o._id === orderId || o.orderId === orderId)
+                                        ? { ...o, status, ...orderData }
                                         : o
                                 )
                             }
@@ -234,7 +235,7 @@ const useSocketStore = create((set, get) => ({
                     return {
                         retailersData: {
                             ...state.retailersData,
-                            data: state.retailersData.data.map(r => 
+                            data: state.retailersData.data.map(r =>
                                 r._id === shopId ? { ...r, isShopActive } : r
                             )
                         }
